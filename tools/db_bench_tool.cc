@@ -1269,6 +1269,7 @@ class Stats {
   }
 
   void Start(int id) {
+    start_ = 0;  // Shichao
     id_ = id;
     next_report_ = FLAGS_stats_interval ? FLAGS_stats_interval : 100;
     last_op_finish_ = start_;
@@ -3567,7 +3568,7 @@ class Benchmark {
         thread->stats.FinishedOps(&db_, db_.db, 1, kDelete);
       }
     }
-    char msg[100];
+    char msg[128];
     snprintf(msg, sizeof(msg),
              "( get:%" PRIu64 " put:%" PRIu64 " del:%" PRIu64 " total:%" \
              PRIu64 " found:%" PRIu64 ")",

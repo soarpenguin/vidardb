@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 // This is only set from db_stress.cc and for testing only.
 // If non-zero, kill at various points in source code with probability 1/this

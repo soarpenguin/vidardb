@@ -22,6 +22,7 @@ int main() {
 #include <thread>
 #include <vector>
 #include <gflags/gflags.h>
+#include <functional>
 
 #include "dynamic_bloom.h"
 #include "port/port.h"

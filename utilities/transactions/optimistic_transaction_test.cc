@@ -7,6 +7,7 @@
 
 #include <string>
 #include <thread>
+#include <functional>
 
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/optimistic_transaction_db.h"

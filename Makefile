@@ -37,7 +37,7 @@ quoted_perl_command = $(subst ','\'',$(perl_command))
 # `make install`
 
 # Set the default DEBUG_LEVEL to 1
-DEBUG_LEVEL?=0
+DEBUG_LEVEL?=1
 
 ifeq ($(MAKECMDGOALS),dbg)
 	DEBUG_LEVEL=2
@@ -466,8 +466,8 @@ endif  # PLATFORM_SHARED_EXT
 	analyze tools tools_lib
 
 
-#all: $(LIBRARY) $(BENCHMARKS) tools tools_lib test_libs $(TESTS)  Shichao
-all: $(LIBRARY) 
+all: $(LIBRARY) $(BENCHMARKS) tools tools_lib test_libs $(TESTS)  #Shichao
+
 static_lib: $(LIBRARY)
 
 shared_lib: $(SHARED)
