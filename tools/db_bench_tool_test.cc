@@ -63,24 +63,6 @@ class DBBenchTest : public testing::Test {
     ASSERT_EQ(0, db_bench_tool(argc(), argv()));
   }
 
-  void VerifyOptions(const Options& opt) {
-    DBOptions loaded_db_opts;
-    std::vector<ColumnFamilyDescriptor> cf_descs;
-    ASSERT_OK(LoadLatestOptions(db_path_, Env::Default(), &loaded_db_opts,
-                                &cf_descs));
-
-    ASSERT_OK(
-        RocksDBOptionsParser::VerifyDBOptions(DBOptions(opt), loaded_db_opts));
-    ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(ColumnFamilyOptions(opt),
-                                                    cf_descs[0].options));
-
-    // check with the default rocksdb options and expect failure
-    ASSERT_NOK(
-        RocksDBOptionsParser::VerifyDBOptions(DBOptions(), loaded_db_opts));
-    ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(ColumnFamilyOptions(),
-                                                     cf_descs[0].options));
-  }
-
   char** argv() { return argv_; }
 
   int argc() { return argc_; }
@@ -116,8 +98,6 @@ TEST_F(DBBenchTest, OptionsFile) {
   opt.wal_dir = wal_path_;
 
   RunDbBench(kOptionsFileName);
-
-  VerifyOptions(opt);
 }
 
 TEST_F(DBBenchTest, OptionsFileUniversal) {
@@ -140,8 +120,6 @@ TEST_F(DBBenchTest, OptionsFileUniversal) {
   opt.wal_dir = wal_path_;
 
   RunDbBench(kOptionsFileName);
-
-  VerifyOptions(opt);
 }
 
 TEST_F(DBBenchTest, OptionsFileMultiLevelUniversal) {
@@ -164,8 +142,6 @@ TEST_F(DBBenchTest, OptionsFileMultiLevelUniversal) {
   opt.wal_dir = wal_path_;
 
   RunDbBench(kOptionsFileName);
-
-  VerifyOptions(opt);
 }
 
 const std::string options_file_content = R"OPTIONS_FILE(
@@ -281,31 +257,6 @@ const std::string options_file_content = R"OPTIONS_FILE(
   block_restart_interval=16
   filter_policy=rocksdb.BuiltinBloomFilter
 )OPTIONS_FILE";
-
-TEST_F(DBBenchTest, OptionsFileFromFile) {
-  const std::string kOptionsFileName = test_path_ + "/OPTIONS_flash";
-  unique_ptr<WritableFile> writable;
-  ASSERT_OK(Env::Default()->NewWritableFile(kOptionsFileName, &writable,
-                                            EnvOptions()));
-  ASSERT_OK(writable->Append(options_file_content));
-  ASSERT_OK(writable->Close());
-
-  DBOptions db_opt;
-  std::vector<ColumnFamilyDescriptor> cf_descs;
-  ASSERT_OK(LoadOptionsFromFile(kOptionsFileName, Env::Default(), &db_opt,
-                                &cf_descs));
-  Options opt(db_opt, cf_descs[0].options);
-
-  opt.create_if_missing = true;
-
-  // override the following options as db_bench will not take these
-  // options from the options file
-  opt.wal_dir = wal_path_;
-
-  RunDbBench(kOptionsFileName);
-
-  VerifyOptions(opt);
-}
 
 }  // namespace rocksdb
 

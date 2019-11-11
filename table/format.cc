@@ -22,7 +22,6 @@
 #include "util/file_reader_writer.h"
 #include "util/perf_context_imp.h"
 #include "util/string_util.h"
-#include "util/xxhash.h"
 
 namespace rocksdb {
 
@@ -71,8 +70,7 @@ const BlockHandle BlockHandle::kNullBlockHandle(0, 0);
 
 namespace {
 inline bool IsLegacyFooterFormat(uint64_t magic_number) {
-  return magic_number == kLegacyBlockBasedTableMagicNumber ||
-         magic_number == kLegacyPlainTableMagicNumber;
+  return magic_number == kLegacyBlockBasedTableMagicNumber;
 }
 inline uint64_t UpconvertLegacyFooterFormat(uint64_t magic_number) {
   if (magic_number == kLegacyBlockBasedTableMagicNumber) {
@@ -276,9 +274,6 @@ Status ReadBlock(RandomAccessFileReader* file, const Footer& footer,
       case kCRC32c:
         value = crc32c::Unmask(value);
         actual = crc32c::Value(data, n + 1);
-        break;
-      case kxxHash:
-        actual = XXH32(data, static_cast<int>(n) + 1, 0);
         break;
       default:
         s = Status::Corruption("unknown checksum type");

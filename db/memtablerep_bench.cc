@@ -590,29 +590,6 @@ int main(int argc, char** argv) {
   std::unique_ptr<rocksdb::MemTableRepFactory> factory;
   if (FLAGS_memtablerep == "skiplist") {
     factory.reset(new rocksdb::SkipListFactory);
-#ifndef ROCKSDB_LITE
-  } else if (FLAGS_memtablerep == "vector") {
-    factory.reset(new rocksdb::VectorRepFactory);
-  } else if (FLAGS_memtablerep == "hashskiplist") {
-    factory.reset(rocksdb::NewHashSkipListRepFactory(
-        FLAGS_bucket_count, FLAGS_hashskiplist_height,
-        FLAGS_hashskiplist_branching_factor));
-    options.prefix_extractor.reset(
-        rocksdb::NewFixedPrefixTransform(FLAGS_prefix_length));
-  } else if (FLAGS_memtablerep == "hashlinklist") {
-    factory.reset(rocksdb::NewHashLinkListRepFactory(
-        FLAGS_bucket_count, FLAGS_huge_page_tlb_size,
-        FLAGS_bucket_entries_logging_threshold,
-        FLAGS_if_log_bucket_dist_when_flash, FLAGS_threshold_use_skiplist));
-    options.prefix_extractor.reset(
-        rocksdb::NewFixedPrefixTransform(FLAGS_prefix_length));
-  } else if (FLAGS_memtablerep == "cuckoo") {
-    factory.reset(rocksdb::NewHashCuckooRepFactory(
-        FLAGS_write_buffer_size, FLAGS_average_data_size,
-        static_cast<uint32_t>(FLAGS_hash_function_count)));
-    options.prefix_extractor.reset(
-        rocksdb::NewFixedPrefixTransform(FLAGS_prefix_length));
-#endif  // ROCKSDB_LITE
   } else {
     fprintf(stdout, "Unknown memtablerep: %s\n", FLAGS_memtablerep.c_str());
     exit(1);

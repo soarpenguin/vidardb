@@ -461,7 +461,7 @@ TEST_F(DBIteratorTest, IterMulti) {
 // by using reseek rather than sequential scan
 TEST_F(DBIteratorTest, IterReseek) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   Options options = CurrentOptions(options_override);
   options.max_sequential_skip_in_iterations = 3;
   options.create_if_missing = true;
@@ -643,7 +643,7 @@ TEST_F(DBIteratorTest, IterPrevMaxSkip) {
 
 TEST_F(DBIteratorTest, IterWithSnapshot) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     CreateAndReopenWithCF({"pikachu"}, CurrentOptions(options_override));
     ASSERT_OK(Put(1, "key1", "val1"));
@@ -879,7 +879,6 @@ TEST_F(DBIteratorTest, DBIteratorBoundTest) {
 TEST_F(DBIteratorTest, PrevAfterMerge) {
   Options options;
   options.create_if_missing = true;
-  options.merge_operator = MergeOperators::CreatePutOperator();
   DestroyAndReopen(options);
 
   // write three entries with different keys using Merge()
@@ -924,7 +923,6 @@ TEST_F(DBIteratorTest, PinnedDataIteratorRandomized) {
     BlockBasedTableOptions table_options;
     table_options.use_delta_encoding = false;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-    options.merge_operator = MergeOperators::CreatePutOperator();
     DestroyAndReopen(options);
 
     std::vector<std::string> generated_keys(key_pool);
@@ -1124,7 +1122,6 @@ TEST_F(DBIteratorTest, PinnedDataIteratorMergeOperator) {
   BlockBasedTableOptions table_options;
   table_options.use_delta_encoding = false;
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  options.merge_operator = MergeOperators::CreateUInt64AddOperator();
   DestroyAndReopen(options);
 
   std::string numbers[7];
@@ -1234,7 +1231,6 @@ TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocks) {
   BlockBasedTableOptions table_options;
   table_options.block_size = 1;  // every block will contain one entry
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  options.merge_operator = MergeOperators::CreateStringAppendTESTOperator();
   options.disable_auto_compactions = true;
   options.max_sequential_skip_in_iterations = 8;
 
@@ -1299,7 +1295,6 @@ TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocks) {
 
 TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
   Options options = CurrentOptions();
-  options.merge_operator = MergeOperators::CreateStringAppendTESTOperator();
   options.disable_auto_compactions = true;
   options.level0_slowdown_writes_trigger = (1 << 30);
   options.level0_stop_writes_trigger = (1 << 30);

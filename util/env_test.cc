@@ -36,7 +36,6 @@
 #include "port/port.h"
 #include "rocksdb/env.h"
 #include "util/coding.h"
-#include "util/env_chroot.h"
 #include "util/log_buffer.h"
 #include "util/mutexlock.h"
 #include "util/string_util.h"
@@ -1188,12 +1187,7 @@ TEST_P(EnvPosixTestWithParam, WritableFileWrapper) {
 
 INSTANTIATE_TEST_CASE_P(DefaultEnv, EnvPosixTestWithParam,
                         ::testing::Values(Env::Default()));
-#if !defined(ROCKSDB_LITE) && !defined(OS_WIN)
-static unique_ptr<Env> chroot_env(NewChrootEnv(Env::Default(),
-                                               test::TmpDir(Env::Default())));
-INSTANTIATE_TEST_CASE_P(ChrootEnv, EnvPosixTestWithParam,
-                        ::testing::Values(chroot_env.get()));
-#endif  // !defined(ROCKSDB_LITE) && !defined(OS_WIN)
+
 
 }  // namespace rocksdb
 

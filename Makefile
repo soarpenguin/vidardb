@@ -282,9 +282,7 @@ TESTS = \
 	block_test \
 	bloom_test \
 	dynamic_bloom_test \
-	c_test \
 	cache_test \
-	checkpoint_test \
 	coding_test \
 	corruption_test \
 	crc32c_test \
@@ -298,7 +296,6 @@ TESTS = \
 	file_reader_writer_test \
 	block_based_filter_block_test \
 	full_filter_block_test \
-	hash_table_test \
 	histogram_test \
 	inlineskiplist_test \
 	log_test \
@@ -306,67 +303,42 @@ TESTS = \
 	mock_env_test \
 	memtable_list_test \
 	merge_helper_test \
-	memory_test \
 	merge_test \
 	merger_test \
-	util_merge_operators_test \
 	options_file_test \
-	redis_test \
-	reduce_levels_test \
-	plain_table_db_test \
 	comparator_db_test \
-	prefix_test \
 	skiplist_test \
-	stringappend_test \
-	ttl_test \
-	backupable_db_test \
-	document_db_test \
-	json_document_test \
-	sim_cache_test \
-	spatial_db_test \
 	version_edit_test \
 	version_set_test \
 	compaction_picker_test \
 	version_builder_test \
 	file_indexer_test \
 	write_batch_test \
-	write_batch_with_index_test \
 	write_controller_test\
 	deletefile_test \
 	table_test \
 	thread_local_test \
-	geodb_test \
-	rate_limiter_test \
 	delete_scheduler_test \
 	options_test \
 	options_settable_test \
-	options_util_test \
 	event_logger_test \
-	cuckoo_table_builder_test \
-	cuckoo_table_reader_test \
-	cuckoo_table_db_test \
 	flush_job_test \
 	wal_manager_test \
 	listener_test \
 	compaction_iterator_test \
 	compaction_job_test \
 	thread_list_test \
-	sst_dump_test \
 	compact_files_test \
 	perf_context_test \
-	optimistic_transaction_test \
 	write_callback_test \
 	heap_test \
-	compact_on_deletion_collector_test \
 	compaction_job_stats_test \
-	transaction_test \
-	ldb_cmd_test \
 	iostats_context_test \
-	persistent_cache_test \
+	repair_test\
+	db_bench_tool_test\
 
 PARALLEL_TEST = \
 	backupable_db_test \
-	compact_on_deletion_collector_test \
 	db_compaction_filter_test \
 	db_compaction_test \
 	db_test \
@@ -386,14 +358,10 @@ ifdef ROCKSDBTESTS_END
 endif
 
 TOOLS = \
-	sst_dump \
 	db_sanity_test \
 	db_stress \
 	write_stress \
-	ldb \
-	db_repl_stress \
-	rocksdb_dump \
-	rocksdb_undump
+	db_repl_stress
 
 TEST_LIBS = \
 	librocksdb_env_basic_test.a
@@ -454,9 +422,14 @@ $(SHARED3): $(SHARED4)
 	ln -fs $(SHARED4) $(SHARED3)
 endif
 
-$(SHARED4):
-	$(CXX) $(PLATFORM_SHARED_LDFLAGS)$(SHARED3) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(LIB_SOURCES) $(TOOL_SOURCES) \
-		$(LDFLAGS) -o $@
+shared_libobjects = $(patsubst %,shared-objects/%,$(LIBOBJECTS))
+CLEAN_FILES += shared-objects
+
+$(shared_libobjects): shared-objects/%.o: %.cc
+	$(AM_V_CC)mkdir -p $(@D) && $(CXX) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
+
+$(SHARED4): $(shared_libobjects)
+	$(CXX) $(PLATFORM_SHARED_LDFLAGS)$(SHARED3) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(shared_libobjects) $(LDFLAGS) -o $@
 
 endif  # PLATFORM_SHARED_EXT
 
@@ -854,22 +827,10 @@ bloom_test: util/bloom_test.o $(LIBOBJECTS) $(TESTHARNESS)
 dynamic_bloom_test: util/dynamic_bloom_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-c_test: db/c_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 coding_test: util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-stringappend_test: utilities/merge_operators/string_append/stringappend_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-redis_test: utilities/redis/redis_lists_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-hash_table_test: utilities/persistent_cache/hash_table_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 histogram_test: util/histogram_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -944,9 +905,6 @@ db_table_properties_test: db/db_table_properties_test.o db/db_test_util.o $(LIBO
 log_write_bench: util/log_write_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK) $(PROFILING_FLAGS)
 
-plain_table_db_test: db/plain_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 comparator_db_test: db/comparator_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
@@ -956,37 +914,10 @@ table_reader_bench: table/table_reader_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 perf_context_test: db/perf_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
 
-prefix_test: db/prefix_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
-
-backupable_db_test: utilities/backupable/backupable_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-checkpoint_test: utilities/checkpoint/checkpoint_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-document_db_test: utilities/document/document_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-json_document_test: utilities/document/json_document_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-sim_cache_test: utilities/simulator_cache/sim_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-spatial_db_test: utilities/spatialdb/spatial_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 env_mirror_test: utilities/env_mirror_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 env_registry_test: utilities/env_registry_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-ttl_test: utilities/ttl/ttl_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-write_batch_with_index_test: utilities/write_batch_with_index/write_batch_with_index_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 flush_job_test: db/flush_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -999,9 +930,6 @@ compaction_job_test: db/compaction_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 compaction_job_stats_test: db/compaction_job_stats_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-compact_on_deletion_collector_test: utilities/table_properties_collectors/compact_on_deletion_collector_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 wal_manager_test: db/wal_manager_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1017,9 +945,6 @@ env_test: util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 fault_injection_test: db/fault_injection_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-rate_limiter_test: util/rate_limiter_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 delete_scheduler_test: util/delete_scheduler_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1067,9 +992,6 @@ version_builder_test: db/version_builder_test.o $(LIBOBJECTS) $(TESTHARNESS)
 file_indexer_test: db/file_indexer_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-reduce_levels_test: tools/reduce_levels_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
@@ -1079,16 +1001,10 @@ write_controller_test: db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
 merge_helper_test: db/merge_helper_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-memory_test: utilities/memory/memory_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 merge_test: db/merge_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 merger_test: table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-util_merge_operators_test: utilities/util_merge_operators_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 options_file_test: db/options_file_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1100,19 +1016,7 @@ deletefile_test: db/deletefile_test.o $(LIBOBJECTS) $(TESTHARNESS)
 geodb_test: utilities/geodb/geodb_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-rocksdb_dump: tools/dump/rocksdb_dump.o $(LIBOBJECTS)
-	$(AM_LINK)
-
 rocksdb_undump: tools/dump/rocksdb_undump.o $(LIBOBJECTS)
-	$(AM_LINK)
-
-cuckoo_table_builder_test: table/cuckoo_table_builder_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-cuckoo_table_reader_test: table/cuckoo_table_reader_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-cuckoo_table_db_test: db/cuckoo_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 listener_test: db/listener_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1130,19 +1034,10 @@ options_test: util/options_test.o $(LIBOBJECTS) $(TESTHARNESS)
 options_settable_test: util/options_settable_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-options_util_test: utilities/options/options_util_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 db_bench_tool_test: tools/db_bench_tool_test.o $(BENCHTOOLOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 event_logger_test: util/event_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-sst_dump_test: tools/sst_dump_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-optimistic_transaction_test: utilities/transactions/optimistic_transaction_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 mock_env_test : util/mock_env_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1166,26 +1061,11 @@ write_callback_test: db/write_callback_test.o $(LIBOBJECTS) $(TESTHARNESS)
 heap_test: util/heap_test.o $(GTEST)
 	$(AM_LINK)
 
-transaction_test: utilities/transactions/transaction_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-sst_dump: tools/sst_dump.o $(LIBOBJECTS)
-	$(AM_LINK)
-
 repair_test: db/repair_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-ldb_cmd_test: tools/ldb_cmd_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-ldb: tools/ldb.o $(LIBOBJECTS)
 	$(AM_LINK)
 
 iostats_context_test: util/iostats_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
-
-persistent_cache_test: utilities/persistent_cache/persistent_cache_test.o  db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
 
 #-------------------------------------------------
 # make install related stuff
@@ -1222,141 +1102,6 @@ install: install-static
 	[ -e $(SHARED4) ] && $(MAKE) install-shared || :
 
 #-------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Jni stuff
-# ---------------------------------------------------------------------------
-
-JAVA_INCLUDE = -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux
-ifeq ($(PLATFORM), OS_SOLARIS)
-	ARCH := $(shell isainfo -b)
-else
-	ARCH := $(shell getconf LONG_BIT)
-endif
-ROCKSDBJNILIB = librocksdbjni-linux$(ARCH).so
-ROCKSDB_JAR = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-linux$(ARCH).jar
-ROCKSDB_JAR_ALL = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH).jar
-ROCKSDB_JAVADOCS_JAR = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-javadoc.jar
-ROCKSDB_SOURCES_JAR = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-sources.jar
-
-ifeq ($(PLATFORM), OS_MACOSX)
-	ROCKSDBJNILIB = librocksdbjni-osx.jnilib
-	ROCKSDB_JAR = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-osx.jar
-ifneq ("$(wildcard $(JAVA_HOME)/include/darwin)","")
-	JAVA_INCLUDE = -I$(JAVA_HOME)/include -I $(JAVA_HOME)/include/darwin
-else
-	JAVA_INCLUDE = -I/System/Library/Frameworks/JavaVM.framework/Headers/
-endif
-endif
-ifeq ($(PLATFORM), OS_SOLARIS)
-	ROCKSDBJNILIB = librocksdbjni-solaris$(ARCH).so
-	ROCKSDB_JAR = rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-solaris$(ARCH).jar
-	JAVA_INCLUDE = -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/solaris
-endif
-
-libz.a:
-	-rm -rf zlib-1.2.8
-	curl -O http://zlib.net/zlib-1.2.8.tar.gz
-	tar xvzf zlib-1.2.8.tar.gz
-	cd zlib-1.2.8 && CFLAGS='-fPIC' ./configure --static && make
-	cp zlib-1.2.8/libz.a .
-
-libbz2.a:
-	-rm -rf bzip2-1.0.6
-	curl -O  http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
-	tar xvzf bzip2-1.0.6.tar.gz
-	cd bzip2-1.0.6 && make CFLAGS='-fPIC -O2 -g -D_FILE_OFFSET_BITS=64'
-	cp bzip2-1.0.6/libbz2.a .
-
-libsnappy.a:
-	-rm -rf snappy-1.1.1
-	curl -O https://snappy.googlecode.com/files/snappy-1.1.1.tar.gz
-	tar xvzf snappy-1.1.1.tar.gz
-	cd snappy-1.1.1 && ./configure --with-pic --enable-static
-	cd snappy-1.1.1 && make
-	cp snappy-1.1.1/.libs/libsnappy.a .
-
-liblz4.a:
-	   -rm -rf lz4-r127
-	   curl -O https://codeload.github.com/Cyan4973/lz4/tar.gz/r127
-	   mv r127 lz4-r127.tar.gz
-	   tar xvzf lz4-r127.tar.gz
-	   cd lz4-r127/lib && make CFLAGS='-fPIC' all
-	   cp lz4-r127/lib/liblz4.a .
-
-# A version of each $(LIBOBJECTS) compiled with -fPIC and a fixed set of static compression libraries
-java_static_libobjects = $(patsubst %,jls/%,$(LIBOBJECTS))
-CLEAN_FILES += jls
-
-JAVA_STATIC_FLAGS = -DZLIB -DBZIP2 -DSNAPPY -DLZ4
-JAVA_STATIC_INCLUDES = -I./zlib-1.2.8 -I./bzip2-1.0.6 -I./snappy-1.1.1 -I./lz4-r127/lib
-
-$(java_static_libobjects): jls/%.o: %.cc libz.a libbz2.a libsnappy.a liblz4.a
-	$(AM_V_CC)mkdir -p $(@D) && $(CXX) $(CXXFLAGS) $(JAVA_STATIC_FLAGS) $(JAVA_STATIC_INCLUDES) -fPIC -c $< -o $@ $(COVERAGEFLAGS)
-
-rocksdbjavastatic: $(java_static_libobjects)
-	cd java;$(MAKE) javalib;
-	rm -f ./java/target/$(ROCKSDBJNILIB)
-	$(CXX) $(CXXFLAGS) -I./java/. $(JAVA_INCLUDE) -shared -fPIC \
-	  -o ./java/target/$(ROCKSDBJNILIB) $(JNI_NATIVE_SOURCES) \
-	  $(java_static_libobjects) $(COVERAGEFLAGS) \
-	  libz.a libbz2.a libsnappy.a liblz4.a $(JAVA_STATIC_LDFLAGS)
-	cd java/target;strip -S -x $(ROCKSDBJNILIB)
-	cd java;jar -cf target/$(ROCKSDB_JAR) HISTORY*.md
-	cd java/target;jar -uf $(ROCKSDB_JAR) $(ROCKSDBJNILIB)
-	cd java/target/classes;jar -uf ../$(ROCKSDB_JAR) org/rocksdb/*.class org/rocksdb/util/*.class
-	cd java/target/apidocs;jar -cf ../$(ROCKSDB_JAVADOCS_JAR) *
-	cd java/src/main/java;jar -cf ../../../target/$(ROCKSDB_SOURCES_JAR) org
-
-rocksdbjavastaticrelease: rocksdbjavastatic
-	cd java/crossbuild && vagrant destroy -f && vagrant up linux32 && vagrant halt linux32 && vagrant up linux64 && vagrant halt linux64
-	cd java;jar -cf target/$(ROCKSDB_JAR_ALL) HISTORY*.md
-	cd java/target;jar -uf $(ROCKSDB_JAR_ALL) librocksdbjni-*.so librocksdbjni-*.jnilib
-	cd java/target/classes;jar -uf ../$(ROCKSDB_JAR_ALL) org/rocksdb/*.class org/rocksdb/util/*.class
-
-rocksdbjavastaticpublish: rocksdbjavastaticrelease
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-javadoc.jar -Dclassifier=javadoc
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-sources.jar -Dclassifier=sources
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-linux64.jar -Dclassifier=linux64
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-linux32.jar -Dclassifier=linux32
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH)-osx.jar -Dclassifier=osx
-	mvn gpg:sign-and-deploy-file -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging -DpomFile=java/rocksjni.pom -Dfile=java/target/rocksdbjni-$(ROCKSDB_MAJOR).$(ROCKSDB_MINOR).$(ROCKSDB_PATCH).jar
-
-# A version of each $(LIBOBJECTS) compiled with -fPIC
-java_libobjects = $(patsubst %,jl/%,$(LIBOBJECTS))
-CLEAN_FILES += jl
-
-$(java_libobjects): jl/%.o: %.cc
-	$(AM_V_CC)mkdir -p $(@D) && $(CXX) $(CXXFLAGS) -fPIC -c $< -o $@ $(COVERAGEFLAGS)
-
-rocksdbjava: $(java_libobjects)
-	$(AM_V_GEN)cd java;$(MAKE) javalib;
-	$(AM_V_at)rm -f ./java/target/$(ROCKSDBJNILIB)
-	$(AM_V_at)$(CXX) $(CXXFLAGS) -I./java/. $(JAVA_INCLUDE) -shared -fPIC -o ./java/target/$(ROCKSDBJNILIB) $(JNI_NATIVE_SOURCES) $(java_libobjects) $(JAVA_LDFLAGS) $(COVERAGEFLAGS)
-	$(AM_V_at)cd java;jar -cf target/$(ROCKSDB_JAR) HISTORY*.md
-	$(AM_V_at)cd java/target;jar -uf $(ROCKSDB_JAR) $(ROCKSDBJNILIB)
-	$(AM_V_at)cd java/target/classes;jar -uf ../$(ROCKSDB_JAR) org/rocksdb/*.class org/rocksdb/util/*.class
-
-jclean:
-	cd java;$(MAKE) clean;
-
-jtest: rocksdbjava
-	cd java;$(MAKE) sample;$(MAKE) test;
-
-jdb_bench:
-	cd java;$(MAKE) db_bench;
-
-commit_prereq: build_tools/rocksdb-lego-determinator \
-               build_tools/precommit_checker.py
-	J=$(J) build_tools/precommit_checker.py unit unit_481 clang_unit tsan asan ubsan lite
-	$(MAKE) clean && $(MAKE) jclean && $(MAKE) rocksdbjava;
-
-xfunc:
-	for xftest in $(XFUNC_TESTS); do \
-		echo "===== Running xftest $$xftest"; \
-		make check ROCKSDB_XFUNC_TEST="$$xftest" tests-regexp="DBTest" ;\
-	done
 
 
 # ---------------------------------------------------------------------------

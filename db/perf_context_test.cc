@@ -18,7 +18,6 @@
 #include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/thread_status_util.h"
-#include "utilities/merge_operators.h"
 
 bool FLAGS_random_key = false;
 bool FLAGS_use_set_based_memetable = false;
@@ -42,13 +41,6 @@ std::shared_ptr<DB> OpenDb(bool read_only = false) {
     options.max_write_buffer_number = FLAGS_max_write_buffer_number;
     options.min_write_buffer_number_to_merge =
       FLAGS_min_write_buffer_number_to_merge;
-
-    if (FLAGS_use_set_based_memetable) {
-#ifndef ROCKSDB_LITE
-      options.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(0));
-      options.memtable_factory.reset(NewHashSkipListRepFactory());
-#endif  // ROCKSDB_LITE
-    }
 
     Status s;
     if (!read_only) {
@@ -619,7 +611,6 @@ TEST_F(PerfContextTest, MergeOperatorTime) {
   DB* db;
   Options options;
   options.create_if_missing = true;
-  options.merge_operator = MergeOperators::CreateStringAppendOperator();
   Status s = DB::Open(options, kDbName, &db);
   EXPECT_OK(s);
 

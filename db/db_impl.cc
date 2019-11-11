@@ -60,9 +60,6 @@
 #include "db/write_batch_internal.h"
 #include "db/write_callback.h"
 #include "db/writebuffer.h"
-#include "db/xfunc_test_points.h"
-#include "memtable/hash_linklist_rep.h"
-#include "memtable/hash_skiplist_rep.h"
 #include "port/likely.h"
 #include "port/port.h"
 #include "rocksdb/cache.h"
@@ -101,7 +98,6 @@
 #include "util/sync_point.h"
 #include "util/thread_status_updater.h"
 #include "util/thread_status_util.h"
-#include "util/xfunc.h"
 #include "rocksdb/utilities/json.hpp"  // Shichao
 
 namespace rocksdb {
@@ -161,12 +157,6 @@ DBOptions SanitizeOptions(const std::string& dbname, const DBOptions& src) {
                                            Env::Priority::LOW);
   result.env->IncBackgroundThreadsIfNeeded(src.max_background_flushes,
                                            Env::Priority::HIGH);
-
-  if (result.rate_limiter.get() != nullptr) {
-    if (result.bytes_per_sync == 0) {
-      result.bytes_per_sync = 1024 * 1024;
-    }
-  }
 
   if (result.WAL_ttl_seconds > 0 || result.WAL_size_limit_MB > 0) {
     result.recycle_log_file_num = false;
@@ -4295,9 +4285,6 @@ Iterator* DBImpl::NewIterator(const ReadOptions& read_options,
   auto cfh = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family);
   auto cfd = cfh->cfd();
 
-  XFUNC_TEST("", "managed_new", managed_new1, xf_manage_new,
-             reinterpret_cast<DBImpl*>(this),
-             const_cast<ReadOptions*>(&read_options), is_snapshot_supported_);
   if (read_options.managed) {
 #ifdef ROCKSDB_LITE
     // not supported in lite version
@@ -4404,9 +4391,6 @@ Status DBImpl::NewIterators(
   }
   iterators->clear();
   iterators->reserve(column_families.size());
-  XFUNC_TEST("", "managed_new", managed_new1, xf_manage_new,
-             reinterpret_cast<DBImpl*>(this),
-             const_cast<ReadOptions*>(&read_options), is_snapshot_supported_);
   if (read_options.managed) {
 #ifdef ROCKSDB_LITE
     return Status::InvalidArgument(
@@ -4550,16 +4534,6 @@ Status DBImpl::WriteImpl(const WriteOptions& write_options,
   }
 
   Status status;
-
-  bool xfunc_attempted_write = false;
-  XFUNC_TEST("transaction", "transaction_xftest_write_impl",
-             xf_transaction_write1, xf_transaction_write, write_options,
-             db_options_, my_batch, callback, this, &status,
-             &xfunc_attempted_write);
-  if (xfunc_attempted_write) {
-    // Test already did the write
-    return status;
-  }
 
   PERF_TIMER_GUARD(write_pre_and_post_process_time);
   WriteThread::Writer w;

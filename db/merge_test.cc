@@ -17,7 +17,6 @@
 #include "db/dbformat.h"
 #include "db/db_impl.h"
 #include "db/write_batch_internal.h"
-#include "utilities/merge_operators.h"
 #include "util/testharness.h"
 
 using namespace rocksdb;
@@ -30,50 +29,6 @@ size_t num_partial_merge_calls;
 void resetNumPartialMergeCalls() { num_partial_merge_calls = 0; }
 }
 
-class CountMergeOperator : public AssociativeMergeOperator {
- public:
-  CountMergeOperator() {
-    mergeOperator_ = MergeOperators::CreateUInt64AddOperator();
-  }
-
-  virtual bool Merge(const Slice& key,
-                     const Slice* existing_value,
-                     const Slice& value,
-                     std::string* new_value,
-                     Logger* logger) const override {
-    assert(new_value->empty());
-    ++num_merge_operator_calls;
-    if (existing_value == nullptr) {
-      new_value->assign(value.data(), value.size());
-      return true;
-    }
-
-    return mergeOperator_->PartialMerge(
-        key,
-        *existing_value,
-        value,
-        new_value,
-        logger);
-  }
-
-  virtual bool PartialMergeMulti(const Slice& key,
-                                 const std::deque<Slice>& operand_list,
-                                 std::string* new_value,
-                                 Logger* logger) const override {
-    assert(new_value->empty());
-    ++num_partial_merge_calls;
-    return mergeOperator_->PartialMergeMulti(key, operand_list, new_value,
-                                             logger);
-  }
-
-  virtual const char* Name() const override {
-    return "UInt64AddOperator";
-  }
-
- private:
-  std::shared_ptr<MergeOperator> mergeOperator_;
-};
-
 namespace {
 std::shared_ptr<DB> OpenDb(const std::string& dbname, const bool ttl = false,
                            const size_t max_successive_merges = 0,
@@ -81,21 +36,13 @@ std::shared_ptr<DB> OpenDb(const std::string& dbname, const bool ttl = false,
   DB* db;
   Options options;
   options.create_if_missing = true;
-  options.merge_operator = std::make_shared<CountMergeOperator>();
   options.max_successive_merges = max_successive_merges;
   options.min_partial_merge_operands = min_partial_merge_operands;
   Status s;
   DestroyDB(dbname, Options());
 // DBWithTTL is not supported in ROCKSDB_LITE
 #ifndef ROCKSDB_LITE
-  if (ttl) {
-    std::cout << "Opening database with TTL\n";
-    DBWithTTL* db_with_ttl;
-    s = DBWithTTL::Open(options, dbname, &db_with_ttl);
-    db = db_with_ttl;
-  } else {
-    s = DB::Open(options, dbname, &db);
-  }
+  s = DB::Open(options, dbname, &db);
 #else
   assert(!ttl);
   s = DB::Open(options, dbname, &db);

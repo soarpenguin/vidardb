@@ -107,7 +107,6 @@ class WritableFileWriter {
   const bool              use_os_buffer_;
   uint64_t                last_sync_size_;
   uint64_t                bytes_per_sync_;
-  RateLimiter*            rate_limiter_;
 
  public:
   WritableFileWriter(std::unique_ptr<WritableFile>&& file,
@@ -122,8 +121,7 @@ class WritableFileWriter {
         direct_io_(writable_file_->UseDirectIO()),
         use_os_buffer_(writable_file_->UseOSBuffer()),
         last_sync_size_(0),
-        bytes_per_sync_(options.bytes_per_sync),
-        rate_limiter_(options.rate_limiter) {
+        bytes_per_sync_(options.bytes_per_sync) {
 
     buf_.Alignment(writable_file_->GetRequiredBufferAlignment());
     buf_.AllocateNewBuffer(65536);

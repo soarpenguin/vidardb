@@ -36,7 +36,6 @@
 
 #include "db/db_impl.h"
 #include "db/version_set.h"
-#include "hdfs/env_hdfs.h"
 #include "port/port.h"
 #include "port/stack_trace.h"
 #include "rocksdb/cache.h"
@@ -65,9 +64,6 @@
 #include "util/statistics.h"
 #include "util/string_util.h"
 #include "util/testutil.h"
-#include "util/transaction_test_util.h"
-#include "util/xxhash.h"
-#include "utilities/merge_operators.h"
 
 #ifdef OS_WIN
 #include <io.h>  // open/close
@@ -800,10 +796,7 @@ DEFINE_bool(dump_malloc_stats, true, "Dump malloc stats in LOG ");
 
 enum RepFactory {
   kSkipList,
-  kPrefixHash,
-  kVectorRep,
-  kHashLinkedList,
-  kCuckoo
+  kPrefixHash
 };
 
 enum RepFactory StringToRepFactory(const char* ctype) {
@@ -813,12 +806,6 @@ enum RepFactory StringToRepFactory(const char* ctype) {
     return kSkipList;
   else if (!strcasecmp(ctype, "prefix_hash"))
     return kPrefixHash;
-  else if (!strcasecmp(ctype, "vector"))
-    return kVectorRep;
-  else if (!strcasecmp(ctype, "hash_linkedlist"))
-    return kHashLinkedList;
-  else if (!strcasecmp(ctype, "cuckoo"))
-    return kCuckoo;
 
   fprintf(stdout, "Cannot parse memreptable %s\n", ctype);
   return kSkipList;
@@ -1706,15 +1693,6 @@ class Benchmark {
       case kSkipList:
         fprintf(stdout, "Memtablerep: skip_list\n");
         break;
-      case kVectorRep:
-        fprintf(stdout, "Memtablerep: vector\n");
-        break;
-      case kHashLinkedList:
-        fprintf(stdout, "Memtablerep: hash_linkedlist\n");
-        break;
-      case kCuckoo:
-        fprintf(stdout, "Memtablerep: cuckoo\n");
-        break;
     }
     fprintf(stdout, "Perf Level: %d\n", FLAGS_perf_level);
 
@@ -1838,15 +1816,6 @@ class Benchmark {
         merge_keys_(FLAGS_merge_keys < 0 ? FLAGS_num : FLAGS_merge_keys),
         report_file_operations_(FLAGS_report_file_operations),
         cachedev_fd_(-1) {
-    // use simcache instead of cache
-    if (FLAGS_simcache_size >= 0) {
-      if (FLAGS_cache_numshardbits >= 1) {
-        cache_ =
-            NewSimCache(cache_, FLAGS_simcache_size, FLAGS_cache_numshardbits);
-      } else {
-        cache_ = NewSimCache(cache_, FLAGS_simcache_size, 0);
-      }
-    }
 
     if (report_file_operations_) {
       if (!FLAGS_hdfs.empty()) {
@@ -2084,19 +2053,12 @@ class Benchmark {
         method = &Benchmark::Compact;
       } else if (name == "crc32c") {
         method = &Benchmark::Crc32c;
-      } else if (name == "xxhash") {
-        method = &Benchmark::xxHash;
       } else if (name == "acquireload") {
         method = &Benchmark::AcquireLoad;
       } else if (name == "compress") {
         method = &Benchmark::Compress;
       } else if (name == "uncompress") {
         method = &Benchmark::Uncompress;
-#ifndef ROCKSDB_LITE
-      } else if (name == "randomtransaction") {
-        method = &Benchmark::RandomTransaction;
-        post_process_method = &Benchmark::RandomTransactionVerify;
-#endif  // ROCKSDB_LITE
       } else if (name == "randomreplacekeys") {
         fresh_db = true;
         method = &Benchmark::RandomReplaceKeys;
@@ -2193,10 +2155,6 @@ class Benchmark {
     shared.num_initialized = 0;
     shared.num_done = 0;
     shared.start = false;
-    if (FLAGS_benchmark_write_rate_limit > 0) {
-      shared.write_rate_limiter.reset(
-          NewGenericRateLimiter(FLAGS_benchmark_write_rate_limit));
-    }
 
     std::unique_ptr<ReporterAgent> reporter_agent;
     if (FLAGS_report_interval_seconds > 0) {
@@ -2272,25 +2230,6 @@ class Benchmark {
     }
     // Print so result is not dead
     fprintf(stderr, "... crc=0x%x\r", static_cast<unsigned int>(crc));
-
-    thread->stats.AddBytes(bytes);
-    thread->stats.AddMessage(label);
-  }
-
-  void xxHash(ThreadState* thread) {
-    // Checksum about 500MB of data total
-    const int size = 4096;
-    const char* label = "(4K per op)";
-    std::string data(size, 'x');
-    int64_t bytes = 0;
-    unsigned int xxh32 = 0;
-    while (bytes < 500 * 1048576) {
-      xxh32 = XXH32(data.data(), size, 0);
-      thread->stats.FinishedOps(nullptr, nullptr, 1, kHash);
-      bytes += size;
-    }
-    // Print so result is not dead
-    fprintf(stderr, "... xxh32=0x%x\r", static_cast<unsigned int>(xxh32));
 
     thread->stats.AddBytes(bytes);
     thread->stats.AddMessage(label);
@@ -2412,22 +2351,6 @@ class Benchmark {
   // Returns true if the options is initialized from the specified
   // options file.
   bool InitializeOptionsFromFile(Options* opts) {
-#ifndef ROCKSDB_LITE
-    printf("Initializing RocksDB Options from the specified file\n");
-    DBOptions db_opts;
-    std::vector<ColumnFamilyDescriptor> cf_descs;
-    if (FLAGS_options_file != "") {
-      auto s = LoadOptionsFromFile(FLAGS_options_file, Env::Default(), &db_opts,
-                                   &cf_descs);
-      if (s.ok()) {
-        *opts = Options(db_opts, cf_descs[0].options);
-        return true;
-      }
-      fprintf(stderr, "Unable to load options file %s --- %s\n",
-              FLAGS_options_file.c_str(), s.ToString().c_str());
-      exit(1);
-    }
-#endif
     return false;
   }
 
@@ -2481,8 +2404,7 @@ class Benchmark {
     options.max_bytes_for_level_multiplier =
         FLAGS_max_bytes_for_level_multiplier;
     options.filter_deletes = FLAGS_filter_deletes;
-    if ((FLAGS_prefix_size == 0) && (FLAGS_rep_factory == kPrefixHash ||
-                                     FLAGS_rep_factory == kHashLinkedList)) {
+    if ((FLAGS_prefix_size == 0) && (FLAGS_rep_factory == kPrefixHash)) {
       fprintf(stderr, "prefix_size should be non-zero if PrefixHash or "
                       "HashLinkedList memtablerep is used\n");
       exit(1);
@@ -2492,83 +2414,13 @@ class Benchmark {
         options.memtable_factory.reset(new SkipListFactory(
             FLAGS_skip_list_lookahead));
         break;
-#ifndef ROCKSDB_LITE
-      case kPrefixHash:
-        options.memtable_factory.reset(
-            NewHashSkipListRepFactory(FLAGS_hash_bucket_count));
-        break;
-      case kHashLinkedList:
-        options.memtable_factory.reset(NewHashLinkListRepFactory(
-            FLAGS_hash_bucket_count));
-        break;
-      case kVectorRep:
-        options.memtable_factory.reset(
-          new VectorRepFactory
-        );
-        break;
-      case kCuckoo:
-        options.memtable_factory.reset(NewHashCuckooRepFactory(
-            options.write_buffer_size, FLAGS_key_size + FLAGS_value_size));
-        break;
-#else
       default:
         fprintf(stderr, "Only skip list is supported in lite mode\n");
-        exit(1);
-#endif  // ROCKSDB_LITE
     }
-    if (FLAGS_use_plain_table) {
-#ifndef ROCKSDB_LITE
-      if (FLAGS_rep_factory != kPrefixHash &&
-          FLAGS_rep_factory != kHashLinkedList) {
-        fprintf(stderr, "Waring: plain table is used with skipList\n");
-      }
-      if (!FLAGS_mmap_read && !FLAGS_mmap_write) {
-        fprintf(stderr, "plain table format requires mmap to operate\n");
-        exit(1);
-      }
 
-      int bloom_bits_per_key = FLAGS_bloom_bits;
-      if (bloom_bits_per_key < 0) {
-        bloom_bits_per_key = 0;
-      }
-
-      PlainTableOptions plain_table_options;
-      plain_table_options.user_key_len = FLAGS_key_size;
-      plain_table_options.bloom_bits_per_key = bloom_bits_per_key;
-      plain_table_options.hash_table_ratio = 0.75;
-      options.table_factory = std::shared_ptr<TableFactory>(
-          NewPlainTableFactory(plain_table_options));
-#else
-      fprintf(stderr, "Plain table is not supported in lite mode\n");
-      exit(1);
-#endif  // ROCKSDB_LITE
-    } else if (FLAGS_use_cuckoo_table) {
-#ifndef ROCKSDB_LITE
-      if (FLAGS_cuckoo_hash_ratio > 1 || FLAGS_cuckoo_hash_ratio < 0) {
-        fprintf(stderr, "Invalid cuckoo_hash_ratio\n");
-        exit(1);
-      }
-      rocksdb::CuckooTableOptions table_options;
-      table_options.hash_table_ratio = FLAGS_cuckoo_hash_ratio;
-      table_options.identity_as_first_hash = FLAGS_identity_as_first_hash;
-      options.table_factory = std::shared_ptr<TableFactory>(
-          NewCuckooTableFactory(table_options));
-#else
-      fprintf(stderr, "Cuckoo table is not supported in lite mode\n");
-      exit(1);
-#endif  // ROCKSDB_LITE
-    } else {
       BlockBasedTableOptions block_based_options;
-      if (FLAGS_use_hash_search) {
-        if (FLAGS_prefix_size == 0) {
-          fprintf(stderr,
-              "prefix_size not assigned when enable use_hash_search \n");
-          exit(1);
-        }
-        block_based_options.index_type = BlockBasedTableOptions::kHashSearch;
-      } else {
-        block_based_options.index_type = BlockBasedTableOptions::kBinarySearch;
-      }
+      block_based_options.index_type = BlockBasedTableOptions::kBinarySearch;
+
       if (cache_ == nullptr) {
         block_based_options.no_block_cache = true;
       }
@@ -2588,7 +2440,7 @@ class Benchmark {
       block_based_options.format_version = 2;
       options.table_factory.reset(
           NewBlockBasedTableFactory(block_based_options));
-    }
+
     if (FLAGS_max_bytes_for_level_multiplier_additional_v.size() > 0) {
       if (FLAGS_max_bytes_for_level_multiplier_additional_v.size() !=
           (unsigned int)FLAGS_num_levels) {
@@ -2654,14 +2506,6 @@ class Benchmark {
     options.bytes_per_sync = FLAGS_bytes_per_sync;
     options.wal_bytes_per_sync = FLAGS_wal_bytes_per_sync;
 
-    // merge operator options
-    options.merge_operator = MergeOperators::CreateFromStringId(
-        FLAGS_merge_operator);
-    if (options.merge_operator == nullptr && !FLAGS_merge_operator.empty()) {
-      fprintf(stderr, "invalid merge operator: %s\n",
-              FLAGS_merge_operator.c_str());
-      exit(1);
-    }
     options.max_successive_merges = FLAGS_max_successive_merges;
     options.report_bg_io_stats = FLAGS_report_bg_io_stats;
 
@@ -2690,10 +2534,6 @@ class Benchmark {
         FLAGS_universal_allow_trivial_move;
     if (FLAGS_thread_status_per_interval > 0) {
       options.enable_thread_tracking = true;
-    }
-    if (FLAGS_rate_limiter_bytes_per_sec > 0) {
-      options.rate_limiter.reset(
-          NewGenericRateLimiter(FLAGS_rate_limiter_bytes_per_sec));
     }
 
 #ifndef ROCKSDB_LITE
@@ -2727,23 +2567,9 @@ class Benchmark {
       FLAGS_env->LowerThreadPoolIOPriority(Env::LOW);
       FLAGS_env->LowerThreadPoolIOPriority(Env::HIGH);
     }
-    if (FLAGS_disable_flashcache_for_background_threads && cachedev_fd_ == -1) {
-      // Avoid creating the env twice when an use_existing_db is true
-      cachedev_fd_ = open(FLAGS_flashcache_dev.c_str(), O_RDONLY);
-      if (cachedev_fd_ < 0) {
-        fprintf(stderr, "Open flash device failed\n");
-        exit(1);
-      }
-      flashcache_aware_env_ = NewFlashcacheAwareEnv(FLAGS_env, cachedev_fd_);
-      if (flashcache_aware_env_.get() == nullptr) {
-        fprintf(stderr, "Failed to open flashcache device at %s\n",
-                FLAGS_flashcache_dev.c_str());
-        std::abort();
-      }
-      options.env = flashcache_aware_env_.get();
-    } else {
-      options.env = FLAGS_env;
-    }
+
+    options.env = FLAGS_env;
+
 
     if (FLAGS_num_multi_db <= 1) {
       OpenDb(options, FLAGS_db, &db_);
@@ -2786,20 +2612,6 @@ class Benchmark {
       if (FLAGS_readonly) {
         s = DB::OpenForReadOnly(options, db_name, column_families,
             &db->cfh, &db->db);
-      } else if (FLAGS_optimistic_transaction_db) {
-        s = OptimisticTransactionDB::Open(options, db_name, column_families,
-                                          &db->cfh, &db->opt_txn_db);
-        if (s.ok()) {
-          db->db = db->opt_txn_db->GetBaseDB();
-        }
-      } else if (FLAGS_transaction_db) {
-        TransactionDB* ptr;
-        TransactionDBOptions txn_db_options;
-        s = TransactionDB::Open(options, txn_db_options, db_name,
-                                column_families, &db->cfh, &ptr);
-        if (s.ok()) {
-          db->db = ptr;
-        }
       } else {
         s = DB::Open(options, db_name, column_families, &db->cfh, &db->db);
       }
@@ -2812,18 +2624,6 @@ class Benchmark {
 #ifndef ROCKSDB_LITE
     } else if (FLAGS_readonly) {
       s = DB::OpenForReadOnly(options, db_name, &db->db);
-    } else if (FLAGS_optimistic_transaction_db) {
-      s = OptimisticTransactionDB::Open(options, db_name, &db->opt_txn_db);
-      if (s.ok()) {
-        db->db = db->opt_txn_db->GetBaseDB();
-      }
-    } else if (FLAGS_transaction_db) {
-      TransactionDB* ptr;
-      TransactionDBOptions txn_db_options;
-      s = TransactionDB::Open(options, txn_db_options, db_name, &ptr);
-      if (s.ok()) {
-        db->db = ptr;
-      }
 #endif  // ROCKSDB_LITE
     } else {
       s = DB::Open(options, db_name, &db->db);
@@ -3376,12 +3176,6 @@ class Benchmark {
     RandomGenerator gen;
     int64_t bytes = 0;
 
-    std::unique_ptr<RateLimiter> write_rate_limiter;
-    if (FLAGS_benchmark_write_rate_limit > 0) {
-      write_rate_limiter.reset(
-          NewGenericRateLimiter(FLAGS_benchmark_write_rate_limit));
-    }
-
     // Don't merge stats from this thread with the readers.
     thread->stats.SetExcludeFromMerge();
 
@@ -3414,11 +3208,6 @@ class Benchmark {
       bytes += key.size() + value_size_;
       thread->stats.FinishedOps(&db_, db_.db, 1, kWrite);
 
-      if (FLAGS_benchmark_write_rate_limit > 0) {
-        write_rate_limiter->Request(
-            entries_per_batch_ * (value_size_ + key_size_),
-            Env::IO_HIGH);
-      }
     }
     thread->stats.AddBytes(bytes);
   }
@@ -3864,106 +3653,6 @@ class Benchmark {
     }
   }
 
-#ifndef ROCKSDB_LITE
-  // This benchmark stress tests Transactions.  For a given --duration (or
-  // total number of --writes, a Transaction will perform a read-modify-write
-  // to increment the value of a key in each of N(--transaction-sets) sets of
-  // keys (where each set has --num keys).  If --threads is set, this will be
-  // done in parallel.
-  //
-  // To test transactions, use --transaction_db=true.  Not setting this
-  // parameter
-  // will run the same benchmark without transactions.
-  //
-  // RandomTransactionVerify() will then validate the correctness of the results
-  // by checking if the sum of all keys in each set is the same.
-  void RandomTransaction(ThreadState* thread) {
-    ReadOptions options(FLAGS_verify_checksum, true);
-    Duration duration(FLAGS_duration, readwrites_);
-    ReadOptions read_options(FLAGS_verify_checksum, true);
-    uint16_t num_prefix_ranges = static_cast<uint16_t>(FLAGS_transaction_sets);
-    uint64_t transactions_done = 0;
-
-    if (num_prefix_ranges == 0 || num_prefix_ranges > 9999) {
-      fprintf(stderr, "invalid value for transaction_sets\n");
-      abort();
-    }
-
-    TransactionOptions txn_options;
-    txn_options.lock_timeout = FLAGS_transaction_lock_timeout;
-    txn_options.set_snapshot = FLAGS_transaction_set_snapshot;
-
-    RandomTransactionInserter inserter(&thread->rand, write_options_,
-                                       read_options, FLAGS_num,
-                                       num_prefix_ranges);
-
-    if (FLAGS_num_multi_db > 1) {
-      fprintf(stderr,
-              "Cannot run RandomTransaction benchmark with "
-              "FLAGS_multi_db > 1.");
-      abort();
-    }
-
-    while (!duration.Done(1)) {
-      bool success;
-
-      // RandomTransactionInserter will attempt to insert a key for each
-      // # of FLAGS_transaction_sets
-      if (FLAGS_optimistic_transaction_db) {
-        success = inserter.OptimisticTransactionDBInsert(db_.opt_txn_db);
-      } else if (FLAGS_transaction_db) {
-        TransactionDB* txn_db = reinterpret_cast<TransactionDB*>(db_.db);
-        success = inserter.TransactionDBInsert(txn_db, txn_options);
-      } else {
-        success = inserter.DBInsert(db_.db);
-      }
-
-      if (!success) {
-        fprintf(stderr, "Unexpected error: %s\n",
-                inserter.GetLastStatus().ToString().c_str());
-        abort();
-      }
-
-      thread->stats.FinishedOps(nullptr, db_.db, 1, kOthers);
-      transactions_done++;
-    }
-
-    char msg[100];
-    if (FLAGS_optimistic_transaction_db || FLAGS_transaction_db) {
-      snprintf(msg, sizeof(msg),
-               "( transactions:%" PRIu64 " aborts:%" PRIu64 ")",
-               transactions_done, inserter.GetFailureCount());
-    } else {
-      snprintf(msg, sizeof(msg), "( batches:%" PRIu64 " )", transactions_done);
-    }
-    thread->stats.AddMessage(msg);
-
-    if (FLAGS_perf_level > 0) {
-      thread->stats.AddMessage(perf_context.ToString());
-    }
-  }
-
-  // Verifies consistency of data after RandomTransaction() has been run.
-  // Since each iteration of RandomTransaction() incremented a key in each set
-  // by the same value, the sum of the keys in each set should be the same.
-  void RandomTransactionVerify() {
-    if (!FLAGS_transaction_db && !FLAGS_optimistic_transaction_db) {
-      // transactions not used, nothing to verify.
-      return;
-    }
-
-    Status s =
-        RandomTransactionInserter::Verify(db_.db,
-                            static_cast<uint16_t>(FLAGS_transaction_sets));
-
-    if (s.ok()) {
-      fprintf(stdout, "RandomTransactionVerify Success.\n");
-    } else {
-      fprintf(stdout, "RandomTransactionVerify FAILED!!\n");
-    }
-  }
-#endif  // ROCKSDB_LITE
-
   // Writes and deletes random keys without overwriting keys.
   //
   // This benchmark is intended to partially replicate the behavior of MyRocks
@@ -4085,17 +3774,8 @@ int db_bench_tool(int argc, char** argv) {
   if (!FLAGS_hdfs.empty() && !FLAGS_env_uri.empty()) {
     fprintf(stderr, "Cannot provide both --hdfs and --env_uri.\n");
     exit(1);
-  } else if (!FLAGS_env_uri.empty()) {
-    FLAGS_env = NewEnvFromUri(FLAGS_env_uri, &custom_env_guard);
-    if (FLAGS_env == nullptr) {
-      fprintf(stderr, "No Env registered for URI: %s\n", FLAGS_env_uri.c_str());
-      exit(1);
-    }
   }
 #endif  // ROCKSDB_LITE
-  if (!FLAGS_hdfs.empty()) {
-    FLAGS_env  = new rocksdb::HdfsEnv(FLAGS_hdfs);
-  }
 
   if (!strcasecmp(FLAGS_compaction_fadvice.c_str(), "NONE"))
     FLAGS_compaction_fadvice_e = rocksdb::Options::NONE;

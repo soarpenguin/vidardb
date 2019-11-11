@@ -21,7 +21,6 @@
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
 #include "db/writebuffer.h"
-#include "memtable/stl_wrappers.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
@@ -39,7 +38,6 @@
 #include "table/get_context.h"
 #include "table/internal_iterator.h"
 #include "table/meta_blocks.h"
-#include "table/plain_table_factory.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/compression.h"
 #include "util/random.h"
@@ -47,7 +45,6 @@
 #include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -522,11 +519,6 @@ class DBConstructor: public Constructor {
 
 enum TestType {
   BLOCK_BASED_TABLE_TEST,
-#ifndef ROCKSDB_LITE
-  PLAIN_TABLE_SEMI_FIXED_PREFIX,
-  PLAIN_TABLE_FULL_STR_PREFIX,
-  PLAIN_TABLE_TOTAL_ORDER,
-#endif  // !ROCKSDB_LITE
   BLOCK_TEST,
   MEMTABLE_TEST,
   DB_TEST
@@ -545,11 +537,6 @@ static std::vector<TestArgs> GenerateArgList() {
   std::vector<TestArgs> test_args;
   std::vector<TestType> test_types = {
       BLOCK_BASED_TABLE_TEST,
-#ifndef ROCKSDB_LITE
-      PLAIN_TABLE_SEMI_FIXED_PREFIX,
-      PLAIN_TABLE_FULL_STR_PREFIX,
-      PLAIN_TABLE_TOTAL_ORDER,
-#endif  // !ROCKSDB_LITE
       BLOCK_TEST,
       MEMTABLE_TEST, DB_TEST};
   std::vector<bool> reverse_compare_types = {false, true};
@@ -586,24 +573,6 @@ static std::vector<TestArgs> GenerateArgList() {
 
   for (auto test_type : test_types) {
     for (auto reverse_compare : reverse_compare_types) {
-#ifndef ROCKSDB_LITE
-      if (test_type == PLAIN_TABLE_SEMI_FIXED_PREFIX ||
-          test_type == PLAIN_TABLE_FULL_STR_PREFIX ||
-          test_type == PLAIN_TABLE_TOTAL_ORDER) {
-        // Plain table doesn't use restart index or compression.
-        TestArgs one_arg;
-        one_arg.type = test_type;
-        one_arg.reverse_compare = reverse_compare;
-        one_arg.restart_interval = restart_intervals[0];
-        one_arg.compression = compression_types[0].first;
-        one_arg.use_mmap = true;
-        test_args.push_back(one_arg);
-        one_arg.use_mmap = false;
-        test_args.push_back(one_arg);
-        continue;
-      }
-#endif  // !ROCKSDB_LITE
-
       for (auto restart_interval : restart_intervals) {
         for (auto compression_type : compression_types) {
           TestArgs one_arg;
@@ -687,45 +656,6 @@ class HarnessTest : public testing::Test {
             new BlockBasedTableFactory(table_options_));
         constructor_ = new TableConstructor(options_.comparator);
         break;
-// Plain table is not supported in ROCKSDB_LITE
-#ifndef ROCKSDB_LITE
-      case PLAIN_TABLE_SEMI_FIXED_PREFIX:
-        support_prev_ = false;
-        only_support_prefix_seek_ = true;
-        options_.prefix_extractor.reset(new FixedOrLessPrefixTransform(2));
-        options_.table_factory.reset(NewPlainTableFactory());
-        constructor_ = new TableConstructor(options_.comparator, true);
-        internal_comparator_.reset(
-            new InternalKeyComparator(options_.comparator));
-        break;
-      case PLAIN_TABLE_FULL_STR_PREFIX:
-        support_prev_ = false;
-        only_support_prefix_seek_ = true;
-        options_.prefix_extractor.reset(NewNoopTransform());
-        options_.table_factory.reset(NewPlainTableFactory());
-        constructor_ = new TableConstructor(options_.comparator, true);
-        internal_comparator_.reset(
-            new InternalKeyComparator(options_.comparator));
-        break;
-      case PLAIN_TABLE_TOTAL_ORDER:
-        support_prev_ = false;
-        only_support_prefix_seek_ = false;
-        options_.prefix_extractor = nullptr;
-
-        {
-          PlainTableOptions plain_table_options;
-          plain_table_options.user_key_len = kPlainTableVariableLength;
-          plain_table_options.bloom_bits_per_key = 0;
-          plain_table_options.hash_table_ratio = 0;
-
-          options_.table_factory.reset(
-              NewPlainTableFactory(plain_table_options));
-        }
-        constructor_ = new TableConstructor(options_.comparator, true);
-        internal_comparator_.reset(
-            new InternalKeyComparator(options_.comparator));
-        break;
-#endif  // !ROCKSDB_LITE
       case BLOCK_TEST:
         table_options_.block_size = 256;
         options_.table_factory.reset(
@@ -1099,7 +1029,6 @@ TEST_F(BlockBasedTableTest, BlockBasedTableProperties2) {
     BlockBasedTableOptions table_options;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
     options.comparator = &reverse_key_comparator;
-    options.merge_operator = MergeOperators::CreateUInt64AddOperator();
     options.table_properties_collector_factories.emplace_back(
         new DummyPropertiesCollectorFactory1());
     options.table_properties_collector_factories.emplace_back(
@@ -1271,31 +1200,10 @@ TEST_F(BlockBasedTableTest, TotalOrderSeekOnHashIndex) {
     // Make each key/value an individual block
     table_options.block_size = 64;
     switch (i) {
-    case 0:
+    default:
       // Binary search index
       table_options.index_type = BlockBasedTableOptions::kBinarySearch;
       options.table_factory.reset(new BlockBasedTableFactory(table_options));
-      break;
-    case 1:
-      // Hash search index
-      table_options.index_type = BlockBasedTableOptions::kHashSearch;
-      options.table_factory.reset(new BlockBasedTableFactory(table_options));
-      options.prefix_extractor.reset(NewFixedPrefixTransform(4));
-      break;
-    case 2:
-      // Hash search index with hash_index_allow_collision
-      table_options.index_type = BlockBasedTableOptions::kHashSearch;
-      table_options.hash_index_allow_collision = true;
-      options.table_factory.reset(new BlockBasedTableFactory(table_options));
-      options.prefix_extractor.reset(NewFixedPrefixTransform(4));
-      break;
-    case 3:
-    default:
-      // Hash search index with filter policy
-      table_options.index_type = BlockBasedTableOptions::kHashSearch;
-      table_options.filter_policy.reset(NewBloomFilterPolicy(10));
-      options.table_factory.reset(new BlockBasedTableFactory(table_options));
-      options.prefix_extractor.reset(NewFixedPrefixTransform(4));
       break;
     }
 
@@ -1394,118 +1302,6 @@ void AddInternalKey(TableConstructor* c, const std::string& prefix,
   static Random rnd(1023);
   InternalKey k(prefix + RandomString(&rnd, 800), 0, kTypeValue);
   c->Add(k.Encode().ToString(), "v");
-}
-
-TEST_F(TableTest, HashIndexTest) {
-  TableConstructor c(BytewiseComparator());
-
-  // keys with prefix length 3, make sure the key/value is big enough to fill
-  // one block
-  AddInternalKey(&c, "0015");
-  AddInternalKey(&c, "0035");
-
-  AddInternalKey(&c, "0054");
-  AddInternalKey(&c, "0055");
-
-  AddInternalKey(&c, "0056");
-  AddInternalKey(&c, "0057");
-
-  AddInternalKey(&c, "0058");
-  AddInternalKey(&c, "0075");
-
-  AddInternalKey(&c, "0076");
-  AddInternalKey(&c, "0095");
-
-  std::vector<std::string> keys;
-  stl_wrappers::KVMap kvmap;
-  Options options;
-  options.prefix_extractor.reset(NewFixedPrefixTransform(3));
-  BlockBasedTableOptions table_options;
-  table_options.index_type = BlockBasedTableOptions::kHashSearch;
-  table_options.hash_index_allow_collision = true;
-  table_options.block_size = 1700;
-  table_options.block_cache = NewLRUCache(1024, 4);
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-
-  std::unique_ptr<InternalKeyComparator> comparator(
-      new InternalKeyComparator(BytewiseComparator()));
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options, *comparator, &keys, &kvmap);
-  auto reader = c.GetTableReader();
-
-  auto props = reader->GetTableProperties();
-  ASSERT_EQ(5u, props->num_data_blocks);
-
-  std::unique_ptr<InternalIterator> hash_iter(
-      reader->NewIterator(ReadOptions()));
-
-  // -- Find keys do not exist, but have common prefix.
-  std::vector<std::string> prefixes = {"001", "003", "005", "007", "009"};
-  std::vector<std::string> lower_bound = {keys[0], keys[1], keys[2],
-                                          keys[7], keys[9], };
-
-  // find the lower bound of the prefix
-  for (size_t i = 0; i < prefixes.size(); ++i) {
-    hash_iter->Seek(InternalKey(prefixes[i], 0, kTypeValue).Encode());
-    ASSERT_OK(hash_iter->status());
-    ASSERT_TRUE(hash_iter->Valid());
-
-    // seek the first element in the block
-    ASSERT_EQ(lower_bound[i], hash_iter->key().ToString());
-    ASSERT_EQ("v", hash_iter->value().ToString());
-  }
-
-  // find the upper bound of prefixes
-  std::vector<std::string> upper_bound = {keys[1], keys[2], keys[7], keys[9], };
-
-  // find existing keys
-  for (const auto& item : kvmap) {
-    auto ukey = ExtractUserKey(item.first).ToString();
-    hash_iter->Seek(ukey);
-
-    // ASSERT_OK(regular_iter->status());
-    ASSERT_OK(hash_iter->status());
-
-    // ASSERT_TRUE(regular_iter->Valid());
-    ASSERT_TRUE(hash_iter->Valid());
-
-    ASSERT_EQ(item.first, hash_iter->key().ToString());
-    ASSERT_EQ(item.second, hash_iter->value().ToString());
-  }
-
-  for (size_t i = 0; i < prefixes.size(); ++i) {
-    // the key is greater than any existing keys.
-    auto key = prefixes[i] + "9";
-    hash_iter->Seek(InternalKey(key, 0, kTypeValue).Encode());
-
-    ASSERT_OK(hash_iter->status());
-    if (i == prefixes.size() - 1) {
-      // last key
-      ASSERT_TRUE(!hash_iter->Valid());
-    } else {
-      ASSERT_TRUE(hash_iter->Valid());
-      // seek the first element in the block
-      ASSERT_EQ(upper_bound[i], hash_iter->key().ToString());
-      ASSERT_EQ("v", hash_iter->value().ToString());
-    }
-  }
-
-  // find keys with prefix that don't match any of the existing prefixes.
-  std::vector<std::string> non_exist_prefixes = {"002", "004", "006", "008"};
-  for (const auto& prefix : non_exist_prefixes) {
-    hash_iter->Seek(InternalKey(prefix, 0, kTypeValue).Encode());
-    // regular_iter->Seek(prefix);
-
-    ASSERT_OK(hash_iter->status());
-    // Seek to non-existing prefixes should yield either invalid, or a
-    // key with prefix greater than the target.
-    if (hash_iter->Valid()) {
-      Slice ukey = ExtractUserKey(hash_iter->key());
-      Slice ukey_prefix = options.prefix_extractor->Transform(ukey);
-      ASSERT_TRUE(BytewiseComparator()->Compare(prefix, ukey_prefix) < 0);
-    }
-  }
-  c.ResetTableReader();
 }
 
 // It's very hard to figure out the index block size of a block accurately.
@@ -2022,63 +1818,6 @@ TEST_F(BlockBasedTableTest, BlockCacheLeak) {
   c.ResetTableReader();
 }
 
-// Plain table is not supported in ROCKSDB_LITE
-#ifndef ROCKSDB_LITE
-TEST_F(PlainTableTest, BasicPlainTableProperties) {
-  PlainTableOptions plain_table_options;
-  plain_table_options.user_key_len = 8;
-  plain_table_options.bloom_bits_per_key = 8;
-  plain_table_options.hash_table_ratio = 0;
-
-  PlainTableFactory factory(plain_table_options);
-  test::StringSink sink;
-  unique_ptr<WritableFileWriter> file_writer(
-      test::GetWritableFileWriter(new test::StringSink()));
-  Options options;
-  const ImmutableCFOptions ioptions(options);
-  InternalKeyComparator ikc(options.comparator);
-  std::vector<std::unique_ptr<IntTblPropCollectorFactory>>
-      int_tbl_prop_collector_factories;
-  std::string column_family_name;
-  std::unique_ptr<TableBuilder> builder(factory.NewTableBuilder(
-      TableBuilderOptions(ioptions, ikc, &int_tbl_prop_collector_factories,
-                          kNoCompression, CompressionOptions(),
-                          nullptr /* compression_dict */,
-                          false /* skip_filters */, column_family_name),
-      TablePropertiesCollectorFactory::Context::kUnknownColumnFamily,
-      file_writer.get()));
-
-  for (char c = 'a'; c <= 'z'; ++c) {
-    std::string key(8, c);
-    key.append("\1       ");  // PlainTable expects internal key structure
-    std::string value(28, c + 42);
-    builder->Add(key, value);
-  }
-  ASSERT_OK(builder->Finish());
-  file_writer->Flush();
-
-  test::StringSink* ss =
-    static_cast<test::StringSink*>(file_writer->writable_file());
-  unique_ptr<RandomAccessFileReader> file_reader(
-      test::GetRandomAccessFileReader(
-          new test::StringSource(ss->contents(), 72242, true)));
-
-  TableProperties* props = nullptr;
-  auto s = ReadTableProperties(file_reader.get(), ss->contents().size(),
-                               kPlainTableMagicNumber, Env::Default(), nullptr,
-                               &props);
-  std::unique_ptr<TableProperties> props_guard(props);
-  ASSERT_OK(s);
-
-  ASSERT_EQ(0ul, props->index_size);
-  ASSERT_EQ(0ul, props->filter_size);
-  ASSERT_EQ(16ul * 26, props->raw_key_size);
-  ASSERT_EQ(28ul * 26, props->raw_value_size);
-  ASSERT_EQ(26ul, props->num_entries);
-  ASSERT_EQ(1ul, props->num_data_blocks);
-}
-#endif  // !ROCKSDB_LITE
-
 TEST_F(GeneralTableTest, ApproximateOffsetOfPlain) {
   TableConstructor c(BytewiseComparator());
   c.Add("k01", "hello");
@@ -2328,68 +2067,6 @@ TEST_F(HarnessTest, FooterTests) {
     ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
     ASSERT_EQ(decoded_footer.version(), 0U);
   }
-  {
-    // xxhash block based
-    std::string encoded;
-    Footer footer(kBlockBasedTableMagicNumber, 1);
-    BlockHandle meta_index(10, 5), index(20, 15);
-    footer.set_metaindex_handle(meta_index);
-    footer.set_index_handle(index);
-    footer.set_checksum(kxxHash);
-    footer.EncodeTo(&encoded);
-    Footer decoded_footer;
-    Slice encoded_slice(encoded);
-    decoded_footer.DecodeFrom(&encoded_slice);
-    ASSERT_EQ(decoded_footer.table_magic_number(), kBlockBasedTableMagicNumber);
-    ASSERT_EQ(decoded_footer.checksum(), kxxHash);
-    ASSERT_EQ(decoded_footer.metaindex_handle().offset(), meta_index.offset());
-    ASSERT_EQ(decoded_footer.metaindex_handle().size(), meta_index.size());
-    ASSERT_EQ(decoded_footer.index_handle().offset(), index.offset());
-    ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
-    ASSERT_EQ(decoded_footer.version(), 1U);
-  }
-// Plain table is not supported in ROCKSDB_LITE
-#ifndef ROCKSDB_LITE
-  {
-    // upconvert legacy plain table
-    std::string encoded;
-    Footer footer(kLegacyPlainTableMagicNumber, 0);
-    BlockHandle meta_index(10, 5), index(20, 15);
-    footer.set_metaindex_handle(meta_index);
-    footer.set_index_handle(index);
-    footer.EncodeTo(&encoded);
-    Footer decoded_footer;
-    Slice encoded_slice(encoded);
-    decoded_footer.DecodeFrom(&encoded_slice);
-    ASSERT_EQ(decoded_footer.table_magic_number(), kPlainTableMagicNumber);
-    ASSERT_EQ(decoded_footer.checksum(), kCRC32c);
-    ASSERT_EQ(decoded_footer.metaindex_handle().offset(), meta_index.offset());
-    ASSERT_EQ(decoded_footer.metaindex_handle().size(), meta_index.size());
-    ASSERT_EQ(decoded_footer.index_handle().offset(), index.offset());
-    ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
-    ASSERT_EQ(decoded_footer.version(), 0U);
-  }
-  {
-    // xxhash block based
-    std::string encoded;
-    Footer footer(kPlainTableMagicNumber, 1);
-    BlockHandle meta_index(10, 5), index(20, 15);
-    footer.set_metaindex_handle(meta_index);
-    footer.set_index_handle(index);
-    footer.set_checksum(kxxHash);
-    footer.EncodeTo(&encoded);
-    Footer decoded_footer;
-    Slice encoded_slice(encoded);
-    decoded_footer.DecodeFrom(&encoded_slice);
-    ASSERT_EQ(decoded_footer.table_magic_number(), kPlainTableMagicNumber);
-    ASSERT_EQ(decoded_footer.checksum(), kxxHash);
-    ASSERT_EQ(decoded_footer.metaindex_handle().offset(), meta_index.offset());
-    ASSERT_EQ(decoded_footer.metaindex_handle().size(), meta_index.size());
-    ASSERT_EQ(decoded_footer.index_handle().offset(), index.offset());
-    ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
-    ASSERT_EQ(decoded_footer.version(), 1U);
-  }
-#endif  // !ROCKSDB_LITE
   {
     // version == 2
     std::string encoded;

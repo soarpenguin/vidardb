@@ -39,9 +39,6 @@ static std::unique_ptr<Env> mock_env(new MockEnv(Env::Default()));
 INSTANTIATE_TEST_CASE_P(MockEnv, EnvBasicTestWithParam,
                         ::testing::Values(mock_env.get()));
 #ifndef ROCKSDB_LITE
-static std::unique_ptr<Env> mem_env(NewMemEnv(Env::Default()));
-INSTANTIATE_TEST_CASE_P(MemEnv, EnvBasicTestWithParam,
-                        ::testing::Values(mem_env.get()));
 
 namespace {
 
@@ -56,10 +53,6 @@ std::vector<Env*> GetCustomEnvs() {
   static bool init = false;
   if (!init) {
     init = true;
-    const char* uri = getenv("TEST_ENV_URI");
-    if (uri != nullptr) {
-      custom_env = NewEnvFromUri(uri, &custom_env_guard);
-    }
   }
 
   std::vector<Env*> res;

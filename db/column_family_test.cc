@@ -23,7 +23,6 @@
 #include "util/sync_point.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -606,8 +605,6 @@ TEST_F(ColumnFamilyTest, IgnoreRecoveredLog) {
     }
   }
 
-  column_family_options_.merge_operator =
-      MergeOperators::CreateUInt64AddOperator();
   db_options_.wal_dir = dbname_ + "/logs";
   Destroy();
   Open();
@@ -887,35 +884,10 @@ TEST_F(ColumnFamilyTest, DifferentWriteBufferSizes) {
   Close();
 }
 
-#ifndef ROCKSDB_LITE  // Cuckoo is not supported in lite
-TEST_F(ColumnFamilyTest, MemtableNotSupportSnapshot) {
-  Open();
-  auto* s1 = dbfull()->GetSnapshot();
-  ASSERT_TRUE(s1 != nullptr);
-  dbfull()->ReleaseSnapshot(s1);
-
-  // Add a column family that doesn't support snapshot
-  ColumnFamilyOptions first;
-  first.memtable_factory.reset(NewHashCuckooRepFactory(1024 * 1024));
-  CreateColumnFamilies({"first"}, {first});
-  auto* s2 = dbfull()->GetSnapshot();
-  ASSERT_TRUE(s2 == nullptr);
-
-  // Add a column family that supports snapshot. Snapshot stays not supported.
-  ColumnFamilyOptions second;
-  CreateColumnFamilies({"second"}, {second});
-  auto* s3 = dbfull()->GetSnapshot();
-  ASSERT_TRUE(s3 == nullptr);
-  Close();
-}
-#endif  // !ROCKSDB_LITE
-
 TEST_F(ColumnFamilyTest, DifferentMergeOperators) {
   Open();
   CreateColumnFamilies({"first", "second"});
   ColumnFamilyOptions default_cf, first, second;
-  first.merge_operator = MergeOperators::CreateUInt64AddOperator();
-  second.merge_operator = MergeOperators::CreateStringAppendOperator();
   Reopen({default_cf, first, second});
 
   std::string one, two, three;

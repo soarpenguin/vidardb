@@ -32,7 +32,6 @@
 #include "table/block_based_table_factory.h"
 #include "util/compression.h"
 #include "util/statistics.h"
-#include "util/xfunc.h"
 
 namespace rocksdb {
 
@@ -213,7 +212,6 @@ DBOptions::DBOptions()
       error_if_exists(false),
       paranoid_checks(true),
       env(Env::Default()),
-      rate_limiter(nullptr),
       sst_file_manager(nullptr),
       info_log(nullptr),
 #ifdef NDEBUG
@@ -285,7 +283,6 @@ DBOptions::DBOptions(const Options& options)
       error_if_exists(options.error_if_exists),
       paranoid_checks(options.paranoid_checks),
       env(options.env),
-      rate_limiter(options.rate_limiter),
       sst_file_manager(options.sst_file_manager),
       info_log(options.info_log),
       info_log_level(options.info_log_level),
@@ -442,8 +439,6 @@ void DBOptions::Dump(Logger* log) const {
          writable_file_max_buffer_size);
     Header(log, "                      Options.use_adaptive_mutex: %d",
         use_adaptive_mutex);
-    Header(log, "                            Options.rate_limiter: %p",
-        rate_limiter.get());
     Header(
         log, "     Options.sst_file_manager.rate_bytes_per_sec: %" PRIi64,
         sst_file_manager ? sst_file_manager->GetDeleteRateBytesPerSecond() : 0);
@@ -736,19 +731,6 @@ ColumnFamilyOptions* ColumnFamilyOptions::OptimizeForSmallDb() {
 }
 
 #ifndef ROCKSDB_LITE
-ColumnFamilyOptions* ColumnFamilyOptions::OptimizeForPointLookup(
-    uint64_t block_cache_size_mb) {
-  prefix_extractor.reset(NewNoopTransform());
-  BlockBasedTableOptions block_based_options;
-  block_based_options.index_type = BlockBasedTableOptions::kHashSearch;
-  block_based_options.filter_policy.reset(NewBloomFilterPolicy(10));
-  block_based_options.block_cache =
-      NewLRUCache(static_cast<size_t>(block_cache_size_mb * 1024 * 1024));
-  table_factory.reset(new BlockBasedTableFactory(block_based_options));
-  memtable_factory.reset(NewHashLinkListRepFactory());
-  return this;
-}
-
 ColumnFamilyOptions* ColumnFamilyOptions::OptimizeLevelStyleCompaction(
     uint64_t memtable_memory_budget) {
   write_buffer_size = static_cast<size_t>(memtable_memory_budget / 4);
@@ -842,8 +824,6 @@ ReadOptions::ReadOptions()
       pin_data(false),
       readahead_size(0),
       unique_key(false) {  // Shichao
-  XFUNC_TEST("", "managed_options", managed_options, xf_manage_options,
-             reinterpret_cast<ReadOptions*>(this));
 }
 
 ReadOptions::ReadOptions(bool cksum, bool cache)
@@ -859,8 +839,6 @@ ReadOptions::ReadOptions(bool cksum, bool cache)
       pin_data(false),
       readahead_size(0),
       unique_key(false) {  // Shichao
-  XFUNC_TEST("", "managed_options", managed_options, xf_manage_options,
-             reinterpret_cast<ReadOptions*>(this));
 }
 
 }  // namespace rocksdb

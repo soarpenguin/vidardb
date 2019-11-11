@@ -16,7 +16,6 @@
 
 #include "table/block.h"
 #include "table/column_table_factory.h"
-#include "table/block_prefix_index.h"
 #include "table/format.h"
 #include "table/get_context.h"
 #include "table/internal_iterator.h"

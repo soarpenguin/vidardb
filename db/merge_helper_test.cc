@@ -12,7 +12,6 @@
 #include "util/coding.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -55,7 +54,6 @@ class MergeHelperTest : public testing::Test {
 // If MergeHelper encounters a new key on the last level, we know that
 // the key has no more history and it can merge keys.
 TEST_F(MergeHelperTest, MergeAtBottomSuccess) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 20, kTypeMerge, test::EncodeInt(1U));
   AddKeyVal("a", 10, kTypeMerge, test::EncodeInt(3U));
@@ -71,7 +69,6 @@ TEST_F(MergeHelperTest, MergeAtBottomSuccess) {
 
 // Merging with a value results in a successful merge.
 TEST_F(MergeHelperTest, MergeValue) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 40, kTypeMerge, test::EncodeInt(1U));
   AddKeyVal("a", 30, kTypeMerge, test::EncodeInt(3U));
@@ -88,7 +85,6 @@ TEST_F(MergeHelperTest, MergeValue) {
 
 // Merging stops before a snapshot.
 TEST_F(MergeHelperTest, SnapshotBeforeValue) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 50, kTypeMerge, test::EncodeInt(1U));
   AddKeyVal("a", 40, kTypeMerge, test::EncodeInt(3U));  // <- iter_ after merge
@@ -107,7 +103,6 @@ TEST_F(MergeHelperTest, SnapshotBeforeValue) {
 // MergeHelper preserves the operand stack for merge operators that
 // cannot do a partial merge.
 TEST_F(MergeHelperTest, NoPartialMerge) {
-  merge_op_ = MergeOperators::CreateStringAppendTESTOperator();
 
   AddKeyVal("a", 50, kTypeMerge, "v2");
   AddKeyVal("a", 40, kTypeMerge, "v");  // <- iter_ after merge
@@ -125,7 +120,6 @@ TEST_F(MergeHelperTest, NoPartialMerge) {
 
 // A single operand can not be merged.
 TEST_F(MergeHelperTest, SingleOperand) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 50, kTypeMerge, test::EncodeInt(1U));
 
@@ -139,7 +133,6 @@ TEST_F(MergeHelperTest, SingleOperand) {
 
 // Merging with a deletion turns the deletion into a value
 TEST_F(MergeHelperTest, MergeDeletion) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 30, kTypeMerge, test::EncodeInt(3U));
   AddKeyVal("a", 20, kTypeDeletion, "");
@@ -154,7 +147,6 @@ TEST_F(MergeHelperTest, MergeDeletion) {
 
 // The merge helper stops upon encountering a corrupt key
 TEST_F(MergeHelperTest, CorruptKey) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
 
   AddKeyVal("a", 30, kTypeMerge, test::EncodeInt(3U));
   AddKeyVal("a", 25, kTypeMerge, test::EncodeInt(1U));
@@ -171,7 +163,6 @@ TEST_F(MergeHelperTest, CorruptKey) {
 
 // The compaction filter is called on every merge operand
 TEST_F(MergeHelperTest, FilterMergeOperands) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   filter_.reset(new test::FilterNumber(5U));
 
   AddKeyVal("a", 30, kTypeMerge, test::EncodeInt(3U));
@@ -193,7 +184,6 @@ TEST_F(MergeHelperTest, FilterMergeOperands) {
 }
 
 TEST_F(MergeHelperTest, FilterAllMergeOperands) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   filter_.reset(new test::FilterNumber(5U));
 
   AddKeyVal("a", 30, kTypeMerge, test::EncodeInt(5U));
@@ -227,7 +217,6 @@ TEST_F(MergeHelperTest, FilterAllMergeOperands) {
 
 // Make sure that merge operands are filtered at the beginning
 TEST_F(MergeHelperTest, FilterFirstMergeOperand) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   filter_.reset(new test::FilterNumber(5U));
 
   AddKeyVal("a", 31, kTypeMerge, test::EncodeInt(5U));  // Filtered
@@ -258,7 +247,6 @@ TEST_F(MergeHelperTest, FilterFirstMergeOperand) {
 // Make sure that merge operands are not filtered out if there's a snapshot
 // pointing at them
 TEST_F(MergeHelperTest, DontFilterMergeOperandsBeforeSnapshotTest) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   filter_.reset(new test::FilterNumber(5U));
 
   AddKeyVal("a", 31, kTypeMerge, test::EncodeInt(5U));

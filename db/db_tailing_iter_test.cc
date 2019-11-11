@@ -293,41 +293,6 @@ TEST_F(DBTestTailingIterator, TailingIteratorDeletes) {
   ASSERT_EQ(count, num_records);
 }
 
-TEST_F(DBTestTailingIterator, TailingIteratorPrefixSeek) {
-  XFUNC_TEST("", "dbtest_prefix", prefix_skip1, XFuncPoint::SetSkip,
-             kSkipNoPrefix);
-  ReadOptions read_options;
-  read_options.tailing = true;
-
-  Options options = CurrentOptions();
-  options.env = env_;
-  options.create_if_missing = true;
-  options.disable_auto_compactions = true;
-  options.prefix_extractor.reset(NewFixedPrefixTransform(2));
-  options.memtable_factory.reset(NewHashSkipListRepFactory(16));
-  DestroyAndReopen(options);
-  CreateAndReopenWithCF({"pikachu"}, options);
-
-  std::unique_ptr<Iterator> iter(db_->NewIterator(read_options, handles_[1]));
-  ASSERT_OK(Put(1, "0101", "test"));
-
-  ASSERT_OK(Flush(1));
-
-  ASSERT_OK(Put(1, "0202", "test"));
-
-  // Seek(0102) shouldn't find any records since 0202 has a different prefix
-  iter->Seek("0102");
-  ASSERT_TRUE(!iter->Valid());
-
-  iter->Seek("0202");
-  ASSERT_TRUE(iter->Valid());
-  ASSERT_EQ(iter->key().ToString(), "0202");
-
-  iter->Next();
-  ASSERT_TRUE(!iter->Valid());
-  XFUNC_TEST("", "dbtest_prefix", prefix_skip1, XFuncPoint::SetSkip, 0);
-}
-
 TEST_F(DBTestTailingIterator, TailingIteratorIncomplete) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
   ReadOptions read_options;
@@ -559,41 +524,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorDeletes) {
   ASSERT_EQ(count, num_records);
 }
 
-TEST_F(DBTestTailingIterator, ManagedTailingIteratorPrefixSeek) {
-  XFUNC_TEST("", "dbtest_prefix", prefix_skip1, XFuncPoint::SetSkip,
-             kSkipNoPrefix);
-  ReadOptions read_options;
-  read_options.tailing = true;
-  read_options.managed = true;
-
-  Options options = CurrentOptions();
-  options.env = env_;
-  options.create_if_missing = true;
-  options.disable_auto_compactions = true;
-  options.prefix_extractor.reset(NewFixedPrefixTransform(2));
-  options.memtable_factory.reset(NewHashSkipListRepFactory(16));
-  DestroyAndReopen(options);
-  CreateAndReopenWithCF({"pikachu"}, options);
-
-  std::unique_ptr<Iterator> iter(db_->NewIterator(read_options, handles_[1]));
-  ASSERT_OK(Put(1, "0101", "test"));
-
-  ASSERT_OK(Flush(1));
-
-  ASSERT_OK(Put(1, "0202", "test"));
-
-  // Seek(0102) shouldn't find any records since 0202 has a different prefix
-  iter->Seek("0102");
-  ASSERT_TRUE(!iter->Valid());
-
-  iter->Seek("0202");
-  ASSERT_TRUE(iter->Valid());
-  ASSERT_EQ(iter->key().ToString(), "0202");
-
-  iter->Next();
-  ASSERT_TRUE(!iter->Valid());
-  XFUNC_TEST("", "dbtest_prefix", prefix_skip1, XFuncPoint::SetSkip, 0);
-}
 
 TEST_F(DBTestTailingIterator, ManagedTailingIteratorIncomplete) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());

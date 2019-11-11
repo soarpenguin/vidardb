@@ -26,7 +26,6 @@
 #include "table/block.h"
 #include "table/block_based_filter_block.h"
 #include "table/block_based_table_factory.h"
-#include "table/block_prefix_index.h"
 #include "table/filter_block.h"
 #include "table/format.h"
 #include "table/full_filter_block.h"
@@ -218,110 +217,6 @@ class BinarySearchIndexReader : public IndexReader {
     assert(index_block_ != nullptr);
   }
   std::unique_ptr<Block> index_block_;
-};
-
-// Index that leverages an internal hash table to quicken the lookup for a given
-// key.
-class HashIndexReader : public IndexReader {
- public:
-  static Status Create(
-      const SliceTransform* hash_key_extractor, const Footer& footer,
-      RandomAccessFileReader* file, Env* env, const Comparator* comparator,
-      const BlockHandle& index_handle, InternalIterator* meta_index_iter,
-      IndexReader** index_reader, bool hash_index_allow_collision,
-      const PersistentCacheOptions& cache_options, Statistics* statistics) {
-    std::unique_ptr<Block> index_block;
-    auto s = ReadBlockFromFile(file, footer, ReadOptions(), index_handle,
-                               &index_block, env, true /* decompress */,
-                               Slice() /*compression dict*/, cache_options,
-                               /*info_log*/ nullptr);
-
-    if (!s.ok()) {
-      return s;
-    }
-
-    // Note, failure to create prefix hash index does not need to be a
-    // hard error. We can still fall back to the original binary search index.
-    // So, Create will succeed regardless, from this point on.
-
-    auto new_index_reader =
-        new HashIndexReader(comparator, std::move(index_block), statistics);
-    *index_reader = new_index_reader;
-
-    // Get prefixes block
-    BlockHandle prefixes_handle;
-    s = FindMetaBlock(meta_index_iter, kHashIndexPrefixesBlock,
-                      &prefixes_handle);
-    if (!s.ok()) {
-      // TODO: log error
-      return Status::OK();
-    }
-
-    // Get index metadata block
-    BlockHandle prefixes_meta_handle;
-    s = FindMetaBlock(meta_index_iter, kHashIndexPrefixesMetadataBlock,
-                      &prefixes_meta_handle);
-    if (!s.ok()) {
-      // TODO: log error
-      return Status::OK();
-    }
-
-    // Read contents for the blocks
-    BlockContents prefixes_contents;
-    s = ReadBlockContents(file, footer, ReadOptions(), prefixes_handle,
-                          &prefixes_contents, env, true /* decompress */,
-                          Slice() /*compression dict*/, cache_options);
-    if (!s.ok()) {
-      return s;
-    }
-    BlockContents prefixes_meta_contents;
-    s = ReadBlockContents(file, footer, ReadOptions(), prefixes_meta_handle,
-                          &prefixes_meta_contents, env, true /* decompress */,
-                          Slice() /*compression dict*/, cache_options);
-    if (!s.ok()) {
-      // TODO: log error
-      return Status::OK();
-    }
-
-    BlockPrefixIndex* prefix_index = nullptr;
-    s = BlockPrefixIndex::Create(hash_key_extractor, prefixes_contents.data,
-                                 prefixes_meta_contents.data, &prefix_index);
-    // TODO: log error
-    if (s.ok()) {
-      new_index_reader->index_block_->SetBlockPrefixIndex(prefix_index);
-    }
-
-    return Status::OK();
-  }
-
-  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr,
-                                        bool total_order_seek = true) override {
-    return index_block_->NewIterator(comparator_, iter, total_order_seek);
-  }
-
-  virtual size_t size() const override { return index_block_->size(); }
-  virtual size_t usable_size() const override {
-    return index_block_->usable_size();
-  }
-
-  virtual size_t ApproximateMemoryUsage() const override {
-    assert(index_block_);
-    return index_block_->ApproximateMemoryUsage() +
-           prefixes_contents_.data.size();
-  }
-
- private:
-  HashIndexReader(const Comparator* comparator,
-                  std::unique_ptr<Block>&& index_block, Statistics* stats)
-      : IndexReader(comparator, stats), index_block_(std::move(index_block)) {
-    assert(index_block_ != nullptr);
-  }
-
-  ~HashIndexReader() {
-  }
-
-  std::unique_ptr<Block> index_block_;
-  BlockContents prefixes_contents_;
 };
 
 // CachableEntry represents the entries that *may* be fetched from block cache.
@@ -1673,49 +1568,11 @@ Status BlockBasedTable::CreateIndexReader(
   const Footer& footer = rep_->footer;
   Statistics* stats = rep_->ioptions.statistics;
 
-  if (index_type_on_file == BlockBasedTableOptions::kHashSearch &&
-      rep_->ioptions.prefix_extractor == nullptr) {
-    Log(InfoLogLevel::WARN_LEVEL, rep_->ioptions.info_log,
-        "BlockBasedTableOptions::kHashSearch requires "
-        "options.prefix_extractor to be set."
-        " Fall back to binary search index.");
-    index_type_on_file = BlockBasedTableOptions::kBinarySearch;
-  }
-
   switch (index_type_on_file) {
     case BlockBasedTableOptions::kBinarySearch: {
       return BinarySearchIndexReader::Create(
           file, footer, footer.index_handle(), env, comparator, index_reader,
           rep_->persistent_cache_options, stats);
-    }
-    case BlockBasedTableOptions::kHashSearch: {
-      std::unique_ptr<Block> meta_guard;
-      std::unique_ptr<InternalIterator> meta_iter_guard;
-      auto meta_index_iter = preloaded_meta_index_iter;
-      if (meta_index_iter == nullptr) {
-        auto s = ReadMetaBlock(rep_, &meta_guard, &meta_iter_guard);
-        if (!s.ok()) {
-          // we simply fall back to binary search in case there is any
-          // problem with prefix hash index loading.
-          Log(InfoLogLevel::WARN_LEVEL, rep_->ioptions.info_log,
-              "Unable to read the metaindex block."
-              " Fall back to binary search index.");
-          return BinarySearchIndexReader::Create(
-              file, footer, footer.index_handle(), env, comparator,
-              index_reader, rep_->persistent_cache_options, stats);
-        }
-        meta_index_iter = meta_iter_guard.get();
-      }
-
-      // We need to wrap data with internal_prefix_transform to make sure it can
-      // handle prefix correctly.
-      rep_->internal_prefix_transform.reset(
-          new InternalKeySliceTransform(rep_->ioptions.prefix_extractor));
-      return HashIndexReader::Create(
-          rep_->internal_prefix_transform.get(), footer, file, env, comparator,
-          footer.index_handle(), meta_index_iter, index_reader,
-          rep_->hash_index_allow_collision, rep_->persistent_cache_options,
-          stats);
     }
     default: {
       std::string error_message =

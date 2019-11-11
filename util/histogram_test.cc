@@ -6,7 +6,6 @@
 #include <cmath>
 
 #include "util/histogram.h"
-#include "util/histogram_windowing.h"
 #include "util/testharness.h"
 
 namespace rocksdb {
@@ -82,124 +81,22 @@ void ClearHistogram(Histogram& histogram) {
 TEST_F(HistogramTest, BasicOperation) {
   HistogramImpl histogram;
   BasicOperation(histogram);
-
-  HistogramWindowingImpl histogramWindowing;
-  BasicOperation(histogramWindowing);
 }
 
 TEST_F(HistogramTest, MergeHistogram) {
   HistogramImpl histogram;
   HistogramImpl other;
   MergeHistogram(histogram, other);
-
-  HistogramWindowingImpl histogramWindowing;
-  HistogramWindowingImpl otherWindowing;
-  MergeHistogram(histogramWindowing, otherWindowing);
 }
 
 TEST_F(HistogramTest, EmptyHistogram) {
   HistogramImpl histogram;
   EmptyHistogram(histogram);
-
-  HistogramWindowingImpl histogramWindowing;
-  EmptyHistogram(histogramWindowing);
 }
 
 TEST_F(HistogramTest, ClearHistogram) {
   HistogramImpl histogram;
   ClearHistogram(histogram);
-
-  HistogramWindowingImpl histogramWindowing;
-  ClearHistogram(histogramWindowing);
-}
-
-TEST_F(HistogramTest, HistogramWindowingExpire) {
-  uint64_t num_windows = 3;
-  int micros_per_window = 1000000;
-  uint64_t min_num_per_window = 0;
-
-  HistogramWindowingImpl
-      histogramWindowing(num_windows, micros_per_window, min_num_per_window);
-
-  PopulateHistogram(histogramWindowing, 1, 1, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 100);
-  ASSERT_EQ(histogramWindowing.min(), 1);
-  ASSERT_EQ(histogramWindowing.max(), 1);
-  ASSERT_EQ(histogramWindowing.Average(), 1);
-
-  PopulateHistogram(histogramWindowing, 2, 2, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 200);
-  ASSERT_EQ(histogramWindowing.min(), 1);
-  ASSERT_EQ(histogramWindowing.max(), 2);
-  ASSERT_EQ(histogramWindowing.Average(), 1.5);
-
-  PopulateHistogram(histogramWindowing, 3, 3, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 300);
-  ASSERT_EQ(histogramWindowing.min(), 1);
-  ASSERT_EQ(histogramWindowing.max(), 3);
-  ASSERT_EQ(histogramWindowing.Average(), 2.0);
-
-  // dropping oldest window with value 1, remaining 2 ~ 4
-  PopulateHistogram(histogramWindowing, 4, 4, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 300);
-  ASSERT_EQ(histogramWindowing.min(), 2);
-  ASSERT_EQ(histogramWindowing.max(), 4);
-  ASSERT_EQ(histogramWindowing.Average(), 3.0);
-
-  // dropping oldest window with value 2, remaining 3 ~ 5
-  PopulateHistogram(histogramWindowing, 5, 5, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 300);
-  ASSERT_EQ(histogramWindowing.min(), 3);
-  ASSERT_EQ(histogramWindowing.max(), 5);
-  ASSERT_EQ(histogramWindowing.Average(), 4.0);
-}
-
-TEST_F(HistogramTest, HistogramWindowingMerge) {
-  uint64_t num_windows = 3;
-  int micros_per_window = 1000000;
-  uint64_t min_num_per_window = 0;
-
-  HistogramWindowingImpl
-      histogramWindowing(num_windows, micros_per_window, min_num_per_window);
-  HistogramWindowingImpl
-      otherWindowing(num_windows, micros_per_window, min_num_per_window);
-
-  PopulateHistogram(histogramWindowing, 1, 1, 100);
-  PopulateHistogram(otherWindowing, 1, 1, 100);
-  env->SleepForMicroseconds(micros_per_window);
-
-  PopulateHistogram(histogramWindowing, 2, 2, 100);
-  PopulateHistogram(otherWindowing, 2, 2, 100);
-  env->SleepForMicroseconds(micros_per_window);
-
-  PopulateHistogram(histogramWindowing, 3, 3, 100);
-  PopulateHistogram(otherWindowing, 3, 3, 100);
-  env->SleepForMicroseconds(micros_per_window);
-
-  histogramWindowing.Merge(otherWindowing);
-  ASSERT_EQ(histogramWindowing.num(), 600);
-  ASSERT_EQ(histogramWindowing.min(), 1);
-  ASSERT_EQ(histogramWindowing.max(), 3);
-  ASSERT_EQ(histogramWindowing.Average(), 2.0);
-
-  // dropping oldest window with value 1, remaining 2 ~ 4
-  PopulateHistogram(histogramWindowing, 4, 4, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 500);
-  ASSERT_EQ(histogramWindowing.min(), 2);
-  ASSERT_EQ(histogramWindowing.max(), 4);
-
-  // dropping oldest window with value 2, remaining 3 ~ 5
-  PopulateHistogram(histogramWindowing, 5, 5, 100);
-  env->SleepForMicroseconds(micros_per_window);
-  ASSERT_EQ(histogramWindowing.num(), 400);
-  ASSERT_EQ(histogramWindowing.min(), 3);
-  ASSERT_EQ(histogramWindowing.max(), 5);
 }
 
 }  // namespace rocksdb

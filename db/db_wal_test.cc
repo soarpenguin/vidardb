@@ -203,7 +203,6 @@ TEST_F(DBWALTest, IgnoreRecoveredLog) {
   do {
     Options options = CurrentOptions();
     options.create_if_missing = true;
-    options.merge_operator = MergeOperators::CreateUInt64AddOperator();
     options.wal_dir = dbname_ + "/logs";
     DestroyAndReopen(options);
 

@@ -45,7 +45,6 @@ using std::unique_ptr;
 enum ChecksumType : char {
   kNoChecksum = 0x0,  // not yet supported. Will fail
   kCRC32c = 0x1,
-  kxxHash = 0x2,
 };
 
 // For advanced user only
@@ -75,11 +74,7 @@ struct BlockBasedTableOptions {
   enum IndexType : char {
     // A space efficient index block that is optimized for
     // binary-search-based index.
-    kBinarySearch,
-
-    // The hash index, if enabled, will do the hash lookup when
-    // `Options.prefix_extractor` is provided.
-    kHashSearch,
+    kBinarySearch
   };
 
   IndexType index_type = kBinarySearch;

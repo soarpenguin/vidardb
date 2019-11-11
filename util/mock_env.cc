@@ -11,7 +11,6 @@
 #include "port/sys_time.h"
 #include <algorithm>
 #include <chrono>
-#include "util/rate_limiter.h"
 #include "util/random.h"
 #include "util/murmurhash.h"
 
@@ -225,9 +224,8 @@ class MockRandomAccessFile : public RandomAccessFile {
 
 class MockWritableFile : public WritableFile {
  public:
-  MockWritableFile(MemFile* file, RateLimiter* rate_limiter)
-    : file_(file),
-      rate_limiter_(rate_limiter) {
+  MockWritableFile(MemFile* file)
+    : file_(file) {
     file_->Ref();
   }
 
@@ -260,16 +258,10 @@ class MockWritableFile : public WritableFile {
 
  private:
   inline size_t RequestToken(size_t bytes) {
-    if (rate_limiter_ && io_priority_ < Env::IO_TOTAL) {
-      bytes = std::min(bytes,
-          static_cast<size_t>(rate_limiter_->GetSingleBurstBytes()));
-      rate_limiter_->Request(bytes, io_priority_);
-    }
     return bytes;
   }
 
   MemFile* file_;
-  RateLimiter* rate_limiter_;
 };
 
 class MockEnvDirectory : public Directory {
@@ -451,7 +443,7 @@ Status MockEnv::NewWritableFile(const std::string& fname,
   file->Ref();
   file_map_[fn] = file;
 
-  result->reset(new MockWritableFile(file, env_options.rate_limiter));
+  result->reset(new MockWritableFile(file));
   return Status::OK();
 }
 
@@ -601,7 +593,7 @@ Status MockEnv::NewLogger(const std::string& fname,
   } else {
     file = iter->second;
   }
-  std::unique_ptr<WritableFile> f(new MockWritableFile(file, nullptr));
+  std::unique_ptr<WritableFile> f(new MockWritableFile(file));
   result->reset(new TestMemLogger(std::move(f), this));
   return Status::OK();
 }

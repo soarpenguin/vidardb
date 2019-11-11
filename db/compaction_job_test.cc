@@ -22,7 +22,6 @@
 #include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -388,7 +387,6 @@ TEST_F(CompactionJobTest, SimpleNonLastLevel) {
 }
 
 TEST_F(CompactionJobTest, SimpleMerge) {
-  merge_op_ = MergeOperators::CreateStringAppendOperator();
   NewDB();
 
   auto file1 = mock::MakeMockFile({
@@ -412,7 +410,6 @@ TEST_F(CompactionJobTest, SimpleMerge) {
 }
 
 TEST_F(CompactionJobTest, NonAssocMerge) {
-  merge_op_ = MergeOperators::CreateStringAppendTESTOperator();
   NewDB();
 
   auto file1 = mock::MakeMockFile({
@@ -438,7 +435,6 @@ TEST_F(CompactionJobTest, NonAssocMerge) {
 
 // Filters merge operands with value 10.
 TEST_F(CompactionJobTest, MergeOperandFilter) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   compaction_filter_.reset(new test::FilterNumber(10U));
   NewDB();
 
@@ -464,7 +460,6 @@ TEST_F(CompactionJobTest, MergeOperandFilter) {
 }
 
 TEST_F(CompactionJobTest, FilterSomeMergeOperands) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   compaction_filter_.reset(new test::FilterNumber(10U));
   NewDB();
 
@@ -501,7 +496,6 @@ TEST_F(CompactionJobTest, FilterSomeMergeOperands) {
 
 // Test where all operands/merge results are filtered out.
 TEST_F(CompactionJobTest, FilterAllMergeOperands) {
-  merge_op_ = MergeOperators::CreateUInt64AddOperator();
   compaction_filter_.reset(new test::FilterNumber(10U));
   NewDB();
 

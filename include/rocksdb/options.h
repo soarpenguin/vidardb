@@ -41,7 +41,6 @@ class Snapshot;
 class TableFactory;
 class MemTableRepFactory;
 class TablePropertiesCollectorFactory;
-class RateLimiter;
 class Slice;
 class SliceTransform;
 class Statistics;
@@ -875,12 +874,6 @@ struct DBOptions {
   // e.g. to read/write files, schedule background work, etc.
   // Default: Env::Default()
   Env* env;
-
-  // Use to control write rate of flush and compaction. Flush has higher
-  // priority than compaction. Rate limiting is disabled if nullptr.
-  // If rate limiter is enabled, bytes_per_sync is set to 1MB by default.
-  // Default: nullptr
-  std::shared_ptr<RateLimiter> rate_limiter;
 
   // Use to track SST files and control their file deletion rate.
   //

@@ -194,8 +194,7 @@ BlockBasedTableOptions RandomBlockBasedTableOptions(Random* rnd) {
   BlockBasedTableOptions opt;
   opt.cache_index_and_filter_blocks = rnd->Uniform(2);
   opt.pin_l0_filter_and_index_blocks_in_cache = rnd->Uniform(2);
-  opt.index_type = rnd->Uniform(2) ? BlockBasedTableOptions::kBinarySearch
-                                   : BlockBasedTableOptions::kHashSearch;
+  opt.index_type = BlockBasedTableOptions::kBinarySearch;
   opt.hash_index_allow_collision = rnd->Uniform(2);
   opt.checksum = static_cast<ChecksumType>(rnd->Uniform(3));
   opt.block_size = rnd->Uniform(10000000);
@@ -211,10 +210,6 @@ TableFactory* RandomTableFactory(Random* rnd, int pre_defined) {
 #ifndef ROCKSDB_LITE
   int random_num = pre_defined >= 0 ? pre_defined : rnd->Uniform(4);
   switch (random_num) {
-    case 0:
-      return NewPlainTableFactory();
-    case 1:
-      return NewCuckooTableFactory();
     default:
       return NewBlockBasedTableFactory();
   }

@@ -42,7 +42,6 @@ class Slice;
 class WritableFile;
 class Directory;
 struct DBOptions;
-class RateLimiter;
 class ThreadStatusUpdater;
 struct ThreadStatus;
 
@@ -102,9 +101,6 @@ struct EnvOptions {
 
   // See DBOptions doc
   size_t writable_file_max_buffer_size = 1024 * 1024;
-
-  // If not nullptr, write rate limiting is enabled for flush and compaction
-  RateLimiter* rate_limiter = nullptr;
 };
 
 class Env {

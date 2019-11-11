@@ -20,7 +20,6 @@
 #include "rocksdb/slice_transform.h"
 #include "rocksdb/table.h"
 #include "table/block_based_table_factory.h"
-#include "table/plain_table_factory.h"
 #include "util/logging.h"
 #include "util/string_util.h"
 
@@ -774,21 +773,6 @@ Status ParseColumnFamilyOption(const std::string& name,
             "unable to parse the specified CF option " + name);
       }
       new_options->table_factory.reset(NewBlockBasedTableFactory(table_opt));
-    } else if (name == "plain_table_factory") {
-      // Nested options
-      PlainTableOptions table_opt, base_table_options;
-      auto plain_table_factory = dynamic_cast<PlainTableFactory*>(
-          new_options->table_factory.get());
-      if (plain_table_factory != nullptr) {
-        base_table_options = plain_table_factory->table_options();
-      }
-      Status table_opt_s = GetPlainTableOptionsFromString(
-          base_table_options, value, &table_opt);
-      if (!table_opt_s.ok()) {
-        return Status::InvalidArgument(
-            "unable to parse the specified CF option " + name);
-      }
-      new_options->table_factory.reset(NewPlainTableFactory(table_opt));
     } else if (name == "memtable") {
       std::unique_ptr<MemTableRepFactory> new_mem_factory;
       Status mem_factory_s =
@@ -1026,10 +1010,7 @@ Status ParseDBOption(const std::string& name,
   const std::string& value =
       input_strings_escaped ? UnescapeOptionString(org_value) : org_value;
   try {
-    if (name == "rate_limiter_bytes_per_sec") {
-      new_options->rate_limiter.reset(
-          NewGenericRateLimiter(static_cast<int64_t>(ParseUint64(value))));
-    } else {
+
       auto iter = db_options_type_info.find(name);
       if (iter == db_options_type_info.end()) {
         return Status::InvalidArgument("Unrecognized option DBOptions:", name);
@@ -1052,7 +1033,7 @@ Status ParseDBOption(const std::string& name,
           return Status::InvalidArgument(
               "Unable to parse the specified DB option " + name);
       }
-    }
+
   } catch (const std::exception&) {
     return Status::InvalidArgument("Unable to parse DBOptions:", name);
   }
@@ -1225,43 +1206,6 @@ Status GetMemTableRepFactoryFromString(const std::string& opts_str,
     } else if (1 == len) {
       mem_factory = new SkipListFactory();
     }
-  } else if (opts_list[0] == "prefix_hash") {
-    // Expecting format
-    // prfix_hash:<hash_bucket_count>
-    if (2 == len) {
-      size_t hash_bucket_count = ParseSizeT(opts_list[1]);
-      mem_factory = NewHashSkipListRepFactory(hash_bucket_count);
-    } else if (1 == len) {
-      mem_factory = NewHashSkipListRepFactory();
-    }
-  } else if (opts_list[0] == "hash_linkedlist") {
-    // Expecting format
-    // hash_linkedlist:<hash_bucket_count>
-    if (2 == len) {
-      size_t hash_bucket_count = ParseSizeT(opts_list[1]);
-      mem_factory = NewHashLinkListRepFactory(hash_bucket_count);
-    } else if (1 == len) {
-      mem_factory = NewHashLinkListRepFactory();
-    }
-  } else if (opts_list[0] == "vector") {
-    // Expecting format
-    // vector:<count>
-    if (2 == len) {
-      size_t count = ParseSizeT(opts_list[1]);
-      mem_factory = new VectorRepFactory(count);
-    } else if (1 == len) {
-      mem_factory = new VectorRepFactory();
-    }
-  } else if (opts_list[0] == "cuckoo") {
-    // Expecting format
-    // cuckoo:<write_buffer_size>
-    if (2 == len) {
-      size_t write_buffer_size = ParseSizeT(opts_list[1]);
-      mem_factory= NewHashCuckooRepFactory(write_buffer_size);
-    } else if (1 == len) {
-      return Status::InvalidArgument("Can't parse memtable_factory option ",
-                                     opts_str);
-    }
   } else {
     return Status::InvalidArgument("Unrecognized memtable_factory option ",
                                    opts_str);
@@ -1412,15 +1356,6 @@ Status GetTableFactoryFromMap(
       return s;
     }
     table_factory->reset(new BlockBasedTableFactory(bbt_opt));
-    return Status::OK();
-  } else if (factory_name == PlainTableFactory().Name()) {
-    PlainTableOptions pt_opt;
-    s = GetPlainTableOptionsFromMap(PlainTableOptions(), opt_map, &pt_opt,
-                                    true);
-    if (!s.ok()) {
-      return s;
-    }
-    table_factory->reset(new PlainTableFactory(pt_opt));
     return Status::OK();
   }
   // Return OK for not supported table factories as TableFactory

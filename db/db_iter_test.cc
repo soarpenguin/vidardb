@@ -20,7 +20,6 @@
 #include "util/string_util.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -609,7 +608,6 @@ TEST_F(DBIteratorTest, DBIteratorEmpty) {
 TEST_F(DBIteratorTest, DBIteratorUseSkipCountSkips) {
   Options options;
   options.statistics = rocksdb::CreateDBStatistics();
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   for (size_t i = 0; i < 200; ++i) {
@@ -647,7 +645,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkipCountSkips) {
 
 TEST_F(DBIteratorTest, DBIteratorUseSkip) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
   {
     for (size_t i = 0; i < 200; ++i) {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
@@ -869,7 +866,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
 
 TEST_F(DBIteratorTest, DBIterator1) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");
@@ -895,7 +891,6 @@ TEST_F(DBIteratorTest, DBIterator1) {
 
 TEST_F(DBIteratorTest, DBIterator2) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");
@@ -918,7 +913,6 @@ TEST_F(DBIteratorTest, DBIterator2) {
 
 TEST_F(DBIteratorTest, DBIterator3) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");
@@ -940,7 +934,6 @@ TEST_F(DBIteratorTest, DBIterator3) {
 }
 TEST_F(DBIteratorTest, DBIterator4) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");
@@ -967,7 +960,6 @@ TEST_F(DBIteratorTest, DBIterator4) {
 
 TEST_F(DBIteratorTest, DBIterator5) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
     internal_iter->AddMerge("a", "merge_1");
@@ -1125,7 +1117,6 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
 TEST_F(DBIteratorTest, DBIterator6) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
     internal_iter->AddMerge("a", "merge_1");
@@ -1279,7 +1270,6 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
 TEST_F(DBIteratorTest, DBIterator7) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
     internal_iter->AddMerge("a", "merge_1");
@@ -1662,7 +1652,6 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
 TEST_F(DBIteratorTest, DBIterator8) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddDeletion("a");
@@ -1688,7 +1677,6 @@ TEST_F(DBIteratorTest, DBIterator8) {
 //             return the biggest element smaller than the seek key.
 TEST_F(DBIteratorTest, DBIterator9) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
     internal_iter->AddMerge("a", "merge_1");
@@ -1789,7 +1777,6 @@ TEST_F(DBIteratorTest, SeekToLastOccurrenceSeq0) {
 
 TEST_F(DBIteratorTest, DBIterator11) {
   Options options;
-  options.merge_operator = MergeOperators::CreateFromStringId("stringappend");
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");

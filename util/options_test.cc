@@ -419,16 +419,16 @@ TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
   BlockBasedTableOptions new_opt;
   // make sure default values are overwritten by something else
   ASSERT_OK(GetBlockBasedTableOptionsFromString(table_opt,
-            "cache_index_and_filter_blocks=1;index_type=kHashSearch;"
-            "checksum=kxxHash;hash_index_allow_collision=1;no_block_cache=1;"
+            "cache_index_and_filter_blocks=1;index_type=kBinarySearch;"
+            "checksum=kCRC32c;hash_index_allow_collision=1;no_block_cache=1;"
             "block_cache=1M;block_cache_compressed=1k;block_size=1024;"
             "block_size_deviation=8;block_restart_interval=4;"
             "filter_policy=bloomfilter:4:true;whole_key_filtering=1;"
             "skip_table_builder_flush=1",
             &new_opt));
   ASSERT_TRUE(new_opt.cache_index_and_filter_blocks);
-  ASSERT_EQ(new_opt.index_type, BlockBasedTableOptions::kHashSearch);
-  ASSERT_EQ(new_opt.checksum, ChecksumType::kxxHash);
+  ASSERT_EQ(new_opt.index_type, BlockBasedTableOptions::kBinarySearch);
+  ASSERT_EQ(new_opt.checksum, ChecksumType::kCRC32c);
   ASSERT_TRUE(new_opt.hash_index_allow_collision);
   ASSERT_TRUE(new_opt.no_block_cache);
   ASSERT_TRUE(new_opt.block_cache != nullptr);
@@ -466,40 +466,6 @@ TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
   ASSERT_NOK(GetBlockBasedTableOptionsFromString(table_opt,
              "cache_index_and_filter_blocks=1;"
              "filter_policy=bloomfilter:4",
-             &new_opt));
-}
-#endif  // !ROCKSDB_LITE
-
-
-#ifndef ROCKSDB_LITE  // GetPlainTableOptionsFromString is not supported
-TEST_F(OptionsTest, GetPlainTableOptionsFromString) {
-  PlainTableOptions table_opt;
-  PlainTableOptions new_opt;
-  // make sure default values are overwritten by something else
-  ASSERT_OK(GetPlainTableOptionsFromString(table_opt,
-            "user_key_len=66;bloom_bits_per_key=20;hash_table_ratio=0.5;"
-            "index_sparseness=8;huge_page_tlb_size=4;encoding_type=kPrefix;"
-            "full_scan_mode=true;store_index_in_file=true",
-            &new_opt));
-  ASSERT_EQ(new_opt.user_key_len, 66);
-  ASSERT_EQ(new_opt.bloom_bits_per_key, 20);
-  ASSERT_EQ(new_opt.hash_table_ratio, 0.5);
-  ASSERT_EQ(new_opt.index_sparseness, 8);
-  ASSERT_EQ(new_opt.huge_page_tlb_size, 4);
-  ASSERT_EQ(new_opt.encoding_type, EncodingType::kPrefix);
-  ASSERT_TRUE(new_opt.full_scan_mode);
-  ASSERT_TRUE(new_opt.store_index_in_file);
-
-  // unknown option
-  ASSERT_NOK(GetPlainTableOptionsFromString(table_opt,
-             "user_key_len=66;bloom_bits_per_key=20;hash_table_ratio=0.5;"
-             "bad_option=1",
-             &new_opt));
-
-  // unrecognized EncodingType
-  ASSERT_NOK(GetPlainTableOptionsFromString(table_opt,
-             "user_key_len=66;bloom_bits_per_key=20;hash_table_ratio=0.5;"
-             "encoding_type=kPrefixXX",
              &new_opt));
 }
 #endif  // !ROCKSDB_LITE
@@ -577,7 +543,6 @@ TEST_F(OptionsTest, GetOptionsFromStringTest) {
 
   ASSERT_EQ(new_options.create_if_missing, true);
   ASSERT_EQ(new_options.max_open_files, 1);
-  ASSERT_TRUE(new_options.rate_limiter.get() != nullptr);
 }
 
 TEST_F(OptionsTest, DBOptionsSerialization) {
@@ -813,34 +778,6 @@ TEST_F(OptionsTest, GetStringFromCompressionType) {
       GetStringFromCompressionType(&res, static_cast<CompressionType>(-10)));
 }
 #endif  // !ROCKSDB_LITE
-
-TEST_F(OptionsTest, ConvertOptionsTest) {
-  LevelDBOptions leveldb_opt;
-  Options converted_opt = ConvertOptions(leveldb_opt);
-
-  ASSERT_EQ(converted_opt.create_if_missing, leveldb_opt.create_if_missing);
-  ASSERT_EQ(converted_opt.error_if_exists, leveldb_opt.error_if_exists);
-  ASSERT_EQ(converted_opt.paranoid_checks, leveldb_opt.paranoid_checks);
-  ASSERT_EQ(converted_opt.env, leveldb_opt.env);
-  ASSERT_EQ(converted_opt.info_log.get(), leveldb_opt.info_log);
-  ASSERT_EQ(converted_opt.write_buffer_size, leveldb_opt.write_buffer_size);
-  ASSERT_EQ(converted_opt.max_open_files, leveldb_opt.max_open_files);
-  ASSERT_EQ(converted_opt.compression, leveldb_opt.compression);
-
-  std::shared_ptr<BlockBasedTableFactory> table_factory =
-      std::dynamic_pointer_cast<BlockBasedTableFactory>(
-          converted_opt.table_factory);
-
-  ASSERT_TRUE(table_factory.get() != nullptr);
-
-  const BlockBasedTableOptions table_opt = table_factory->table_options();
-
-  ASSERT_EQ(table_opt.block_cache->GetCapacity(), 8UL << 20);
-  ASSERT_EQ(table_opt.block_size, leveldb_opt.block_size);
-  ASSERT_EQ(table_opt.block_restart_interval,
-            leveldb_opt.block_restart_interval);
-  ASSERT_EQ(table_opt.filter_policy.get(), leveldb_opt.filter_policy);
-}
 
 #ifndef ROCKSDB_LITE
 class OptionsParserTest : public testing::Test {

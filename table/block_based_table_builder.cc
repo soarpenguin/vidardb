@@ -45,7 +45,6 @@
 #include "util/compression.h"
 #include "util/crc32c.h"
 #include "util/stop_watch.h"
-#include "util/xxhash.h"
 
 namespace rocksdb {
 
@@ -276,10 +275,6 @@ IndexBuilder* CreateIndexBuilder(IndexType type, const Comparator* comparator,
     case BlockBasedTableOptions::kBinarySearch: {
       return new ShortenedIndexBuilder(comparator,
                                        index_block_restart_interval);
-    }
-    case BlockBasedTableOptions::kHashSearch: {
-      return new HashIndexBuilder(comparator, prefix_extractor,
-                                  index_block_restart_interval);
     }
     default: {
       assert(!"Do not recognize the index type ");
@@ -688,14 +683,6 @@ void BlockBasedTableBuilder::WriteRawBlock(const Slice& block_contents,
         auto crc = crc32c::Value(block_contents.data(), block_contents.size());
         crc = crc32c::Extend(crc, trailer, 1);  // Extend to cover block type
         EncodeFixed32(trailer_without_type, crc32c::Mask(crc));
-        break;
-      }
-      case kxxHash: {
-        void* xxh = XXH32_init(0);
-        XXH32_update(xxh, block_contents.data(),
-                     static_cast<uint32_t>(block_contents.size()));
-        XXH32_update(xxh, trailer, 1);  // Extend  to cover block type
-        EncodeFixed32(trailer_without_type, XXH32_digest(xxh));
         break;
       }
     }

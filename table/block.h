@@ -18,7 +18,6 @@
 #include "db/pinned_iterators_manager.h"
 #include "rocksdb/iterator.h"
 #include "rocksdb/options.h"
-#include "table/block_prefix_index.h"
 #include "table/internal_iterator.h"
 
 #include "format.h"
@@ -28,7 +27,6 @@ namespace rocksdb {
 struct BlockContents;
 class Comparator;
 class BlockIter;
-class BlockPrefixIndex;
 
 class Block {
  public:
@@ -69,7 +67,6 @@ class Block {
   InternalIterator* NewIterator(const Comparator* comparator,
                                 BlockIter* iter = nullptr,
                                 bool total_order_seek = true);
-  void SetBlockPrefixIndex(BlockPrefixIndex* prefix_index);
 
   // Report an approximation of how much memory has been used.
   size_t ApproximateMemoryUsage() const;
@@ -79,7 +76,6 @@ class Block {
   const char* data_;            // contents_.data.data()
   size_t size_;                 // contents_.data.size()
   uint32_t restart_offset_;     // Offset in data_ of restart array
-  std::unique_ptr<BlockPrefixIndex> prefix_index_;
 
   // No copying allowed
   Block(const Block&);
@@ -96,19 +92,17 @@ class BlockIter : public InternalIterator {
         current_(0),
         restart_index_(0),
         status_(Status::OK()),
-        prefix_index_(nullptr),
         reverse_(false) {}  // Shichao
 
   BlockIter(const Comparator* comparator, const char* data, uint32_t restarts,
-            uint32_t num_restarts, BlockPrefixIndex* prefix_index,
-            bool reverse = false)  // Shichao
+            uint32_t num_restarts, bool reverse = false)  // Shichao
       : BlockIter() {
-    Initialize(comparator, data, restarts, num_restarts, prefix_index, reverse);  // Shichao
+    Initialize(comparator, data, restarts, num_restarts, reverse);  // Shichao
   }
 
   void Initialize(const Comparator* comparator, const char* data,
                   uint32_t restarts, uint32_t num_restarts,
-                  BlockPrefixIndex* prefix_index, bool reverse = false) {  // Shichao
+                  bool reverse = false) {  // Shichao
     assert(data_ == nullptr);           // Ensure it is called only once
     assert(num_restarts > 0);           // Ensure the param is valid
 
@@ -118,7 +112,6 @@ class BlockIter : public InternalIterator {
     num_restarts_ = num_restarts;
     current_ = restarts_;
     restart_index_ = num_restarts_;
-    prefix_index_ = prefix_index;
     reverse_ = reverse;  // Shichao
   }
 
@@ -176,7 +169,6 @@ class BlockIter : public InternalIterator {
   IterKey key_;
   Slice value_;
   Status status_;
-  BlockPrefixIndex* prefix_index_;
 
   bool reverse_;     // Shichao
   std::string val_;  // Shichao
@@ -218,8 +210,6 @@ class BlockIter : public InternalIterator {
   bool BinaryBlockIndexSeek(const Slice& target, uint32_t* block_ids,
                             uint32_t left, uint32_t right,
                             uint32_t* index);
-
-  bool PrefixSeek(const Slice& target, uint32_t* index);
 };
 
 }  // namespace rocksdb

@@ -30,7 +30,6 @@
 #include "db/db_impl.h"
 #include "db/dbformat.h"
 #include "db/filename.h"
-#include "memtable/hash_linklist_rep.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/compaction_filter.h"
 #include "rocksdb/convenience.h"
@@ -44,7 +43,6 @@
 #include "rocksdb/utilities/checkpoint.h"
 #include "table/block_based_table_factory.h"
 #include "table/mock_table.h"
-#include "table/plain_table_factory.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/compression.h"
 #include "util/mock_env.h"
@@ -57,8 +55,6 @@
 #endif  // !(defined NDEBUG) || !defined(OS_WIN)
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "util/xfunc.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 

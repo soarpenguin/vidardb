@@ -587,14 +587,13 @@ static std::unordered_map<std::string, CompressionType>
 
 static std::unordered_map<std::string, BlockBasedTableOptions::IndexType>
     block_base_table_index_type_string_map = {
-        {"kBinarySearch", BlockBasedTableOptions::IndexType::kBinarySearch},
-        {"kHashSearch", BlockBasedTableOptions::IndexType::kHashSearch}};
+        {"kBinarySearch", BlockBasedTableOptions::IndexType::kBinarySearch}};
 
 static std::unordered_map<std::string, EncodingType> encoding_type_string_map =
     {{"kPlain", kPlain}, {"kPrefix", kPrefix}};
 
 static std::unordered_map<std::string, ChecksumType> checksum_type_string_map =
-    {{"kNoChecksum", kNoChecksum}, {"kCRC32c", kCRC32c}, {"kxxHash", kxxHash}};
+    {{"kNoChecksum", kNoChecksum}, {"kCRC32c", kCRC32c}};
 
 static std::unordered_map<std::string, CompactionStyle>
     compaction_style_string_map = {

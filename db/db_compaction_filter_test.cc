@@ -467,7 +467,6 @@ TEST_F(DBTestCompactionFilter, CompactionFilterWithMergeOperator) {
 
   Options options = CurrentOptions();
   options.create_if_missing = true;
-  options.merge_operator = MergeOperators::CreateUInt64AddOperator();
   options.num_levels = 3;
   // Filter out keys with value is 2.
   options.compaction_filter_factory =

@@ -18,7 +18,6 @@
 
 #include "rocksdb/comparator.h"
 #include "table/format.h"
-#include "table/block_prefix_index.h"
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/perf_context_imp.h"
@@ -114,12 +113,7 @@ void BlockIter::Seek(const Slice& target) {
     return;
   }
   uint32_t index = 0;
-  bool ok = false;
-  if (prefix_index_) {
-    ok = PrefixSeek(target, &index);
-  } else {
-    ok = BinarySeek(target, 0, num_restarts_ - 1, &index);
-  }
+  bool ok = BinarySeek(target, 0, num_restarts_ - 1, &index);
 
   if (!ok) {
     return;
@@ -311,19 +305,6 @@ bool BlockIter::BinaryBlockIndexSeek(const Slice& target, uint32_t* block_ids,
   }
 }
 
-bool BlockIter::PrefixSeek(const Slice& target, uint32_t* index) {
-  assert(prefix_index_);
-  uint32_t* block_ids = nullptr;
-  uint32_t num_blocks = prefix_index_->GetBlocks(target, &block_ids);
-
-  if (num_blocks == 0) {
-    current_ = restarts_;
-    return false;
-  } else  {
-    return BinaryBlockIndexSeek(target, block_ids, 0, num_blocks - 1, index);
-  }
-}
-
 uint32_t Block::NumRestarts() const {
   assert(size_ >= 2*sizeof(uint32_t));
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
@@ -365,31 +346,18 @@ InternalIterator* Block::NewIterator(const Comparator* cmp, BlockIter* iter,
       return NewEmptyInternalIterator();
     }
   } else {
-    BlockPrefixIndex* prefix_index_ptr =
-        total_order_seek ? nullptr : prefix_index_.get();
-
     if (iter != nullptr) {
-      iter->Initialize(cmp, data_, restart_offset_, num_restarts,
-                       prefix_index_ptr);
+      iter->Initialize(cmp, data_, restart_offset_, num_restarts);
     } else {
-      iter = new BlockIter(cmp, data_, restart_offset_, num_restarts,
-                           prefix_index_ptr);
+      iter = new BlockIter(cmp, data_, restart_offset_, num_restarts);
     }
   }
 
   return iter;
 }
 
-void Block::SetBlockPrefixIndex(BlockPrefixIndex* prefix_index) {
-  prefix_index_.reset(prefix_index);
-}
-
 size_t Block::ApproximateMemoryUsage() const {
-  size_t usage = usable_size();
-  if (prefix_index_) {
-    usage += prefix_index_->ApproximateMemoryUsage();
-  }
-  return usage;
+  return usable_size();
 }
 
 }  // namespace rocksdb

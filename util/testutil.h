@@ -22,7 +22,6 @@
 #include "rocksdb/table.h"
 #include "table/block_based_table_factory.h"
 #include "table/internal_iterator.h"
-#include "table/plain_table_factory.h"
 #include "util/mutexlock.h"
 #include "util/random.h"
 

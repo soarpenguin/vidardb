@@ -2278,66 +2278,6 @@ TEST_F(DBCompactionTest, SanitizeCompactionOptionsTest) {
   ASSERT_EQ(150, db_->GetOptions().soft_pending_compaction_bytes_limit);
 }
 
-// This tests for a bug that could cause two level0 compactions running
-// concurrently
-// TODO(aekmekji): Make sure that the reason this fails when run with
-// max_subcompactions > 1 is not a correctness issue but just inherent to
-// running parallel L0-L1 compactions
-TEST_F(DBCompactionTest, SuggestCompactRangeNoTwoLevel0Compactions) {
-  Options options = CurrentOptions();
-  options.compaction_style = kCompactionStyleLevel;
-  options.write_buffer_size = 110 << 10;
-  options.arena_block_size = 4 << 10;
-  options.level0_file_num_compaction_trigger = 4;
-  options.num_levels = 4;
-  options.compression = kNoCompression;
-  options.max_bytes_for_level_base = 450 << 10;
-  options.target_file_size_base = 98 << 10;
-  options.max_write_buffer_number = 2;
-  options.max_background_compactions = 2;
-
-  DestroyAndReopen(options);
-
-  // fill up the DB
-  Random rnd(301);
-  for (int num = 0; num < 10; num++) {
-    GenerateNewRandomFile(&rnd);
-  }
-  db_->CompactRange(CompactRangeOptions(), nullptr, nullptr);
-
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
-      {{"CompactionJob::Run():Start",
-        "DBCompactionTest::SuggestCompactRangeNoTwoLevel0Compactions:1"},
-       {"DBCompactionTest::SuggestCompactRangeNoTwoLevel0Compactions:2",
-        "CompactionJob::Run():End"}});
-
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
-
-  // trigger L0 compaction
-  for (int num = 0; num < options.level0_file_num_compaction_trigger + 1;
-       num++) {
-    GenerateNewRandomFile(&rnd, /* nowait */ true);
-    ASSERT_OK(Flush());
-  }
-
-  TEST_SYNC_POINT(
-      "DBCompactionTest::SuggestCompactRangeNoTwoLevel0Compactions:1");
-
-  GenerateNewRandomFile(&rnd, /* nowait */ true);
-  dbfull()->TEST_WaitForFlushMemTable();
-  ASSERT_OK(experimental::SuggestCompactRange(db_, nullptr, nullptr));
-  for (int num = 0; num < options.level0_file_num_compaction_trigger + 1;
-       num++) {
-    GenerateNewRandomFile(&rnd, /* nowait */ true);
-    ASSERT_OK(Flush());
-  }
-
-  TEST_SYNC_POINT(
-      "DBCompactionTest::SuggestCompactRangeNoTwoLevel0Compactions:2");
-  dbfull()->TEST_WaitForCompact();
-}
-
-
 TEST_P(DBCompactionTestWithParam, ForceBottommostLevelCompaction) {
   int32_t trivial_move = 0;
   int32_t non_trivial_move = 0;

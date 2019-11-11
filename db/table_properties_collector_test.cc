@@ -16,7 +16,6 @@
 #include "rocksdb/table.h"
 #include "table/block_based_table_factory.h"
 #include "table/meta_blocks.h"
-#include "table/plain_table_factory.h"
 #include "table/table_builder.h"
 #include "util/coding.h"
 #include "util/file_reader_writer.h"
@@ -346,20 +345,6 @@ TEST_P(TablePropertiesTest, CustomizedTablePropertiesCollector) {
     TestCustomizedTablePropertiesCollector(backward_mode_,
                                            kBlockBasedTableMagicNumber,
                                            encode_as_internal, options, ikc);
-
-#ifndef ROCKSDB_LITE  // PlainTable is not supported in Lite
-    // test plain table
-    PlainTableOptions plain_table_options;
-    plain_table_options.user_key_len = 8;
-    plain_table_options.bloom_bits_per_key = 8;
-    plain_table_options.hash_table_ratio = 0;
-
-    options.table_factory =
-        std::make_shared<PlainTableFactory>(plain_table_options);
-    TestCustomizedTablePropertiesCollector(backward_mode_,
-                                           kPlainTableMagicNumber,
-                                           encode_as_internal, options, ikc);
-#endif  // !ROCKSDB_LITE
   }
 }
 
@@ -479,17 +464,6 @@ TEST_P(TablePropertiesTest, InternalKeyPropertiesCollector) {
         backward_mode_, kBlockBasedTableMagicNumber, false /* not sanitize */,
         std::make_shared<BlockBasedTableFactory>());
   }
-
-#ifndef ROCKSDB_LITE  // PlainTable is not supported in Lite
-  PlainTableOptions plain_table_options;
-  plain_table_options.user_key_len = 8;
-  plain_table_options.bloom_bits_per_key = 8;
-  plain_table_options.hash_table_ratio = 0;
-
-  TestInternalKeyPropertiesCollector(
-      backward_mode_, kPlainTableMagicNumber, false /* not sanitize */,
-      std::make_shared<PlainTableFactory>(plain_table_options));
-#endif  // !ROCKSDB_LITE
 }
 
 INSTANTIATE_TEST_CASE_P(InternalKeyPropertiesCollector, TablePropertiesTest,

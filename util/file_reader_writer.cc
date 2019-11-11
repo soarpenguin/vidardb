@@ -16,7 +16,6 @@
 #include "util/histogram.h"
 #include "util/iostats_context_imp.h"
 #include "util/random.h"
-#include "util/rate_limiter.h"
 #include "util/sync_point.h"
 
 namespace rocksdb {
@@ -253,21 +252,6 @@ Status WritableFileWriter::RangeSync(uint64_t offset, uint64_t nbytes) {
 }
 
 size_t WritableFileWriter::RequestToken(size_t bytes, bool align) {
-  Env::IOPriority io_priority;
-  if (rate_limiter_ && (io_priority = writable_file_->GetIOPriority()) <
-      Env::IO_TOTAL) {
-    bytes = std::min(
-      bytes, static_cast<size_t>(rate_limiter_->GetSingleBurstBytes()));
-
-    if (align) {
-      // Here we may actually require more than burst and block
-      // but we can not write less than one page at a time on unbuffered
-      // thus we may want not to use ratelimiter s
-      size_t alignment = buf_.Alignment();
-      bytes = std::max(alignment, TruncateToPageBoundary(alignment, bytes));
-    }
-    rate_limiter_->Request(bytes, io_priority);
-  }
   return bytes;
 }
 

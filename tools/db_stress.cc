@@ -41,7 +41,6 @@ int main() {
 #include <gflags/gflags.h>
 #include "db/db_impl.h"
 #include "db/version_set.h"
-#include "hdfs/env_hdfs.h"
 #include "port/port.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/env.h"
@@ -59,7 +58,6 @@ int main() {
 #include "util/random.h"
 #include "util/string_util.h"
 #include "util/testutil.h"
-#include "utilities/merge_operators.h"
 
 using GFLAGS::ParseCommandLineFlags;
 using GFLAGS::RegisterFlagValidator;
@@ -418,8 +416,7 @@ DEFINE_bool(in_place_update, false, "On true, does inplace update in memtable");
 
 enum RepFactory {
   kSkipList,
-  kHashSkipList,
-  kVectorRep
+  kHashSkipList
 };
 
 namespace {
@@ -430,8 +427,6 @@ enum RepFactory StringToRepFactory(const char* ctype) {
     return kSkipList;
   else if (!strcasecmp(ctype, "prefix_hash"))
     return kHashSkipList;
-  else if (!strcasecmp(ctype, "vector"))
-    return kVectorRep;
 
   fprintf(stdout, "Cannot parse memreptable %s\n", ctype);
   return kSkipList;
@@ -2015,9 +2010,6 @@ class StressTest {
       case kHashSkipList:
         memtablerep = "prefix_hash";
         break;
-      case kVectorRep:
-        memtablerep = "vector";
-        break;
     }
 
     fprintf(stdout, "Memtablerep               : %s\n", memtablerep);
@@ -2096,24 +2088,12 @@ class StressTest {
       case kSkipList:
         // no need to do anything
         break;
-#ifndef ROCKSDB_LITE
-      case kHashSkipList:
-        options_.memtable_factory.reset(NewHashSkipListRepFactory(10000));
-        break;
-      case kVectorRep:
-        options_.memtable_factory.reset(new VectorRepFactory());
-        break;
-#else
       default:
         fprintf(stderr,
                 "RocksdbLite only supports skip list mem table. Skip "
                 "--rep_factory\n");
-#endif  // ROCKSDB_LITE
     }
 
-    if (FLAGS_use_merge) {
-      options_.merge_operator = MergeOperators::CreatePutOperator();
-    }
 
     // set universal style compaction configurations, if applicable
     if (FLAGS_universal_size_ratio != 0) {
@@ -2194,14 +2174,8 @@ class StressTest {
       assert(!s.ok() || column_families_.size() ==
                             static_cast<size_t>(FLAGS_column_families));
     } else {
-#ifndef ROCKSDB_LITE
-      DBWithTTL* db_with_ttl;
-      s = DBWithTTL::Open(options_, FLAGS_db, &db_with_ttl, FLAGS_ttl);
-      db_ = db_with_ttl;
-#else
       fprintf(stderr, "TTL is not supported in RocksDBLite\n");
       exit(1);
-#endif
     }
     if (!s.ok()) {
       fprintf(stderr, "open error: %s\n", s.ToString().c_str());
@@ -2257,9 +2231,6 @@ int main(int argc, char** argv) {
   }
   FLAGS_compression_type_e =
     StringToCompressionType(FLAGS_compression_type.c_str());
-  if (!FLAGS_hdfs.empty()) {
-    FLAGS_env  = new rocksdb::HdfsEnv(FLAGS_hdfs);
-  }
   FLAGS_rep_factory = StringToRepFactory(FLAGS_memtablerep.c_str());
 
   // The number of background threads should be at least as much the

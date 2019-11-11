@@ -30,7 +30,6 @@
 #include "db/job_context.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
-#include "memtable/hash_linklist_rep.h"
 #include "port/stack_trace.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/compaction_filter.h"
@@ -52,7 +51,6 @@
 #include "rocksdb/utilities/write_batch_with_index.h"
 #include "table/block_based_table_factory.h"
 #include "table/mock_table.h"
-#include "table/plain_table_factory.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/compression.h"
 #include "util/file_reader_writer.h"
@@ -60,14 +58,11 @@
 #include "util/logging.h"
 #include "util/mock_env.h"
 #include "util/mutexlock.h"
-#include "util/rate_limiter.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 #include "util/thread_status_util.h"
-#include "util/xfunc.h"
-#include "utilities/merge_operators.h"
 
 namespace rocksdb {
 
@@ -139,63 +134,6 @@ TEST_F(DBTest, MockEnvTest) {
 
   delete db;
 }
-
-// NewMemEnv returns nullptr in ROCKSDB_LITE since class InMemoryEnv isn't
-// defined.
-#ifndef ROCKSDB_LITE
-TEST_F(DBTest, MemEnvTest) {
-  unique_ptr<Env> env{NewMemEnv(Env::Default())};
-  Options options;
-  options.create_if_missing = true;
-  options.env = env.get();
-  DB* db;
-
-  const Slice keys[] = {Slice("aaa"), Slice("bbb"), Slice("ccc")};
-  const Slice vals[] = {Slice("foo"), Slice("bar"), Slice("baz")};
-
-  ASSERT_OK(DB::Open(options, "/dir/db", &db));
-  for (size_t i = 0; i < 3; ++i) {
-    ASSERT_OK(db->Put(WriteOptions(), keys[i], vals[i]));
-  }
-
-  for (size_t i = 0; i < 3; ++i) {
-    std::string res;
-    ASSERT_OK(db->Get(ReadOptions(), keys[i], &res));
-    ASSERT_TRUE(res == vals[i]);
-  }
-
-  Iterator* iterator = db->NewIterator(ReadOptions());
-  iterator->SeekToFirst();
-  for (size_t i = 0; i < 3; ++i) {
-    ASSERT_TRUE(iterator->Valid());
-    ASSERT_TRUE(keys[i] == iterator->key());
-    ASSERT_TRUE(vals[i] == iterator->value());
-    iterator->Next();
-  }
-  ASSERT_TRUE(!iterator->Valid());
-  delete iterator;
-
-  DBImpl* dbi = reinterpret_cast<DBImpl*>(db);
-  ASSERT_OK(dbi->TEST_FlushMemTable());
-
-  for (size_t i = 0; i < 3; ++i) {
-    std::string res;
-    ASSERT_OK(db->Get(ReadOptions(), keys[i], &res));
-    ASSERT_TRUE(res == vals[i]);
-  }
-
-  delete db;
-
-  options.create_if_missing = false;
-  ASSERT_OK(DB::Open(options, "/dir/db", &db));
-  for (size_t i = 0; i < 3; ++i) {
-    std::string res;
-    ASSERT_OK(db->Get(ReadOptions(), keys[i], &res));
-    ASSERT_TRUE(res == vals[i]);
-  }
-  delete db;
-}
-#endif  // ROCKSDB_LITE
 
 TEST_F(DBTest, WriteEmptyBatch) {
   Options options = CurrentOptions();
@@ -685,7 +623,7 @@ TEST_F(DBTest, GetFromVersions) {
 #ifndef ROCKSDB_LITE
 TEST_F(DBTest, GetSnapshot) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     CreateAndReopenWithCF({"pikachu"}, CurrentOptions(options_override));
     // Try with both a short key and a long key
@@ -1529,7 +1467,7 @@ TEST_F(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
 #ifndef ROCKSDB_LITE
 TEST_F(DBTest, Snapshot) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     CreateAndReopenWithCF({"pikachu"}, CurrentOptions(options_override));
     Put(0, "foo", "0v1");
@@ -1593,7 +1531,7 @@ TEST_F(DBTest, Snapshot) {
 
 TEST_F(DBTest, HiddenValuesAreRemoved) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     Options options = CurrentOptions(options_override);
     CreateAndReopenWithCF({"pikachu"}, options);
@@ -1633,7 +1571,6 @@ TEST_F(DBTest, HiddenValuesAreRemoved) {
 
 TEST_F(DBTest, CompactBetweenSnapshots) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
   do {
     Options options = CurrentOptions(options_override);
     options.disable_auto_compactions = true;
@@ -1698,7 +1635,7 @@ TEST_F(DBTest, UnremovableSingleDelete) {
   // Because a subsequent SingleDelete(A) would delete the Put(A, v2)
   // but not Put(A, v1), so Get(A) would return v1.
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     Options options = CurrentOptions(options_override);
     options.disable_auto_compactions = true;
@@ -2172,7 +2109,7 @@ TEST_F(DBTest, SnapshotFiles) {
 
 TEST_F(DBTest, CompactOnFlush) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   do {
     Options options = CurrentOptions(options_override);
     options.disable_auto_compactions = true;
@@ -2499,7 +2436,7 @@ static void MTThreadBody(void* arg) {
 
       // Half of the time directly use WriteBatch. Half of the time use
       // WriteBatchWithIndex.
-      if (rnd.OneIn(2)) {
+//      if (rnd.OneIn(2)) {
         WriteBatch batch;
         for (int cf = 0; cf < kColumnFamilies; ++cf) {
           snprintf(valbuf, sizeof(valbuf), "%d.%d.%d.%d.%-1000d", key, id,
@@ -2507,15 +2444,7 @@ static void MTThreadBody(void* arg) {
           batch.Put(t->state->test->handles_[cf], Slice(keybuf), Slice(valbuf));
         }
         ASSERT_OK(db->Write(WriteOptions(), &batch));
-      } else {
-        WriteBatchWithIndex batch(db->GetOptions().comparator);
-        for (int cf = 0; cf < kColumnFamilies; ++cf) {
-          snprintf(valbuf, sizeof(valbuf), "%d.%d.%d.%d.%-1000d", key, id,
-                   static_cast<int>(counter), cf, unique_id);
-          batch.Put(t->state->test->handles_[cf], Slice(keybuf), Slice(valbuf));
-        }
-        ASSERT_OK(db->Write(WriteOptions(), batch.GetWriteBatch()));
-      }
+//      }
     } else {
       // Read a value and verify that it matches the pattern written above
       // and that writes to all column families were atomic (unique_id is the
@@ -2584,7 +2513,7 @@ class MultiThreadedDBTest : public DBTest,
 
 TEST_P(MultiThreadedDBTest, MultiThreaded) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   std::vector<std::string> cfs;
   for (int i = 1; i < kColumnFamilies; ++i) {
     cfs.push_back(ToString(i));
@@ -3101,7 +3030,7 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(DBTestRandomized, Randomized) {
   anon::OptionsOverride options_override;
-  options_override.skip_policy = kSkipNoSnapshot;
+//  options_override.skip_policy = kSkipNoSnapshot;
   Options options = CurrentOptions(options_override);
   DestroyAndReopen(options);
 
@@ -3242,30 +3171,6 @@ TEST_F(DBTest, MultiGetEmpty) {
   } while (ChangeCompactOptions());
 }
 
-TEST_F(DBTest, BlockBasedTablePrefixIndexTest) {
-  // create a DB with block prefix index
-  BlockBasedTableOptions table_options;
-  Options options = CurrentOptions();
-  table_options.index_type = BlockBasedTableOptions::kHashSearch;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  options.prefix_extractor.reset(NewFixedPrefixTransform(1));
-
-  Reopen(options);
-  ASSERT_OK(Put("k1", "v1"));
-  Flush();
-  ASSERT_OK(Put("k2", "v2"));
-
-  // Reopen it without prefix extractor, make sure everything still works.
-  // RocksDB should just fall back to the binary index.
-  table_options.index_type = BlockBasedTableOptions::kBinarySearch;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  options.prefix_extractor.reset();
-
-  Reopen(options);
-  ASSERT_EQ("v1", Get("k1"));
-  ASSERT_EQ("v2", Get("k2"));
-}
-
 TEST_F(DBTest, ChecksumTest) {
   BlockBasedTableOptions table_options;
   Options options = CurrentOptions();
@@ -3276,13 +3181,6 @@ TEST_F(DBTest, ChecksumTest) {
   ASSERT_OK(Put("a", "b"));
   ASSERT_OK(Put("c", "d"));
   ASSERT_OK(Flush());  // table with crc checksum
-
-  table_options.checksum = kxxHash;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  Reopen(options);
-  ASSERT_OK(Put("e", "f"));
-  ASSERT_OK(Put("g", "h"));
-  ASSERT_OK(Flush());  // table with xxhash checksum
 
   table_options.checksum = kCRC32c;
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
@@ -3355,75 +3253,7 @@ TEST_F(DBTest, SimpleWriteTimeoutTest) {
 }
 
 #ifndef ROCKSDB_LITE
-/*
- * This test is not reliable enough as it heavily depends on disk behavior.
- */
-TEST_F(DBTest, RateLimitingTest) {
-  Options options = CurrentOptions();
-  options.write_buffer_size = 1 << 20;  // 1MB
-  options.level0_file_num_compaction_trigger = 2;
-  options.target_file_size_base = 1 << 20;     // 1MB
-  options.max_bytes_for_level_base = 4 << 20;  // 4MB
-  options.max_bytes_for_level_multiplier = 4;
-  options.compression = kNoCompression;
-  options.create_if_missing = true;
-  options.env = env_;
-  options.IncreaseParallelism(4);
-  DestroyAndReopen(options);
 
-  WriteOptions wo;
-  wo.disableWAL = true;
-
-  // # no rate limiting
-  Random rnd(301);
-  uint64_t start = env_->NowMicros();
-  // Write ~96M data
-  for (int64_t i = 0; i < (96 << 10); ++i) {
-    ASSERT_OK(
-        Put(RandomString(&rnd, 32), RandomString(&rnd, (1 << 10) + 1), wo));
-  }
-  uint64_t elapsed = env_->NowMicros() - start;
-  double raw_rate = env_->bytes_written_ * 1000000.0 / elapsed;
-  Close();
-
-  // # rate limiting with 0.7 x threshold
-  options.rate_limiter.reset(
-      NewGenericRateLimiter(static_cast<int64_t>(0.7 * raw_rate)));
-  env_->bytes_written_ = 0;
-  DestroyAndReopen(options);
-
-  start = env_->NowMicros();
-  // Write ~96M data
-  for (int64_t i = 0; i < (96 << 10); ++i) {
-    ASSERT_OK(
-        Put(RandomString(&rnd, 32), RandomString(&rnd, (1 << 10) + 1), wo));
-  }
-  elapsed = env_->NowMicros() - start;
-  Close();
-  ASSERT_EQ(options.rate_limiter->GetTotalBytesThrough(), env_->bytes_written_);
-  double ratio = env_->bytes_written_ * 1000000 / elapsed / raw_rate;
-  fprintf(stderr, "write rate ratio = %.2lf, expected 0.7\n", ratio);
-  ASSERT_TRUE(ratio < 0.8);
-
-  // # rate limiting with half of the raw_rate
-  options.rate_limiter.reset(
-      NewGenericRateLimiter(static_cast<int64_t>(raw_rate / 2)));
-  env_->bytes_written_ = 0;
-  DestroyAndReopen(options);
-
-  start = env_->NowMicros();
-  // Write ~96M data
-  for (int64_t i = 0; i < (96 << 10); ++i) {
-    ASSERT_OK(
-        Put(RandomString(&rnd, 32), RandomString(&rnd, (1 << 10) + 1), wo));
-  }
-  elapsed = env_->NowMicros() - start;
-  Close();
-  ASSERT_EQ(options.rate_limiter->GetTotalBytesThrough(), env_->bytes_written_);
-  ratio = env_->bytes_written_ * 1000000 / elapsed / raw_rate;
-  fprintf(stderr, "write rate ratio = %.2lf, expected 0.5\n", ratio);
-  ASSERT_LT(ratio, 0.6);
-}
 
 TEST_F(DBTest, TableOptionsSanitizeTest) {
   Options options = CurrentOptions();
@@ -3431,7 +3261,6 @@ TEST_F(DBTest, TableOptionsSanitizeTest) {
   DestroyAndReopen(options);
   ASSERT_EQ(db_->GetOptions().allow_mmap_reads, false);
 
-  options.table_factory.reset(new PlainTableFactory());
   options.prefix_extractor.reset(NewNoopTransform());
   Destroy(options);
   ASSERT_TRUE(!TryReopen(options).IsNotSupported());
@@ -3439,7 +3268,7 @@ TEST_F(DBTest, TableOptionsSanitizeTest) {
   // Test for check of prefix_extractor when hash index is used for
   // block-based table
   BlockBasedTableOptions to;
-  to.index_type = BlockBasedTableOptions::kHashSearch;
+  to.index_type = BlockBasedTableOptions::kBinarySearch;
   options = CurrentOptions();
   options.create_if_missing = true;
   options.table_factory.reset(NewBlockBasedTableFactory(to));
@@ -3471,27 +3300,6 @@ TEST_F(DBTest, MmapAndBufferOptions) {
   ASSERT_OK(TryReopen(options));
 }
 #endif
-
-TEST_F(DBTest, ConcurrentMemtableNotSupported) {
-  Options options = CurrentOptions();
-  options.allow_concurrent_memtable_write = true;
-  options.soft_pending_compaction_bytes_limit = 0;
-  options.hard_pending_compaction_bytes_limit = 100;
-  options.create_if_missing = true;
-
-  DestroyDB(dbname_, options);
-  options.memtable_factory.reset(NewHashLinkListRepFactory(4, 0, 3, true, 4));
-  ASSERT_NOK(TryReopen(options));
-
-  options.memtable_factory.reset(new SkipListFactory);
-  ASSERT_OK(TryReopen(options));
-
-  ColumnFamilyOptions cf_options(options);
-  cf_options.memtable_factory.reset(
-      NewHashLinkListRepFactory(4, 0, 3, true, 4));
-  ColumnFamilyHandle* handle;
-  ASSERT_NOK(db_->CreateColumnFamily(cf_options, "name", &handle));
-}
 
 #endif  // ROCKSDB_LITE
 
@@ -5032,182 +4840,6 @@ TEST_F(DBTest, EmptyCompactedDB) {
   Status s = Put("new", "value");
   ASSERT_TRUE(s.IsNotSupported());
   Close();
-}
-#endif  // ROCKSDB_LITE
-
-#ifndef ROCKSDB_LITE
-TEST_F(DBTest, SuggestCompactRangeTest) {
-  class CompactionFilterFactoryGetContext : public CompactionFilterFactory {
-   public:
-    virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-        const CompactionFilter::Context& context) override {
-      saved_context = context;
-      std::unique_ptr<CompactionFilter> empty_filter;
-      return empty_filter;
-    }
-    const char* Name() const override {
-      return "CompactionFilterFactoryGetContext";
-    }
-    static bool IsManual(CompactionFilterFactory* compaction_filter_factory) {
-      return reinterpret_cast<CompactionFilterFactoryGetContext*>(
-                 compaction_filter_factory)
-          ->saved_context.is_manual_compaction;
-    }
-    CompactionFilter::Context saved_context;
-  };
-
-  Options options = CurrentOptions();
-  options.memtable_factory.reset(
-      new SpecialSkipListFactory(DBTestBase::kNumKeysByGenerateNewRandomFile));
-  options.compaction_style = kCompactionStyleLevel;
-  options.compaction_filter_factory.reset(
-      new CompactionFilterFactoryGetContext());
-  options.write_buffer_size = 200 << 10;
-  options.arena_block_size = 4 << 10;
-  options.level0_file_num_compaction_trigger = 4;
-  options.num_levels = 4;
-  options.compression = kNoCompression;
-  options.max_bytes_for_level_base = 450 << 10;
-  options.target_file_size_base = 98 << 10;
-  options.max_grandparent_overlap_factor = 1 << 20;  // inf
-
-  Reopen(options);
-
-  Random rnd(301);
-
-  for (int num = 0; num < 3; num++) {
-    GenerateNewRandomFile(&rnd);
-  }
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("0,4", FilesPerLevel(0));
-  ASSERT_TRUE(!CompactionFilterFactoryGetContext::IsManual(
-      options.compaction_filter_factory.get()));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("1,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("2,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("3,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("0,4,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("1,4,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("2,4,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("3,4,4", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("0,4,8", FilesPerLevel(0));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ("1,4,8", FilesPerLevel(0));
-
-  // compact it three times
-  for (int i = 0; i < 3; ++i) {
-    ASSERT_OK(experimental::SuggestCompactRange(db_, nullptr, nullptr));
-    dbfull()->TEST_WaitForCompact();
-  }
-
-  // All files are compacted
-  ASSERT_EQ(0, NumTableFilesAtLevel(0));
-  ASSERT_EQ(0, NumTableFilesAtLevel(1));
-
-  GenerateNewRandomFile(&rnd);
-  ASSERT_EQ(1, NumTableFilesAtLevel(0));
-
-  // nonoverlapping with the file on level 0
-  Slice start("a"), end("b");
-  ASSERT_OK(experimental::SuggestCompactRange(db_, &start, &end));
-  dbfull()->TEST_WaitForCompact();
-
-  // should not compact the level 0 file
-  ASSERT_EQ(1, NumTableFilesAtLevel(0));
-
-  start = Slice("j");
-  end = Slice("m");
-  ASSERT_OK(experimental::SuggestCompactRange(db_, &start, &end));
-  dbfull()->TEST_WaitForCompact();
-  ASSERT_TRUE(CompactionFilterFactoryGetContext::IsManual(
-      options.compaction_filter_factory.get()));
-
-  // now it should compact the level 0 file
-  ASSERT_EQ(0, NumTableFilesAtLevel(0));
-  ASSERT_EQ(1, NumTableFilesAtLevel(1));
-}
-
-TEST_F(DBTest, PromoteL0) {
-  Options options = CurrentOptions();
-  options.disable_auto_compactions = true;
-  options.write_buffer_size = 10 * 1024 * 1024;
-  DestroyAndReopen(options);
-
-  // non overlapping ranges
-  std::vector<std::pair<int32_t, int32_t>> ranges = {
-      {81, 160}, {0, 80}, {161, 240}, {241, 320}};
-
-  int32_t value_size = 10 * 1024;  // 10 KB
-
-  Random rnd(301);
-  std::map<int32_t, std::string> values;
-  for (const auto& range : ranges) {
-    for (int32_t j = range.first; j < range.second; j++) {
-      values[j] = RandomString(&rnd, value_size);
-      ASSERT_OK(Put(Key(j), values[j]));
-    }
-    ASSERT_OK(Flush());
-  }
-
-  int32_t level0_files = NumTableFilesAtLevel(0, 0);
-  ASSERT_EQ(level0_files, ranges.size());
-  ASSERT_EQ(NumTableFilesAtLevel(1, 0), 0);  // No files in L1
-
-  // Promote L0 level to L2.
-  ASSERT_OK(experimental::PromoteL0(db_, db_->DefaultColumnFamily(), 2));
-  // We expect that all the files were trivially moved from L0 to L2
-  ASSERT_EQ(NumTableFilesAtLevel(0, 0), 0);
-  ASSERT_EQ(NumTableFilesAtLevel(2, 0), level0_files);
-
-  for (const auto& kv : values) {
-    ASSERT_EQ(Get(Key(kv.first)), kv.second);
-  }
-}
-
-TEST_F(DBTest, PromoteL0Failure) {
-  Options options = CurrentOptions();
-  options.disable_auto_compactions = true;
-  options.write_buffer_size = 10 * 1024 * 1024;
-  DestroyAndReopen(options);
-
-  // Produce two L0 files with overlapping ranges.
-  ASSERT_OK(Put(Key(0), ""));
-  ASSERT_OK(Put(Key(3), ""));
-  ASSERT_OK(Flush());
-  ASSERT_OK(Put(Key(1), ""));
-  ASSERT_OK(Flush());
-
-  Status status;
-  // Fails because L0 has overlapping files.
-  status = experimental::PromoteL0(db_, db_->DefaultColumnFamily());
-  ASSERT_TRUE(status.IsInvalidArgument());
-
-  ASSERT_OK(db_->CompactRange(CompactRangeOptions(), nullptr, nullptr));
-  // Now there is a file in L1.
-  ASSERT_GE(NumTableFilesAtLevel(1, 0), 1);
-
-  ASSERT_OK(Put(Key(5), ""));
-  ASSERT_OK(Flush());
-  // Fails because L1 is non-empty.
-  status = experimental::PromoteL0(db_, db_->DefaultColumnFamily());
-  ASSERT_TRUE(status.IsInvalidArgument());
 }
 #endif  // ROCKSDB_LITE
 
