@@ -20,7 +20,6 @@
 #include "table/get_context.h"
 #include "table/internal_iterator.h"
 #include "table/meta_blocks.h"
-#include "table/persistent_cache_helper.h"
 #include "table/two_level_iterator.h"
 
 #include "util/coding.h"
@@ -47,12 +46,10 @@ Status ReadBlockFromFile(RandomAccessFileReader* file, const Footer& footer,
                          const ReadOptions& options, const BlockHandle& handle,
                          std::unique_ptr<Block>* result, Env* env,
                          bool do_uncompress, const Slice& compression_dict,
-                         const PersistentCacheOptions& cache_options,
                          Logger* info_log) {
   BlockContents contents;
   Status s = ReadBlockContents(file, footer, options, handle, &contents, env,
-                               do_uncompress, compression_dict, cache_options,
-                               info_log);
+                               do_uncompress, compression_dict, info_log);
   if (s.ok()) {
     result->reset(new Block(std::move(contents)));
   }
@@ -163,12 +160,11 @@ class BinarySearchIndexReader : public IndexReader {
   static Status Create(RandomAccessFileReader* file, const Footer& footer,
                        const BlockHandle& index_handle, Env* env,
                        const Comparator* comparator, IndexReader** index_reader,
-                       const PersistentCacheOptions& cache_options,
                        Statistics* statistics) {
     std::unique_ptr<Block> index_block;
     auto s = ReadBlockFromFile(file, footer, ReadOptions(), index_handle,
                                &index_block, env, true /* decompress */,
-                               Slice() /*compression dict*/, cache_options,
+                               Slice() /*compression dict*/,
                                /*info_log*/ nullptr);
 
     if (s.ok()) {
@@ -248,7 +244,6 @@ struct ColumnTable::Rep {
   size_t persistent_cache_key_prefix_size = 0;
   uint64_t dummy_index_reader_offset =
       0;  // ID that is unique for the block cache.
-  PersistentCacheOptions persistent_cache_options;
 
   // Footer contains the fixed table information
   Footer footer;
@@ -293,11 +288,6 @@ void ColumnTable::SetupCacheKeyPrefix(Rep* rep, uint64_t file_size) {
     // Create dummy offset of index reader which is beyond the file size.
     rep->dummy_index_reader_offset =
         file_size + rep->table_options.block_cache->NewId();
-  }
-  if (rep->table_options.persistent_cache != nullptr) {
-    GenerateCachePrefix(/*cache=*/nullptr, rep->file->file(),
-                        &rep->persistent_cache_key_prefix[0],
-                        &rep->persistent_cache_key_prefix_size);
   }
 }
 
@@ -359,13 +349,6 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
   rep->index_type = table_options.index_type;
   SetupCacheKeyPrefix(rep, file_size);
   unique_ptr<ColumnTable> new_table(new ColumnTable(rep));
-
-  // page cache options
-  rep->persistent_cache_options =
-      PersistentCacheOptions(rep->table_options.persistent_cache,
-                             std::string(rep->persistent_cache_key_prefix,
-                                         rep->persistent_cache_key_prefix_size),
-                             rep->ioptions.statistics);
 
   // Read meta index
   std::unique_ptr<Block> meta;
@@ -567,7 +550,7 @@ Status ColumnTable::ReadMetaBlock(Rep* rep,
       rep->file.get(), rep->footer, ReadOptions(),
       rep->footer.metaindex_handle(), &meta, rep->ioptions.env,
       true /* decompress */, Slice() /*compression dict*/,
-      rep->persistent_cache_options, rep->ioptions.info_log);
+      rep->ioptions.info_log);
 
   if (!s.ok()) {
     Log(InfoLogLevel::ERROR_LEVEL, rep->ioptions.info_log,
@@ -768,8 +751,7 @@ InternalIterator* ColumnTable::NewDataBlockIterator(
         StopWatch sw(rep->ioptions.env, statistics, READ_BLOCK_GET_MICROS);
         s = ReadBlockFromFile(rep->file.get(), rep->footer, ro, handle,
                               &raw_block, rep->ioptions.env, true,
-                              compression_dict, rep->persistent_cache_options,
-                              rep->ioptions.info_log);
+                              compression_dict, rep->ioptions.info_log);
       }
 
       if (s.ok()) {
@@ -793,8 +775,7 @@ InternalIterator* ColumnTable::NewDataBlockIterator(
     std::unique_ptr<Block> block_value;
     s = ReadBlockFromFile(rep->file.get(), rep->footer, ro, handle,
                           &block_value, rep->ioptions.env, true /* compress */,
-                          compression_dict, rep->persistent_cache_options,
-                          rep->ioptions.info_log);
+                          compression_dict, rep->ioptions.info_log);
     if (s.ok()) {
       block.value = block_value.release();
     }
@@ -1289,7 +1270,7 @@ Status ColumnTable::CreateIndexReader(IndexReader** index_reader) {
     case ColumnTableOptions::kBinarySearch: {
       return BinarySearchIndexReader::Create(
           file, footer, footer.index_handle(), env, comparator, index_reader,
-          rep_->persistent_cache_options, stats);
+          stats);
     }
     default: {
       std::string error_message =

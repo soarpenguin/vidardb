@@ -16,7 +16,6 @@
 #include "rocksdb/table.h"
 
 #include "port/port.h" // noexcept
-#include "table/persistent_cache_helper.h"
 
 namespace rocksdb {
 
@@ -214,7 +213,6 @@ extern Status ReadBlockContents(
     const ReadOptions& options, const BlockHandle& handle,
     BlockContents* contents, Env* env, bool do_uncompress = true,
     const Slice& compression_dict = Slice(),
-    const PersistentCacheOptions& cache_options = PersistentCacheOptions(),
     Logger* info_log = nullptr);
 
 // The 'data' points to the raw block contents read in from file.

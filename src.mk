@@ -67,7 +67,6 @@ LIB_SOURCES =                                                   \
   table/merger.cc                                               \
   table/meta_blocks.cc                                          \
   table/sst_file_writer.cc                                      \
-  table/persistent_cache_helper.cc                              \
   table/table_properties.cc                                     \
   table/two_level_iterator.cc                                   \
   util/arena.cc                                                 \
@@ -194,7 +193,6 @@ TEST_BENCH_SOURCES =                                                    \
   util/coding_test.cc                                                   \
   util/crc32c_test.cc                                                   \
   util/dynamic_bloom_test.cc                                            \
-  util/env_basic_test.cc                                                \
   util/env_test.cc                                                      \
   util/filelock_test.cc                                                 \
   util/histogram_test.cc                                                \

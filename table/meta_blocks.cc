@@ -13,7 +13,6 @@
 #include "table/block.h"
 #include "table/format.h"
 #include "table/internal_iterator.h"
-#include "table/persistent_cache_helper.h"
 #include "table/table_properties_internal.h"
 #include "util/coding.h"
 

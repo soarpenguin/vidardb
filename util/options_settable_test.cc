@@ -19,7 +19,6 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/memtablerep.h"
-#include "rocksdb/utilities/leveldb_options.h"
 #include "util/options_helper.h"
 #include "util/options_parser.h"
 #include "util/options_sanity_check.h"
@@ -102,8 +101,6 @@ TEST_F(OptionsSettableTest, BlockBasedTableOptionsAllFieldsSettable) {
        sizeof(std::shared_ptr<FlushBlockPolicyFactory>)},
       {offsetof(struct BlockBasedTableOptions, block_cache),
        sizeof(std::shared_ptr<Cache>)},
-      {offsetof(struct BlockBasedTableOptions, persistent_cache),
-       sizeof(std::shared_ptr<PersistentCache>)},
       {offsetof(struct BlockBasedTableOptions, block_cache_compressed),
        sizeof(std::shared_ptr<Cache>)},
       {offsetof(struct BlockBasedTableOptions, filter_policy),

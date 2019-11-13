@@ -15,7 +15,6 @@
 #include "rocksdb/env.h"
 #include "table/block.h"
 #include "table/block_based_table_reader.h"
-#include "table/persistent_cache_helper.h"
 #include "util/coding.h"
 #include "util/compression.h"
 #include "util/crc32c.h"
@@ -295,7 +294,6 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
                          const BlockHandle& handle, BlockContents* contents,
                          Env* env, bool decompression_requested,
                          const Slice& compression_dict,
-                         const PersistentCacheOptions& cache_options,
                          Logger* info_log) {
   Status status;
   Slice slice;
@@ -305,63 +303,20 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
   char* used_buf = nullptr;
   rocksdb::CompressionType compression_type;
 
-  if (cache_options.persistent_cache &&
-      !cache_options.persistent_cache->IsCompressed()) {
-    status = PersistentCacheHelper::LookupUncompressedPage(cache_options,
-                                                           handle, contents);
-    if (status.ok()) {
-      // uncompressed page is found for the block handle
-      return status;
-    } else {
-      // uncompressed page is not found
-      if (info_log && !status.IsNotFound()) {
-        assert(!status.ok());
-        Log(InfoLogLevel::INFO_LEVEL, info_log,
-            "Error reading from persistent cache. %s",
-            status.ToString().c_str());
-      }
-    }
-  }
+  status = Status::NotFound();
 
-  if (cache_options.persistent_cache &&
-      cache_options.persistent_cache->IsCompressed()) {
-    // lookup uncompressed cache mode p-cache
-    status = PersistentCacheHelper::LookupRawPage(
-        cache_options, handle, &heap_buf, n + kBlockTrailerSize);
+  // cache miss read from device
+  if (decompression_requested &&
+          n + kBlockTrailerSize < DefaultStackBufferSize) {
+    // If we've got a small enough hunk of data, read it in to the
+    // trivially allocated stack buffer instead of needing a full malloc()
+    used_buf = &stack_buf[0];
   } else {
-    status = Status::NotFound();
-  }
-
-  if (status.ok()) {
-    // cache hit
+    heap_buf = std::unique_ptr<char[]>(new char[n + kBlockTrailerSize]);
     used_buf = heap_buf.get();
-    slice = Slice(heap_buf.get(), n);
-  } else {
-    if (info_log && !status.IsNotFound()) {
-      assert(!status.ok());
-      Log(InfoLogLevel::INFO_LEVEL, info_log,
-          "Error reading from persistent cache. %s", status.ToString().c_str());
-    }
-    // cache miss read from device
-    if (decompression_requested &&
-        n + kBlockTrailerSize < DefaultStackBufferSize) {
-      // If we've got a small enough hunk of data, read it in to the
-      // trivially allocated stack buffer instead of needing a full malloc()
-      used_buf = &stack_buf[0];
-    } else {
-      heap_buf = std::unique_ptr<char[]>(new char[n + kBlockTrailerSize]);
-      used_buf = heap_buf.get();
-    }
-
-    status = ReadBlock(file, footer, read_options, handle, &slice, used_buf);
-    if (status.ok() && read_options.fill_cache &&
-        cache_options.persistent_cache &&
-        cache_options.persistent_cache->IsCompressed()) {
-      // insert to raw cache
-      PersistentCacheHelper::InsertRawPage(cache_options, handle, used_buf,
-                                           n + kBlockTrailerSize);
-    }
   }
+
+  status = ReadBlock(file, footer, read_options, handle, &slice, used_buf);
 
   if (!status.ok()) {
     return status;
@@ -385,14 +340,6 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
       memcpy(heap_buf.get(), stack_buf, n);
     }
     *contents = BlockContents(std::move(heap_buf), n, true, compression_type);
-  }
-
-  if (status.ok() && read_options.fill_cache &&
-      cache_options.persistent_cache &&
-      !cache_options.persistent_cache->IsCompressed()) {
-    // insert to uncompressed cache
-    PersistentCacheHelper::InsertUncompressedPage(cache_options, handle,
-                                                  *contents);
   }
 
   return status;

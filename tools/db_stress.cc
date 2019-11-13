@@ -47,7 +47,6 @@ int main() {
 #include "rocksdb/slice.h"
 #include "rocksdb/slice_transform.h"
 #include "rocksdb/statistics.h"
-#include "rocksdb/utilities/db_ttl.h"
 #include "rocksdb/write_batch.h"
 #include "util/coding.h"
 #include "util/compression.h"

@@ -45,16 +45,8 @@
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/options.h"
 #include "rocksdb/perf_context.h"
-#include "rocksdb/rate_limiter.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/slice_transform.h"
-#include "rocksdb/utilities/env_registry.h"
-#include "rocksdb/utilities/flashcache.h"
-#include "rocksdb/utilities/optimistic_transaction_db.h"
-#include "rocksdb/utilities/options_util.h"
-#include "rocksdb/utilities/sim_cache.h"
-#include "rocksdb/utilities/transaction.h"
-#include "rocksdb/utilities/transaction_db.h"
 #include "rocksdb/write_batch.h"
 #include "util/compression.h"
 #include "util/crc32c.h"
@@ -1034,9 +1026,6 @@ static void AppendWithSpace(std::string* str, Slice msg) {
 struct DBWithColumnFamilies {
   std::vector<ColumnFamilyHandle*> cfh;
   DB* db;
-#ifndef ROCKSDB_LITE
-  OptimisticTransactionDB* opt_txn_db;
-#endif  // ROCKSDB_LITE
   std::atomic<size_t> num_created;  // Need to be updated after all the
                                     // new entries in cfh are set.
   size_t num_hot;  // Number of column families to be queried at each moment.
@@ -1046,9 +1035,6 @@ struct DBWithColumnFamilies {
 
   DBWithColumnFamilies()
       : db(nullptr)
-#ifndef ROCKSDB_LITE
-        , opt_txn_db(nullptr)
-#endif  // ROCKSDB_LITE
   {
     cfh.clear();
     num_created = 0;
@@ -1058,9 +1044,6 @@ struct DBWithColumnFamilies {
   DBWithColumnFamilies(const DBWithColumnFamilies& other)
       : cfh(other.cfh),
         db(other.db),
-#ifndef ROCKSDB_LITE
-        opt_txn_db(other.opt_txn_db),
-#endif  // ROCKSDB_LITE
         num_created(other.num_created.load()),
         num_hot(other.num_hot) {}
 
@@ -1068,18 +1051,8 @@ struct DBWithColumnFamilies {
     std::for_each(cfh.begin(), cfh.end(),
                   [](ColumnFamilyHandle* cfhi) { delete cfhi; });
     cfh.clear();
-#ifndef ROCKSDB_LITE
-    if (opt_txn_db) {
-      delete opt_txn_db;
-      opt_txn_db = nullptr;
-    } else {
-      delete db;
-      db = nullptr;
-    }
-#else
     delete db;
     db = nullptr;
-#endif  // ROCKSDB_LITE
   }
 
   ColumnFamilyHandle* GetCfh(int64_t rand_num) {
@@ -1518,7 +1491,6 @@ struct SharedState {
   port::CondVar cv;
   int total;
   int perf_level;
-  std::shared_ptr<RateLimiter> write_rate_limiter;
 
   // Each thread goes through the following states:
   //    (1) initializing
@@ -2102,10 +2074,6 @@ class Benchmark {
     }
     if (FLAGS_statistics) {
       fprintf(stdout, "STATISTICS:\n%s\n", dbstats->ToString().c_str());
-    }
-    if (FLAGS_simcache_size >= 0) {
-      fprintf(stdout, "SIMULATOR CACHE STATISTICS:\n%s\n",
-              std::dynamic_pointer_cast<SimCache>(cache_)->ToString().c_str());
     }
   }
 
@@ -2762,16 +2730,6 @@ class Benchmark {
       size_t id = thread->rand.Next() % num_key_gens;
       DBWithColumnFamilies* db_with_cfh = SelectDBWithCfh(id);
       batch.Clear();
-
-      if (thread->shared->write_rate_limiter.get() != nullptr) {
-        thread->shared->write_rate_limiter->Request(
-            entries_per_batch_ * (value_size_ + key_size_),
-            Env::IO_HIGH);
-        // Set time at which last op finished to Now() to hide latency and
-        // sleep from rate limiter. Also, do the check once per batch, not
-        // once per write.
-        thread->stats.ResetLastOpTime();
-      }
 
       for (int64_t j = 0; j < entries_per_batch_; j++) {
         int64_t rand_num = key_gens[id]->Next();

@@ -9,8 +9,6 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/experimental.h"
-#include "rocksdb/utilities/convenience.h"
 #include "util/sync_point.h"
 namespace rocksdb {
 

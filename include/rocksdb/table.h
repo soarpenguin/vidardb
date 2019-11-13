@@ -30,7 +30,6 @@ namespace rocksdb {
 
 // -- Block-based Table
 class FlushBlockPolicyFactory;
-class PersistentCache;
 class RandomAccessFile;
 struct TableReaderOptions;
 struct TableBuilderOptions;
@@ -96,10 +95,6 @@ struct BlockBasedTableOptions {
   // If non-NULL use the specified cache for blocks.
   // If NULL, rocksdb will automatically create and use an 8MB internal cache.
   std::shared_ptr<Cache> block_cache = nullptr;
-
-  // If non-NULL use the specified cache for pages read from device
-  // IF NULL, no page cache is used
-  std::shared_ptr<PersistentCache> persistent_cache = nullptr;
 
   // If non-NULL use the specified cache for compressed blocks.
   // If NULL, rocksdb will not use a compressed block cache.
@@ -390,10 +385,6 @@ struct ColumnTableOptions {
   // If non-NULL use the specified cache for blocks.
   // If NULL, rocksdb will automatically create and use an 8MB internal cache.
   std::shared_ptr<Cache> block_cache = nullptr;
-
-  // If non-NULL use the specified cache for pages read from device
-  // IF NULL, no page cache is used
-  std::shared_ptr<PersistentCache> persistent_cache = nullptr;
 
   // Approximate size of user data packed per block.  Note that the
   // block size specified here corresponds to uncompressed data.  The

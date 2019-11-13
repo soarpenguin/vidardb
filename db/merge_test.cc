@@ -13,7 +13,6 @@
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
 #include "rocksdb/merge_operator.h"
-#include "rocksdb/utilities/db_ttl.h"
 #include "db/dbformat.h"
 #include "db/db_impl.h"
 #include "db/write_batch_internal.h"

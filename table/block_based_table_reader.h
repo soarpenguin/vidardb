@@ -15,7 +15,6 @@
 #include <string>
 
 #include "rocksdb/options.h"
-#include "rocksdb/persistent_cache.h"
 #include "rocksdb/statistics.h"
 #include "rocksdb/status.h"
 #include "rocksdb/table.h"

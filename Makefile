@@ -288,7 +288,6 @@ TESTS = \
 	crc32c_test \
 	slice_transform_test \
 	dbformat_test \
-	env_basic_test \
 	env_test \
 	fault_injection_test \
 	filelock_test \
@@ -784,7 +783,7 @@ $(TOOLS_LIBRARY): $(BENCH_SOURCES:.cc=.o) $(TOOL_SOURCES:.cc=.o) $(LIB_SOURCES:.
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $^
 
-librocksdb_env_basic_test.a: util/env_basic_test.o $(LIBOBJECTS) $(TESTHARNESS)
+librocksdb_env_basic_test.a: $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $^
 

@@ -19,7 +19,6 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/memtablerep.h"
-#include "rocksdb/utilities/leveldb_options.h"
 #include "util/options_helper.h"
 #include "util/options_parser.h"
 #include "util/options_sanity_check.h"
