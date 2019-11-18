@@ -14,7 +14,6 @@ LIB_SOURCES =                                                   \
   db/db_impl.cc                                                 \
   db/db_impl_debug.cc                                           \
   db/db_impl_readonly.cc                                        \
-  db/db_impl_experimental.cc                                    \
   db/db_info_dumper.cc                                          \
   db/db_iter.cc                                                 \
   db/event_helpers.cc                                           \
@@ -26,7 +25,6 @@ LIB_SOURCES =                                                   \
   db/internal_stats.cc                                          \
   db/log_reader.cc                                              \
   db/log_writer.cc                                              \
-  db/managed_iterator.cc                                        \
   db/memtable_allocator.cc                                      \
   db/memtable.cc                                                \
   db/memtable_list.cc                                           \

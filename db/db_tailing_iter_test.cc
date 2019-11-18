@@ -396,7 +396,6 @@ TEST_F(DBTestTailingIterator, TailingIteratorUpperBound) {
 TEST_F(DBTestTailingIterator, ManagedTailingIteratorSingle) {
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
 
   std::unique_ptr<Iterator> iter(db_->NewIterator(read_options));
   iter->SeekToFirst();
@@ -416,7 +415,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorKeepAdding) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
 
   std::unique_ptr<Iterator> iter(db_->NewIterator(read_options, handles_[1]));
   std::string value(1024, 'a');
@@ -439,7 +437,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorSeekToNext) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
 
   std::unique_ptr<Iterator> iter(db_->NewIterator(read_options, handles_[1]));
   std::string value(1024, 'a');
@@ -487,7 +484,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorDeletes) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
 
   std::unique_ptr<Iterator> iter(db_->NewIterator(read_options, handles_[1]));
 
@@ -529,7 +525,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorIncomplete) {
   CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
   read_options.read_tier = kBlockCacheTier;
 
   std::string key = "key";
@@ -556,7 +551,6 @@ TEST_F(DBTestTailingIterator, ManagedTailingIteratorSeekToSame) {
 
   ReadOptions read_options;
   read_options.tailing = true;
-  read_options.managed = true;
 
   const int NROWS = 10000;
   // Write rows with keys 00000, 00002, 00004 etc.

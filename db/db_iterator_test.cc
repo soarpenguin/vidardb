@@ -127,7 +127,6 @@ TEST_F(DBIteratorTest, ManagedNonBlockingIteration) {
     Options options = CurrentOptions();
     options.statistics = rocksdb::CreateDBStatistics();
     non_blocking_opts.read_tier = kBlockCacheTier;
-    non_blocking_opts.managed = true;
     CreateAndReopenWithCF({"pikachu"}, options);
     // write one kv to the database.
     ASSERT_OK(Put(1, "a", "b"));
