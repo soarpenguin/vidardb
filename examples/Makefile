@@ -16,23 +16,14 @@ compaction_filter_example: librocksdb compaction_filter_example.cc
 compact_files_example: librocksdb compact_files_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 
-.c.o:
-	$(CC) $(CFLAGS) -c $< -o $@ -I../include
-
-c_simple_example: librocksdb c_simple_example.o
-	$(CXX) $@.o -o$@ ../librocksdb.a $(PLATFORM_LDFLAGS) $(EXEC_LDFLAGS)
-
-optimistic_transaction_example: librocksdb optimistic_transaction_example.cc
-	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
-
 transaction_example: librocksdb transaction_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 
-options_file_example: librocksdb options_file_example.cc
+simple_column_example: librocksdb simple_column_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 
 clean:
-	rm -rf ./simple_example ./column_families_example ./compact_files_example ./compaction_filter_example ./c_simple_example c_simple_example.o ./optimistic_transaction_example ./transaction_example
+	rm -rf ./simple_example ./column_families_example ./compact_files_example ./compaction_filter_example ./transaction_example ./simple_column_example
 
 librocksdb:
 	cd .. && $(MAKE) static_lib
