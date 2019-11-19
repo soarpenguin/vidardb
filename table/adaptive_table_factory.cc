@@ -17,8 +17,6 @@ AdaptiveTableFactory::~AdaptiveTableFactory() {}  // Shichao
 AdaptiveTableFactory::AdaptiveTableFactory(
     std::shared_ptr<TableFactory> table_factory_to_write,
     std::shared_ptr<TableFactory> block_based_table_factory,
-    std::shared_ptr<TableFactory> plain_table_factory,
-    std::shared_ptr<TableFactory> cuckoo_table_factory,
     std::shared_ptr<TableFactory> column_table_factory,  // Shichao
     int knob)  // Shichao
     : table_factory_to_write_(table_factory_to_write),
@@ -142,13 +140,10 @@ void AdaptiveTableFactory::SetOutputLevel(
 extern TableFactory* NewAdaptiveTableFactory(
     std::shared_ptr<TableFactory> table_factory_to_write,
     std::shared_ptr<TableFactory> block_based_table_factory,
-    std::shared_ptr<TableFactory> plain_table_factory,
-    std::shared_ptr<TableFactory> cuckoo_table_factory,
     std::shared_ptr<TableFactory> column_table_factory,  // Shichao
     int knob) {                                          // Shichao
   return new AdaptiveTableFactory(table_factory_to_write,
-      block_based_table_factory, plain_table_factory, cuckoo_table_factory,
-      column_table_factory, knob);  // Shichao
+      block_based_table_factory, column_table_factory, knob);  // Shichao
 }
 
 }  // namespace rocksdb

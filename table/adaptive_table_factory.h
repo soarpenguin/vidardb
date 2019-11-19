@@ -29,8 +29,6 @@ class AdaptiveTableFactory : public TableFactory {
   explicit AdaptiveTableFactory(
       std::shared_ptr<TableFactory> table_factory_to_write,
       std::shared_ptr<TableFactory> block_based_table_factory,
-      std::shared_ptr<TableFactory> plain_table_factory,
-      std::shared_ptr<TableFactory> cuckoo_table_factory,
       std::shared_ptr<TableFactory> column_table_factory,  // Shichao
       int knob);  // Shichao
 
