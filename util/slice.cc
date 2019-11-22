@@ -8,101 +8,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <algorithm>
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/slice.h"
 #include "util/string_util.h"
 #include <stdio.h>
 
 namespace rocksdb {
-
-namespace {
-
-class FixedPrefixTransform : public SliceTransform {
- private:
-  size_t prefix_len_;
-  std::string name_;
-
- public:
-  explicit FixedPrefixTransform(size_t prefix_len)
-      : prefix_len_(prefix_len),
-        // Note that if any part of the name format changes, it will require
-        // changes on options_helper in order to make RocksDBOptionsParser work
-        // for the new change.
-        // TODO(yhchiang): move serialization / deserializaion code inside
-        // the class implementation itself.
-        name_("rocksdb.FixedPrefix." + ToString(prefix_len_)) {}
-
-  virtual const char* Name() const override { return name_.c_str(); }
-
-  virtual Slice Transform(const Slice& src) const override {
-    assert(InDomain(src));
-    return Slice(src.data(), prefix_len_);
-  }
-
-  virtual bool InDomain(const Slice& src) const override {
-    return (src.size() >= prefix_len_);
-  }
-
-  virtual bool InRange(const Slice& dst) const override {
-    return (dst.size() == prefix_len_);
-  }
-
-  virtual bool SameResultWhenAppended(const Slice& prefix) const override {
-    return InDomain(prefix);
-  }
-};
-
-class CappedPrefixTransform : public SliceTransform {
- private:
-  size_t cap_len_;
-  std::string name_;
-
- public:
-  explicit CappedPrefixTransform(size_t cap_len)
-      : cap_len_(cap_len),
-        // Note that if any part of the name format changes, it will require
-        // changes on options_helper in order to make RocksDBOptionsParser work
-        // for the new change.
-        // TODO(yhchiang): move serialization / deserializaion code inside
-        // the class implementation itself.
-        name_("rocksdb.CappedPrefix." + ToString(cap_len_)) {}
-
-  virtual const char* Name() const override { return name_.c_str(); }
-
-  virtual Slice Transform(const Slice& src) const override {
-    assert(InDomain(src));
-    return Slice(src.data(), std::min(cap_len_, src.size()));
-  }
-
-  virtual bool InDomain(const Slice& src) const override { return true; }
-
-  virtual bool InRange(const Slice& dst) const override {
-    return (dst.size() <= cap_len_);
-  }
-
-  virtual bool SameResultWhenAppended(const Slice& prefix) const override {
-    return prefix.size() >= cap_len_;
-  }
-};
-
-class NoopTransform : public SliceTransform {
- public:
-  explicit NoopTransform() { }
-
-  virtual const char* Name() const override { return "rocksdb.Noop"; }
-
-  virtual Slice Transform(const Slice& src) const override { return src; }
-
-  virtual bool InDomain(const Slice& src) const override { return true; }
-
-  virtual bool InRange(const Slice& dst) const override { return true; }
-
-  virtual bool SameResultWhenAppended(const Slice& prefix) const override {
-    return false;
-  }
-};
-
-}
 
 // 2 small internal utility functions, for efficient hex conversions
 // and no need for snprintf, toupper etc...
@@ -171,18 +81,6 @@ bool Slice::DecodeHex(std::string* result) const {
     result->push_back((h1 << 4) | h2);
   }
   return true;
-}
-
-const SliceTransform* NewFixedPrefixTransform(size_t prefix_len) {
-  return new FixedPrefixTransform(prefix_len);
-}
-
-const SliceTransform* NewCappedPrefixTransform(size_t cap_len) {
-  return new CappedPrefixTransform(cap_len);
-}
-
-const SliceTransform* NewNoopTransform() {
-  return new NoopTransform;
 }
 
 }  // namespace rocksdb

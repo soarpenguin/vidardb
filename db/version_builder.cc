@@ -313,7 +313,7 @@ class VersionBuilder::Rep {
             env_options_, *(base_vstorage_->InternalComparator()),
             file_meta->fd, &file_meta->table_reader_handle, false /*no_io */,
             true /* record_read_stats */,
-            internal_stats->GetFileReadHist(level), false, level);
+            internal_stats->GetFileReadHist(level), level);
         if (file_meta->table_reader_handle != nullptr) {
           // Load table_reader
           file_meta->fd.table_reader = table_cache_->GetTableReaderFromHandle(

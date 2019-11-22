@@ -101,10 +101,6 @@ TEST_F(OptionsSettableTest, BlockBasedTableOptionsAllFieldsSettable) {
        sizeof(std::shared_ptr<FlushBlockPolicyFactory>)},
       {offsetof(struct BlockBasedTableOptions, block_cache),
        sizeof(std::shared_ptr<Cache>)},
-      {offsetof(struct BlockBasedTableOptions, block_cache_compressed),
-       sizeof(std::shared_ptr<Cache>)},
-      {offsetof(struct BlockBasedTableOptions, filter_policy),
-       sizeof(std::shared_ptr<const FilterPolicy>)},
   };
 
   // In this test, we catch a new option of BlockBasedTableOptions that is not
@@ -162,8 +158,6 @@ TEST_F(OptionsSettableTest, BlockBasedTableOptionsAllFieldsSettable) {
                           kBbtoBlacklist));
 
   ASSERT_TRUE(new_bbto->block_cache.get() != nullptr);
-  ASSERT_TRUE(new_bbto->block_cache_compressed.get() != nullptr);
-  ASSERT_TRUE(new_bbto->filter_policy.get() != nullptr);
 
   bbto->~BlockBasedTableOptions();
   new_bbto->~BlockBasedTableOptions();
@@ -310,8 +304,6 @@ TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
        sizeof(std::shared_ptr<CompactionFilterFactory>)},
       {offsetof(struct ColumnFamilyOptions, compression_per_level),
        sizeof(std::vector<CompressionType>)},
-      {offsetof(struct ColumnFamilyOptions, prefix_extractor),
-       sizeof(std::shared_ptr<const SliceTransform>)},
       {offsetof(struct ColumnFamilyOptions,
                 max_bytes_for_level_multiplier_additional),
        sizeof(std::vector<int>)},
@@ -322,8 +314,6 @@ TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
       {offsetof(struct ColumnFamilyOptions,
                 table_properties_collector_factories),
        sizeof(ColumnFamilyOptions::TablePropertiesCollectorFactories)},
-      {offsetof(struct ColumnFamilyOptions, inplace_callback),
-       sizeof(UpdateStatus(*)(char*, uint32_t*, Slice, std::string*))},
   };
 
   char* options_ptr = new char[sizeof(ColumnFamilyOptions)];
@@ -374,15 +364,12 @@ TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
       *options,
       "compaction_filter_factory=mpudlojcujCompactionFilterFactory;"
       "table_factory=PlainTable;"
-      "prefix_extractor=rocksdb.CappedPrefix.13;"
       "comparator=leveldb.BytewiseComparator;"
       "compression_per_level=kBZip2Compression:kBZip2Compression:"
       "kBZip2Compression:kNoCompression:kZlibCompression:kBZip2Compression:"
       "kSnappyCompression;"
       "max_bytes_for_level_base=986;"
-      "bloom_locality=8016;"
       "target_file_size_base=4294976376;"
-      "memtable_prefix_bloom_huge_page_tlb_size=2557;"
       "max_successive_merges=5497;"
       "max_sequential_skip_in_iterations=4294971408;"
       "arena_block_size=1893;"
@@ -408,14 +395,10 @@ TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
       "max_write_buffer_number_to_maintain=84;"
       "verify_checksums_in_compaction=false;"
       "merge_operator=aabcxehazrMergeOperator;"
-      "memtable_prefix_bloom_bits=4642;"
       "paranoid_file_checks=true;"
-      "inplace_update_num_locks=7429;"
       "optimize_filters_for_hits=false;"
       "level_compaction_dynamic_level_bytes=false;"
-      "inplace_update_support=false;"
       "compaction_style=kCompactionStyleFIFO;"
-      "memtable_prefix_bloom_probes=2511;"
       "purge_redundant_kvs_while_flush=true;"
       "filter_deletes=false;"
       "hard_pending_compaction_bytes_limit=0;"

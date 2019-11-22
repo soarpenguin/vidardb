@@ -36,7 +36,6 @@
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
-#include "util/autovector.h"
 #include "util/event_logger.h"
 #include "util/stop_watch.h"
 #include "util/thread_local.h"

@@ -11,7 +11,6 @@
 #include "rocksdb/db.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/perf_context.h"
-#include "rocksdb/slice_transform.h"
 #include "util/histogram.h"
 #include "util/instrumented_mutex.h"
 #include "util/stop_watch.h"
@@ -293,7 +292,7 @@ void ProfileQueries(bool enabled_time = false) {
     hist_get.Add(perf_context.user_key_comparison_count);
 
     perf_context.Reset();
-    db->MultiGet(read_options, multiget_keys, &values);
+//    db->MultiGet(read_options, multiget_keys, &values);
     hist_mget_snapshot.Add(perf_context.get_snapshot_time);
     hist_mget_memtable.Add(perf_context.get_from_memtable_time);
     hist_mget_files.Add(perf_context.get_from_output_files_time);
@@ -394,7 +393,7 @@ void ProfileQueries(bool enabled_time = false) {
     hist_get.Add(perf_context.user_key_comparison_count);
 
     perf_context.Reset();
-    db->MultiGet(read_options, multiget_keys, &values);
+//    db->MultiGet(read_options, multiget_keys, &values);
     hist_mget_snapshot.Add(perf_context.get_snapshot_time);
     hist_mget_memtable.Add(perf_context.get_from_memtable_time);
     hist_mget_files.Add(perf_context.get_from_output_files_time);
@@ -606,39 +605,6 @@ TEST_F(PerfContextTest, ToString) {
   ASSERT_NE(std::string::npos, zero_excluded.find("= 12345"));
 }
 
-TEST_F(PerfContextTest, MergeOperatorTime) {
-  DestroyDB(kDbName, Options());
-  DB* db;
-  Options options;
-  options.create_if_missing = true;
-  Status s = DB::Open(options, kDbName, &db);
-  EXPECT_OK(s);
-
-  std::string val;
-  ASSERT_OK(db->Merge(WriteOptions(), "k1", "val1"));
-  ASSERT_OK(db->Merge(WriteOptions(), "k1", "val2"));
-  ASSERT_OK(db->Merge(WriteOptions(), "k1", "val3"));
-  ASSERT_OK(db->Merge(WriteOptions(), "k1", "val4"));
-
-  SetPerfLevel(kEnableTime);
-  perf_context.Reset();
-  ASSERT_OK(db->Get(ReadOptions(), "k1", &val));
-  EXPECT_GT(perf_context.merge_operator_time_nanos, 0);
-
-  ASSERT_OK(db->Flush(FlushOptions()));
-
-  perf_context.Reset();
-  ASSERT_OK(db->Get(ReadOptions(), "k1", &val));
-  EXPECT_GT(perf_context.merge_operator_time_nanos, 0);
-
-  ASSERT_OK(db->CompactRange(CompactRangeOptions(), nullptr, nullptr));
-
-  perf_context.Reset();
-  ASSERT_OK(db->Get(ReadOptions(), "k1", &val));
-  EXPECT_GT(perf_context.merge_operator_time_nanos, 0);
-
-  delete db;
-}
 }
 
 int main(int argc, char** argv) {

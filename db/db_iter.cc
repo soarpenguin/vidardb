@@ -103,8 +103,7 @@ class DBIter: public Iterator {
   DBIter(Env* env, const ImmutableCFOptions& ioptions, const Comparator* cmp,
          InternalIterator* iter, SequenceNumber s, bool arena_mode,
          uint64_t max_sequential_skip_in_iterations, uint64_t version_number,
-         const Slice* iterate_upper_bound = nullptr,
-         bool prefix_same_as_start = false, bool pin_data = false)
+         const Slice* iterate_upper_bound = nullptr, bool pin_data = false)
       : arena_mode_(arena_mode),
         env_(env),
         logger_(ioptions.info_log),
@@ -118,10 +117,8 @@ class DBIter: public Iterator {
         statistics_(ioptions.statistics),
         version_number_(version_number),
         iterate_upper_bound_(iterate_upper_bound),
-        prefix_same_as_start_(prefix_same_as_start),
         pin_thru_lifetime_(pin_data) {
     RecordTick(statistics_, NO_ITERATORS);
-    prefix_extractor_ = ioptions.prefix_extractor;
     max_skip_ = max_sequential_skip_in_iterations;
     if (pin_thru_lifetime_) {
       pinned_iters_mgr_.StartPinning();
@@ -205,8 +202,8 @@ class DBIter: public Iterator {
   bool FindValueForCurrentKeyUsingSeek();
   void FindPrevUserKey();
   void FindNextUserKey();
-  inline void FindNextUserEntry(bool skipping, bool prefix_check);
-  void FindNextUserEntryInternal(bool skipping, bool prefix_check);
+  inline void FindNextUserEntry(bool skipping);
+  void FindNextUserEntryInternal(bool skipping);
   bool ParseKey(ParsedInternalKey* key);
   void MergeValuesNewToOld();
 
@@ -234,7 +231,6 @@ class DBIter: public Iterator {
     }
   }
 
-  const SliceTransform* prefix_extractor_;
   bool arena_mode_;
   Env* const env_;
   Logger* logger_;
@@ -254,9 +250,6 @@ class DBIter: public Iterator {
   uint64_t max_skip_;
   uint64_t version_number_;
   const Slice* iterate_upper_bound_;
-  IterKey prefix_start_buf_;
-  Slice prefix_start_key_;
-  const bool prefix_same_as_start_;
   // Means that we will pin all data blocks we read as long the Iterator
   // is not deleted, will be true if ReadOptions::pin_data is true
   const bool pin_thru_lifetime_;
@@ -312,7 +305,7 @@ void DBIter::Next() {
     valid_ = false;
     return;
   }
-  FindNextUserEntry(true /* skipping the current user key */, prefix_same_as_start_);
+  FindNextUserEntry(true /* skipping the current user key */);
   if (statistics_ != nullptr && valid_) {
     local_stats_.next_found_count_++;
     local_stats_.bytes_read_ += (key().size() + value().size());
@@ -332,13 +325,13 @@ void DBIter::Next() {
 // keys against the prefix of the seeked key. Set to false when
 // performing a seek without a key (e.g. SeekToFirst). Set to
 // prefix_same_as_start_ for other iterations.
-inline void DBIter::FindNextUserEntry(bool skipping, bool prefix_check) {
+inline void DBIter::FindNextUserEntry(bool skipping) {
   PERF_TIMER_GUARD(find_next_user_entry_time);
-  FindNextUserEntryInternal(skipping, prefix_check);
+  FindNextUserEntryInternal(skipping);
 }
 
 // Actual implementation of DBIter::FindNextUserEntry()
-void DBIter::FindNextUserEntryInternal(bool skipping, bool prefix_check) {
+void DBIter::FindNextUserEntryInternal(bool skipping) {
   // Loop until we hit an acceptable entry to yield
   assert(iter_->Valid());
   assert(direction_ == kForward);
@@ -350,11 +343,6 @@ void DBIter::FindNextUserEntryInternal(bool skipping, bool prefix_check) {
     if (ParseKey(&ikey)) {
       if (iterate_upper_bound_ != nullptr &&
           user_comparator_->Compare(ikey.user_key, *iterate_upper_bound_) >= 0) {
-        break;
-      }
-
-      if (prefix_extractor_ && prefix_check &&
-          prefix_extractor_->Transform(ikey.user_key).compare(prefix_start_key_) != 0) {
         break;
       }
 
@@ -505,11 +493,6 @@ void DBIter::Prev() {
       local_stats_.prev_found_count_++;
       local_stats_.bytes_read_ += (key().size() + value().size());
     }
-  }
-  if (valid_ && prefix_extractor_ && prefix_same_as_start_ &&
-      prefix_extractor_->Transform(saved_key_.GetKey())
-              .compare(prefix_start_key_) != 0) {
-    valid_ = false;
   }
 }
 
@@ -810,15 +793,9 @@ void DBIter::Seek(const Slice& target) {
 
   RecordTick(statistics_, NUMBER_DB_SEEK);
   if (iter_->Valid()) {
-    if (prefix_extractor_ && prefix_same_as_start_) {
-      prefix_start_key_ = prefix_extractor_->Transform(target);
-    }
     direction_ = kForward;
     ClearSavedValue();
-    FindNextUserEntry(false /* not skipping */, prefix_same_as_start_);
-    if (!valid_) {
-      prefix_start_key_.clear();
-    }
+    FindNextUserEntry(false /* not skipping */);
     if (statistics_ != nullptr) {
       if (valid_) {
         RecordTick(statistics_, NUMBER_DB_SEEK_FOUND);
@@ -828,18 +805,11 @@ void DBIter::Seek(const Slice& target) {
   } else {
     valid_ = false;
   }
-  if (valid_ && prefix_extractor_ && prefix_same_as_start_) {
-    prefix_start_buf_.SetKey(prefix_start_key_);
-    prefix_start_key_ = prefix_start_buf_.GetKey();
-  }
 }
 
 void DBIter::SeekToFirst() {
   // Don't use iter_::Seek() if we set a prefix extractor
   // because prefix seek will be used.
-  if (prefix_extractor_ != nullptr) {
-    max_skip_ = std::numeric_limits<uint64_t>::max();
-  }
   direction_ = kForward;
   ReleaseTempPinnedData();
   ClearSavedValue();
@@ -851,7 +821,7 @@ void DBIter::SeekToFirst() {
 
   RecordTick(statistics_, NUMBER_DB_SEEK);
   if (iter_->Valid()) {
-    FindNextUserEntry(false /* not skipping */, false /* no prefix check */);
+    FindNextUserEntry(false /* not skipping */);
     if (statistics_ != nullptr) {
       if (valid_) {
         RecordTick(statistics_, NUMBER_DB_SEEK_FOUND);
@@ -861,18 +831,11 @@ void DBIter::SeekToFirst() {
   } else {
     valid_ = false;
   }
-  if (valid_ && prefix_extractor_ && prefix_same_as_start_) {
-    prefix_start_buf_.SetKey(prefix_extractor_->Transform(saved_key_.GetKey()));
-    prefix_start_key_ = prefix_start_buf_.GetKey();
-  }
 }
 
 void DBIter::SeekToLast() {
   // Don't use iter_::Seek() if we set a prefix extractor
   // because prefix seek will be used.
-  if (prefix_extractor_ != nullptr) {
-    max_skip_ = std::numeric_limits<uint64_t>::max();
-  }
   direction_ = kReverse;
   ReleaseTempPinnedData();
   ClearSavedValue();
@@ -911,10 +874,6 @@ void DBIter::SeekToLast() {
       RecordTick(statistics_, ITER_BYTES_READ, key().size() + value().size());
     }
   }
-  if (valid_ && prefix_extractor_ && prefix_same_as_start_) {
-    prefix_start_buf_.SetKey(prefix_extractor_->Transform(saved_key_.GetKey()));
-    prefix_start_key_ = prefix_start_buf_.GetKey();
-  }
 }
 
 Iterator* NewDBIterator(Env* env, const ImmutableCFOptions& ioptions,
@@ -923,12 +882,11 @@ Iterator* NewDBIterator(Env* env, const ImmutableCFOptions& ioptions,
                         const SequenceNumber& sequence,
                         uint64_t max_sequential_skip_in_iterations,
                         uint64_t version_number,
-                        const Slice* iterate_upper_bound,
-                        bool prefix_same_as_start, bool pin_data) {
+                        const Slice* iterate_upper_bound, bool pin_data) {
   DBIter* db_iter =
       new DBIter(env, ioptions, user_key_comparator, internal_iter, sequence,
                  false, max_sequential_skip_in_iterations, version_number,
-                 iterate_upper_bound, prefix_same_as_start, pin_data);
+                 iterate_upper_bound, pin_data);
   return db_iter;
 }
 
@@ -964,15 +922,14 @@ ArenaWrappedDBIter* NewArenaWrappedDbIterator(
     Env* env, const ImmutableCFOptions& ioptions,
     const Comparator* user_key_comparator, const SequenceNumber& sequence,
     uint64_t max_sequential_skip_in_iterations, uint64_t version_number,
-    const Slice* iterate_upper_bound, bool prefix_same_as_start,
-    bool pin_data) {
+    const Slice* iterate_upper_bound, bool pin_data) {
   ArenaWrappedDBIter* iter = new ArenaWrappedDBIter();
   Arena* arena = iter->GetArena();
   auto mem = arena->AllocateAligned(sizeof(DBIter));
   DBIter* db_iter =
       new (mem) DBIter(env, ioptions, user_key_comparator, nullptr, sequence,
                        true, max_sequential_skip_in_iterations, version_number,
-                       iterate_upper_bound, prefix_same_as_start, pin_data);
+                       iterate_upper_bound, pin_data);
 
   iter->SetDBIter(db_iter);
 

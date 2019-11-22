@@ -28,7 +28,6 @@
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
-#include "util/autovector.h"
 #include "util/event_logger.h"
 #include "util/instrumented_mutex.h"
 #include "util/stop_watch.h"
@@ -71,9 +70,9 @@ class FlushJob {
 
  private:
   void ReportStartedFlush();
-  void ReportFlushInputSize(const autovector<MemTable*>& mems);
+  void ReportFlushInputSize(const std::vector<MemTable*>& mems);
   void RecordFlushIOStats();
-  Status WriteLevel0Table(const autovector<MemTable*>& mems, VersionEdit* edit,
+  Status WriteLevel0Table(const std::vector<MemTable*>& mems, VersionEdit* edit,
                           FileMetaData* meta);
   const std::string& dbname_;
   ColumnFamilyData* cfd_;

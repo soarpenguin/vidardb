@@ -32,7 +32,7 @@ void MemTableListVersion::AddMemTable(MemTable* m) {
   *parent_memtable_list_memory_usage_ += m->ApproximateMemoryUsage();
 }
 
-void MemTableListVersion::UnrefMemTable(autovector<MemTable*>* to_delete,
+void MemTableListVersion::UnrefMemTable(std::vector<MemTable*>* to_delete,
                                         MemTable* m) {
   if (m->Unref()) {
     to_delete->push_back(m);
@@ -69,7 +69,7 @@ MemTableListVersion::MemTableListVersion(
 void MemTableListVersion::Ref() { ++refs_; }
 
 // called by superversion::clean()
-void MemTableListVersion::Unref(autovector<MemTable*>* to_delete) {
+void MemTableListVersion::Unref(std::vector<MemTable*>* to_delete) {
   assert(refs_ >= 1);
   --refs_;
   if (refs_ == 0) {
@@ -208,7 +208,7 @@ SequenceNumber MemTableListVersion::GetEarliestSequenceNumber(
 }
 
 // caller is responsible for referencing m
-void MemTableListVersion::Add(MemTable* m, autovector<MemTable*>* to_delete) {
+void MemTableListVersion::Add(MemTable* m, std::vector<MemTable*>* to_delete) {
   assert(refs_ == 1);  // only when refs_ == 1 is MemTableListVersion mutable
   AddMemTable(m);
 
@@ -217,7 +217,7 @@ void MemTableListVersion::Add(MemTable* m, autovector<MemTable*>* to_delete) {
 
 // Removes m from list of memtables not flushed.  Caller should NOT Unref m.
 void MemTableListVersion::Remove(MemTable* m,
-                                 autovector<MemTable*>* to_delete) {
+                                 std::vector<MemTable*>* to_delete) {
   assert(refs_ == 1);  // only when refs_ == 1 is MemTableListVersion mutable
   memlist_.remove(m);
 
@@ -230,7 +230,7 @@ void MemTableListVersion::Remove(MemTable* m,
 }
 
 // Make sure we don't use up too much space in history
-void MemTableListVersion::TrimHistory(autovector<MemTable*>* to_delete) {
+void MemTableListVersion::TrimHistory(std::vector<MemTable*>* to_delete) {
   while (memlist_.size() + memlist_history_.size() >
              static_cast<size_t>(max_write_buffer_number_to_maintain_) &&
          !memlist_history_.empty()) {
@@ -253,7 +253,7 @@ bool MemTableList::IsFlushPending() const {
 }
 
 // Returns the memtables that need to be flushed.
-void MemTableList::PickMemtablesToFlush(autovector<MemTable*>* ret) {
+void MemTableList::PickMemtablesToFlush(std::vector<MemTable*>* ret) {
   AutoThreadOperationStageUpdater stage_updater(
       ThreadStatus::STAGE_PICK_MEMTABLES_TO_FLUSH);
   const auto& memlist = current_->memlist_;
@@ -272,7 +272,7 @@ void MemTableList::PickMemtablesToFlush(autovector<MemTable*>* ret) {
   flush_requested_ = false;  // start-flush request is complete
 }
 
-void MemTableList::RollbackMemtableFlush(const autovector<MemTable*>& mems,
+void MemTableList::RollbackMemtableFlush(const std::vector<MemTable*>& mems,
                                          uint64_t file_number) {
   AutoThreadOperationStageUpdater stage_updater(
       ThreadStatus::STAGE_MEMTABLE_ROLLBACK);
@@ -295,8 +295,8 @@ void MemTableList::RollbackMemtableFlush(const autovector<MemTable*>& mems,
 // Record a successful flush in the manifest file
 Status MemTableList::InstallMemtableFlushResults(
     ColumnFamilyData* cfd, const MutableCFOptions& mutable_cf_options,
-    const autovector<MemTable*>& mems, VersionSet* vset, InstrumentedMutex* mu,
-    uint64_t file_number, autovector<MemTable*>* to_delete,
+    const std::vector<MemTable*>& mems, VersionSet* vset, InstrumentedMutex* mu,
+    uint64_t file_number, std::vector<MemTable*>* to_delete,
     Directory* db_directory, LogBuffer* log_buffer) {
   AutoThreadOperationStageUpdater stage_updater(
       ThreadStatus::STAGE_MEMTABLE_INSTALL_FLUSH_RESULTS);
@@ -370,7 +370,7 @@ Status MemTableList::InstallMemtableFlushResults(
 }
 
 // New memtables are inserted at the front of the list.
-void MemTableList::Add(MemTable* m, autovector<MemTable*>* to_delete) {
+void MemTableList::Add(MemTable* m, std::vector<MemTable*>* to_delete) {
   assert(static_cast<int>(current_->memlist_.size()) >= num_flush_not_started_);
   InstallNewVersion();
   // this method is used to move mutable memtable into an immutable list.

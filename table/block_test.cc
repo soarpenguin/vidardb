@@ -14,7 +14,6 @@
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"
 #include "rocksdb/table.h"
-#include "rocksdb/slice_transform.h"
 #include "table/block.h"
 #include "table/block_builder.h"
 #include "table/format.h"
@@ -148,15 +147,11 @@ BlockContents GetBlockContents(std::unique_ptr<BlockBuilder> *builder,
 void CheckBlockContents(BlockContents contents, const int max_key,
                         const std::vector<std::string> &keys,
                         const std::vector<std::string> &values) {
-  const size_t prefix_size = 6;
   // create block reader
   BlockContents contents_ref(contents.data, contents.cachable,
                              contents.compression_type);
   Block reader1(std::move(contents));
   Block reader2(std::move(contents_ref));
-
-  std::unique_ptr<const SliceTransform> prefix_extractor(
-      NewFixedPrefixTransform(prefix_size));
 
   std::unique_ptr<InternalIterator> regular_iter(
       reader2.NewIterator(BytewiseComparator()));

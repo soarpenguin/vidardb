@@ -41,12 +41,10 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/options.h"
 #include "rocksdb/perf_context.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/write_batch.h"
 #include "util/compression.h"
 #include "util/crc32c.h"
@@ -1179,7 +1177,6 @@ enum OperationType : unsigned char {
   kWrite,
   kDelete,
   kSeek,
-  kMerge,
   kUpdate,
   kCompress,
   kUncompress,
@@ -1194,7 +1191,6 @@ static std::unordered_map<OperationType, std::string, std::hash<unsigned char>>
   {kWrite, "write"},
   {kDelete, "delete"},
   {kSeek, "seek"},
-  {kMerge, "merge"},
   {kUpdate, "update"},
   {kCompress, "compress"},
   {kCompress, "uncompress"},
@@ -1560,7 +1556,6 @@ class Benchmark {
   std::shared_ptr<Cache> cache_;
   std::shared_ptr<Cache> compressed_cache_;
   std::shared_ptr<const FilterPolicy> filter_policy_;
-  const SliceTransform* prefix_extractor_;
   DBWithColumnFamilies db_;
   std::vector<DBWithColumnFamilies> multi_dbs_;
   int64_t num_;
@@ -1767,11 +1762,6 @@ class Benchmark {
                                                    FLAGS_cache_numshardbits)
                                      : NewLRUCache(FLAGS_compressed_cache_size))
                               : nullptr),
-        filter_policy_(FLAGS_bloom_bits >= 0
-                           ? NewBloomFilterPolicy(FLAGS_bloom_bits,
-                                                  FLAGS_use_block_based_filter)
-                           : nullptr),
-        prefix_extractor_(NewFixedPrefixTransform(FLAGS_prefix_size)),
         num_(FLAGS_num),
         value_size_(FLAGS_value_size),
         key_size_(FLAGS_key_size),
@@ -1822,7 +1812,6 @@ class Benchmark {
 
   ~Benchmark() {
     db_.DeleteDBs();
-    delete prefix_extractor_;
     if (cache_.get() != nullptr) {
       // this will leak, but we're shutting down so nobody cares
       cache_->DisownData();
@@ -1964,10 +1953,6 @@ class Benchmark {
         method = &Benchmark::ReadRandom;
       } else if (name == "readrandomfast") {
         method = &Benchmark::ReadRandomFast;
-      } else if (name == "multireadrandom") {
-        fprintf(stderr, "entries_per_batch = %" PRIi64 "\n",
-                entries_per_batch_);
-        method = &Benchmark::MultiReadRandom;
       } else if (name == "readmissing") {
         ++key_size_;
         method = &Benchmark::ReadRandom;
@@ -1981,9 +1966,6 @@ class Benchmark {
       } else if (name == "seekrandomwhilewriting") {
         num_threads++;  // Add extra thread for writing
         method = &Benchmark::SeekRandomWhileWriting;
-      } else if (name == "seekrandomwhilemerging") {
-        num_threads++;  // Add extra thread for merging
-        method = &Benchmark::SeekRandomWhileMerging;
       } else if (name == "readrandomsmall") {
         reads_ /= 1000;
         method = &Benchmark::ReadRandom;
@@ -1994,29 +1976,12 @@ class Benchmark {
       } else if (name == "readwhilewriting") {
         num_threads++;  // Add extra thread for writing
         method = &Benchmark::ReadWhileWriting;
-      } else if (name == "readwhilemerging") {
-        num_threads++;  // Add extra thread for writing
-        method = &Benchmark::ReadWhileMerging;
       } else if (name == "readrandomwriterandom") {
         method = &Benchmark::ReadRandomWriteRandom;
-      } else if (name == "readrandommergerandom") {
-        if (FLAGS_merge_operator.empty()) {
-          fprintf(stdout, "%-12s : skipped (--merge_operator is unknown)\n",
-                  name.c_str());
-          exit(1);
-        }
-        method = &Benchmark::ReadRandomMergeRandom;
       } else if (name == "updaterandom") {
         method = &Benchmark::UpdateRandom;
       } else if (name == "appendrandom") {
         method = &Benchmark::AppendRandom;
-      } else if (name == "mergerandom") {
-        if (FLAGS_merge_operator.empty()) {
-          fprintf(stdout, "%-12s : skipped (--merge_operator is unknown)\n",
-                  name.c_str());
-          exit(1);
-        }
-        method = &Benchmark::MergeRandom;
       } else if (name == "randomwithverify") {
         method = &Benchmark::RandomWithVerify;
       } else if (name == "fillseekseq") {
@@ -2342,10 +2307,6 @@ class Benchmark {
     options.max_background_flushes = FLAGS_max_background_flushes;
     options.compaction_style = FLAGS_compaction_style_e;
     options.compaction_pri = FLAGS_compaction_pri_e;
-    if (FLAGS_prefix_size != 0) {
-      options.prefix_extractor.reset(
-          NewFixedPrefixTransform(FLAGS_prefix_size));
-    }
     if (FLAGS_use_uint64_comparator) {
       options.comparator = test::Uint64Comparator();
       if (FLAGS_key_size != 8) {
@@ -2353,8 +2314,6 @@ class Benchmark {
         exit(1);
       }
     }
-    options.memtable_prefix_bloom_bits = FLAGS_memtable_bloom_bits;
-    options.bloom_locality = FLAGS_bloom_locality;
     options.max_file_opening_threads = FLAGS_file_opening_threads;
     options.new_table_reader_for_compaction_inputs =
         FLAGS_new_table_reader_for_compaction_inputs;
@@ -2392,19 +2351,11 @@ class Benchmark {
       if (cache_ == nullptr) {
         block_based_options.no_block_cache = true;
       }
-      block_based_options.cache_index_and_filter_blocks =
-          FLAGS_cache_index_and_filter_blocks;
-      block_based_options.pin_l0_filter_and_index_blocks_in_cache =
-          FLAGS_pin_l0_filter_and_index_blocks_in_cache;
       block_based_options.block_cache = cache_;
-      block_based_options.block_cache_compressed = compressed_cache_;
       block_based_options.block_size = FLAGS_block_size;
       block_based_options.block_restart_interval = FLAGS_block_restart_interval;
       block_based_options.index_block_restart_interval =
           FLAGS_index_block_restart_interval;
-      block_based_options.filter_policy = filter_policy_;
-      block_based_options.skip_table_builder_flush =
-          FLAGS_skip_table_builder_flush;
       block_based_options.format_version = 2;
       options.table_factory.reset(
           NewBlockBasedTableFactory(block_based_options));
@@ -2921,48 +2872,6 @@ class Benchmark {
     }
   }
 
-  // Calls MultiGet over a list of keys from a random distribution.
-  // Returns the total number of keys found.
-  void MultiReadRandom(ThreadState* thread) {
-    int64_t read = 0;
-    int64_t found = 0;
-    ReadOptions options(FLAGS_verify_checksum, true);
-    std::vector<Slice> keys;
-    std::vector<std::unique_ptr<const char[]> > key_guards;
-    std::vector<std::string> values(entries_per_batch_);
-    while (static_cast<int64_t>(keys.size()) < entries_per_batch_) {
-      key_guards.push_back(std::unique_ptr<const char[]>());
-      keys.push_back(AllocateKey(&key_guards.back()));
-    }
-
-    Duration duration(FLAGS_duration, reads_);
-    while (!duration.Done(1)) {
-      DB* db = SelectDB(thread);
-      for (int64_t i = 0; i < entries_per_batch_; ++i) {
-        GenerateKeyFromInt(GetRandomKey(&thread->rand), FLAGS_num, &keys[i]);
-      }
-      std::vector<Status> statuses = db->MultiGet(options, keys, &values);
-      assert(static_cast<int64_t>(statuses.size()) == entries_per_batch_);
-
-      read += entries_per_batch_;
-      for (int64_t i = 0; i < entries_per_batch_; ++i) {
-        if (statuses[i].ok()) {
-          ++found;
-        } else if (!statuses[i].IsNotFound()) {
-          fprintf(stderr, "MultiGet returned an error: %s\n",
-                  statuses[i].ToString().c_str());
-          abort();
-        }
-      }
-      thread->stats.FinishedOps(nullptr, db, entries_per_batch_, kRead);
-    }
-
-    char msg[100];
-    snprintf(msg, sizeof(msg), "(%" PRIu64 " of %" PRIu64 " found)",
-             found, read);
-    thread->stats.AddMessage(msg);
-  }
-
   void IteratorCreation(ThreadState* thread) {
     Duration duration(FLAGS_duration, reads_);
     ReadOptions options(FLAGS_verify_checksum, true);
@@ -3072,14 +2981,6 @@ class Benchmark {
     }
   }
 
-  void SeekRandomWhileMerging(ThreadState* thread) {
-    if (thread->tid > 0) {
-      SeekRandom(thread);
-    } else {
-      BGWriter(thread, kMerge);
-    }
-  }
-
   void DoDelete(ThreadState* thread, bool seq) {
     WriteBatch batch;
     Duration duration(seq ? 0 : FLAGS_duration, num_);
@@ -3121,14 +3022,6 @@ class Benchmark {
     }
   }
 
-  void ReadWhileMerging(ThreadState* thread) {
-    if (thread->tid > 0) {
-      ReadRandom(thread);
-    } else {
-      BGWriter(thread, kMerge);
-    }
-  }
-
   void BGWriter(ThreadState* thread, enum OperationType write_merge) {
     // Special thread that keeps writing until other threads are done.
     RandomGenerator gen;
@@ -3155,10 +3048,7 @@ class Benchmark {
 
       if (write_merge == kWrite) {
           s = db->Put(write_options_, key, gen.Generate(value_size_));
-      } else {
-          s = db->Merge(write_options_, key, gen.Generate(value_size_));
       }
-
       if (!s.ok()) {
         fprintf(stderr, "put or merge error: %s\n", s.ToString().c_str());
         exit(1);
@@ -3479,103 +3369,6 @@ class Benchmark {
     thread->stats.AddMessage(msg);
   }
 
-  // Read-modify-write for random keys (using MergeOperator)
-  // The merge operator to use should be defined by FLAGS_merge_operator
-  // Adjust FLAGS_value_size so that the keys are reasonable for this operator
-  // Assumes that the merge operator is non-null (i.e.: is well-defined)
-  //
-  // For example, use FLAGS_merge_operator="uint64add" and FLAGS_value_size=8
-  // to simulate random additions over 64-bit integers using merge.
-  //
-  // The number of merges on the same key can be controlled by adjusting
-  // FLAGS_merge_keys.
-  void MergeRandom(ThreadState* thread) {
-    RandomGenerator gen;
-    int64_t bytes = 0;
-    std::unique_ptr<const char[]> key_guard;
-    Slice key = AllocateKey(&key_guard);
-    // The number of iterations is the larger of read_ or write_
-    Duration duration(FLAGS_duration, readwrites_);
-    while (!duration.Done(1)) {
-      DB* db = SelectDB(thread);
-      GenerateKeyFromInt(thread->rand.Next() % merge_keys_, merge_keys_, &key);
-
-      Status s = db->Merge(write_options_, key, gen.Generate(value_size_));
-
-      if (!s.ok()) {
-        fprintf(stderr, "merge error: %s\n", s.ToString().c_str());
-        exit(1);
-      }
-      bytes += key.size() + value_size_;
-      thread->stats.FinishedOps(nullptr, db, 1, kMerge);
-    }
-
-    // Print some statistics
-    char msg[100];
-    snprintf(msg, sizeof(msg), "( updates:%" PRIu64 ")", readwrites_);
-    thread->stats.AddBytes(bytes);
-    thread->stats.AddMessage(msg);
-  }
-
-  // Read and merge random keys. The amount of reads and merges are controlled
-  // by adjusting FLAGS_num and FLAGS_mergereadpercent. The number of distinct
-  // keys (and thus also the number of reads and merges on the same key) can be
-  // adjusted with FLAGS_merge_keys.
-  //
-  // As with MergeRandom, the merge operator to use should be defined by
-  // FLAGS_merge_operator.
-  void ReadRandomMergeRandom(ThreadState* thread) {
-    ReadOptions options(FLAGS_verify_checksum, true);
-    RandomGenerator gen;
-    std::string value;
-    int64_t num_hits = 0;
-    int64_t num_gets = 0;
-    int64_t num_merges = 0;
-    size_t max_length = 0;
-
-    std::unique_ptr<const char[]> key_guard;
-    Slice key = AllocateKey(&key_guard);
-    // the number of iterations is the larger of read_ or write_
-    Duration duration(FLAGS_duration, readwrites_);
-    while (!duration.Done(1)) {
-      DB* db = SelectDB(thread);
-      GenerateKeyFromInt(thread->rand.Next() % merge_keys_, merge_keys_, &key);
-
-      bool do_merge = int(thread->rand.Next() % 100) < FLAGS_mergereadpercent;
-
-      if (do_merge) {
-        Status s = db->Merge(write_options_, key, gen.Generate(value_size_));
-        if (!s.ok()) {
-          fprintf(stderr, "merge error: %s\n", s.ToString().c_str());
-          exit(1);
-        }
-        num_merges++;
-        thread->stats.FinishedOps(nullptr, db, 1, kMerge);
-      } else {
-        Status s = db->Get(options, key, &value);
-        if (value.length() > max_length)
-          max_length = value.length();
-
-        if (!s.ok() && !s.IsNotFound()) {
-          fprintf(stderr, "get error: %s\n", s.ToString().c_str());
-          // we continue after error rather than exiting so that we can
-          // find more errors if any
-        } else if (!s.IsNotFound()) {
-          num_hits++;
-        }
-        num_gets++;
-        thread->stats.FinishedOps(nullptr, db, 1, kRead);
-      }
-    }
-
-    char msg[100];
-    snprintf(msg, sizeof(msg),
-             "(reads:%" PRIu64 " merges:%" PRIu64 " total:%" PRIu64
-             " hits:%" PRIu64 " maxlength:%" ROCKSDB_PRIszt ")",
-             num_gets, num_merges, readwrites_, num_hits, max_length);
-    thread->stats.AddMessage(msg);
-  }
-
   void WriteSeqSeekSeq(ThreadState* thread) {
     writes_ = FLAGS_num;
     DoWrite(thread, SEQUENTIAL);
@@ -3646,8 +3439,7 @@ class Benchmark {
                                 static_cast<int64_t>(0));
       GenerateKeyFromInt(key_id * max_counter + counters[key_id], FLAGS_num,
                          &key);
-      s = FLAGS_use_single_deletes ? db->SingleDelete(write_options_, key)
-                                   : db->Delete(write_options_, key);
+      s = db->Delete(write_options_, key);
       if (s.ok()) {
         counters[key_id] = (counters[key_id] + 1) % max_counter;
         GenerateKeyFromInt(key_id * max_counter + counters[key_id], FLAGS_num,

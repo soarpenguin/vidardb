@@ -29,20 +29,17 @@ struct TableReaderOptions {
   TableReaderOptions(const ImmutableCFOptions& _ioptions,
                      const EnvOptions& _env_options,
                      const InternalKeyComparator& _internal_comparator,
-                     bool _skip_filters = false, int _level = -1,
+                     int _level = -1,
                      const std::vector<uint32_t>& _cols = std::vector<uint32_t>())  // Shichao
       : ioptions(_ioptions),
         env_options(_env_options),
         internal_comparator(_internal_comparator),
-        skip_filters(_skip_filters),
         level(_level),
         cols(_cols) {}  // Shichao
 
   const ImmutableCFOptions& ioptions;
   const EnvOptions& env_options;
   const InternalKeyComparator& internal_comparator;
-  // This is only used for BlockBasedTable (reader)
-  bool skip_filters;
   // what level this table/file is on, -1 for "not set, don't know"
   int level;
   std::vector<uint32_t> cols;  // Shichao
@@ -56,7 +53,7 @@ struct TableBuilderOptions {
           _int_tbl_prop_collector_factories,
       CompressionType _compression_type,
       const CompressionOptions& _compression_opts,
-      const std::string* _compression_dict, bool _skip_filters,
+      const std::string* _compression_dict,
       const std::string& _column_family_name,
       const EnvOptions& _env_options = EnvOptions())  // Shichao
       : ioptions(_ioptions),
@@ -65,7 +62,6 @@ struct TableBuilderOptions {
         compression_type(_compression_type),
         compression_opts(_compression_opts),
         compression_dict(_compression_dict),
-        skip_filters(_skip_filters),
         column_family_name(_column_family_name),
         env_options(_env_options) {}  // Shichao
   const ImmutableCFOptions& ioptions;
@@ -76,7 +72,6 @@ struct TableBuilderOptions {
   const CompressionOptions& compression_opts;
   // Data for presetting the compression library's dictionary, or nullptr.
   const std::string* compression_dict;
-  bool skip_filters;  // only used by BlockBasedTableBuilder
   const std::string& column_family_name;
   const EnvOptions& env_options;  // Shichao, only used by ColumnTableBuilder
 };

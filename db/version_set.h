@@ -233,7 +233,7 @@ class VersionStorageInfo {
 
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
   // REQUIRES: DB mutex held during access
-  const autovector<std::pair<int, FileMetaData*>>& FilesMarkedForCompaction()
+  const std::vector<std::pair<int, FileMetaData*>>& FilesMarkedForCompaction()
       const {
     assert(finalized_);
     return files_marked_for_compaction_;
@@ -340,7 +340,7 @@ class VersionStorageInfo {
   std::vector<uint64_t> level_max_bytes_;
 
   // A short brief metadata of files per level
-  autovector<rocksdb::LevelFilesBrief> level_files_brief_;
+  std::vector<rocksdb::LevelFilesBrief> level_files_brief_;
   FileIndexer file_indexer_;
   Arena arena_;  // Used to allocate space for file_levels_
 
@@ -377,7 +377,7 @@ class VersionStorageInfo {
   // This vector contains list of files marked for compaction and also not
   // currently being compacted. It is protected by DB mutex. It is calculated in
   // ComputeCompactionScore()
-  autovector<std::pair<int, FileMetaData*>> files_marked_for_compaction_;
+  std::vector<std::pair<int, FileMetaData*>> files_marked_for_compaction_;
 
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields

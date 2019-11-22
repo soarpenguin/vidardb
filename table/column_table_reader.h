@@ -69,12 +69,12 @@ class ColumnTable : public TableReader {
   // The result of NewIterator() is initially invalid (caller must
   // call one of the Seek methods on the iterator before using it).
   // @param skip_filters Disables loading/accessing the filter block
-  InternalIterator* NewIterator(const ReadOptions&, Arena* arena = nullptr,
-                                bool skip_filters = true) override;
+  InternalIterator* NewIterator(const ReadOptions&,
+                                Arena* arena = nullptr) override;
 
   // @param skip_filters Disables loading/accessing the filter block
   Status Get(const ReadOptions& readOptions, const Slice& key,
-             GetContext* get_context, bool skip_filters = true) override;
+             GetContext* get_context) override;
 
   // Pre-fetch the disk blocks that correspond to the key range specified by
   // (kbegin, kend). The call will return error status in the event of

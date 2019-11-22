@@ -52,7 +52,7 @@ TableBuilder* NewTableBuilder(
   return ioptions.table_factory->NewTableBuilder(
       TableBuilderOptions(ioptions, internal_comparator,
                           int_tbl_prop_collector_factories, compression_type,
-                          compression_opts, compression_dict, skip_filters,
+                          compression_opts, compression_dict,
                           column_family_name, env_options),  // Shichao
       column_family_id, file);
 }

@@ -16,7 +16,6 @@
 namespace rocksdb {
 
 class Slice;
-class SliceTransform;
 
 // Context information of a compaction run
 struct CompactionFilterContext {

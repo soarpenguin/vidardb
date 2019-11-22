@@ -17,7 +17,6 @@
 #include "db/job_context.h"
 #include "rocksdb/env.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "table/merger.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
@@ -123,7 +122,6 @@ ForwardIterator::ForwardIterator(DBImpl* db, const ReadOptions& read_options,
     : db_(db),
       read_options_(read_options),
       cfd_(cfd),
-      prefix_extractor_(cfd->ioptions()->prefix_extractor),
       user_comparator_(cfd->user_comparator()),
       immutable_min_heap_(MinIterComparator(&cfd_->internal_comparator())),
       sv_(current_sv),
@@ -413,15 +411,7 @@ void ForwardIterator::Next() {
     }
   } else if (current_ != mutable_iter_) {
     // It is going to advance immutable iterator
-
-    if (is_prev_set_ && prefix_extractor_) {
-      // advance prev_key_ to current_ only if they share the same prefix
-      update_prev_key =
-        prefix_extractor_->Transform(prev_key_.GetKey()).compare(
-          prefix_extractor_->Transform(current_->key())) == 0;
-    } else {
       update_prev_key = true;
-    }
 
 
     if (update_prev_key) {
@@ -666,10 +656,7 @@ bool ForwardIterator::NeedToSeekImmutable(const Slice& target) {
     return true;
   }
   Slice prev_key = prev_key_.GetKey();
-  if (prefix_extractor_ && prefix_extractor_->Transform(target).compare(
-    prefix_extractor_->Transform(prev_key)) != 0) {
-    return true;
-  }
+
   if (cfd_->internal_comparator().InternalKeyComparator::Compare(
         prev_key, target) >= (is_prev_inclusive_ ? 1 : 0)) {
     return true;

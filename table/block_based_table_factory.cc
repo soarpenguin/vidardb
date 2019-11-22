@@ -63,8 +63,7 @@ Status BlockBasedTableFactory::NewTableReader(
   return BlockBasedTable::Open(
       table_reader_options.ioptions, table_reader_options.env_options,
       table_options_, table_reader_options.internal_comparator, std::move(file),
-      file_size, table_reader, prefetch_enabled,
-      table_reader_options.skip_filters, table_reader_options.level);
+      file_size, table_reader, prefetch_enabled, table_reader_options.level);
 }
 
 TableBuilder* BlockBasedTableFactory::NewTableBuilder(
@@ -77,7 +76,6 @@ TableBuilder* BlockBasedTableFactory::NewTableBuilder(
       file, table_builder_options.compression_type,
       table_builder_options.compression_opts,
       table_builder_options.compression_dict,
-      table_builder_options.skip_filters,
       table_builder_options.column_family_name);
 
   return table_builder;
@@ -86,17 +84,6 @@ TableBuilder* BlockBasedTableFactory::NewTableBuilder(
 Status BlockBasedTableFactory::SanitizeOptions(
     const DBOptions& db_opts,
     const ColumnFamilyOptions& cf_opts) const {
-  if (table_options_.cache_index_and_filter_blocks &&
-      table_options_.no_block_cache) {
-    return Status::InvalidArgument("Enable cache_index_and_filter_blocks, "
-        ", but block cache is disabled");
-  }
-  if (table_options_.pin_l0_filter_and_index_blocks_in_cache &&
-      table_options_.no_block_cache) {
-    return Status::InvalidArgument(
-        "Enable pin_l0_filter_and_index_blocks_in_cache, "
-        ", but block cache is disabled");
-  }
   if (!BlockBasedTableSupportedVersion(table_options_.format_version)) {
     return Status::InvalidArgument(
         "Unsupported BlockBasedTable format_version. Please check "
@@ -115,18 +102,8 @@ std::string BlockBasedTableFactory::GetPrintableTableOptions() const {
            table_options_.flush_block_policy_factory->Name(),
            static_cast<void*>(table_options_.flush_block_policy_factory.get()));
   ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  cache_index_and_filter_blocks: %d\n",
-           table_options_.cache_index_and_filter_blocks);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize,
-           "  pin_l0_filter_and_index_blocks_in_cache: %d\n",
-           table_options_.pin_l0_filter_and_index_blocks_in_cache);
-  ret.append(buffer);
   snprintf(buffer, kBufferSize, "  index_type: %d\n",
            table_options_.index_type);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  hash_index_allow_collision: %d\n",
-           table_options_.hash_index_allow_collision);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  checksum: %d\n",
            table_options_.checksum);
@@ -142,15 +119,6 @@ std::string BlockBasedTableFactory::GetPrintableTableOptions() const {
              table_options_.block_cache->GetCapacity());
     ret.append(buffer);
   }
-  snprintf(buffer, kBufferSize, "  block_cache_compressed: %p\n",
-           static_cast<void*>(table_options_.block_cache_compressed.get()));
-  ret.append(buffer);
-  if (table_options_.block_cache_compressed) {
-    snprintf(buffer, kBufferSize,
-             "  block_cache_compressed_size: %" ROCKSDB_PRIszt "\n",
-             table_options_.block_cache_compressed->GetCapacity());
-    ret.append(buffer);
-  }
   snprintf(buffer, kBufferSize, "  block_size: %" ROCKSDB_PRIszt "\n",
            table_options_.block_size);
   ret.append(buffer);
@@ -162,16 +130,6 @@ std::string BlockBasedTableFactory::GetPrintableTableOptions() const {
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  index_block_restart_interval: %d\n",
            table_options_.index_block_restart_interval);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  filter_policy: %s\n",
-           table_options_.filter_policy == nullptr ?
-             "nullptr" : table_options_.filter_policy->Name());
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  whole_key_filtering: %d\n",
-           table_options_.whole_key_filtering);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  skip_table_builder_flush: %d\n",
-           table_options_.skip_table_builder_flush);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  format_version: %d\n",
            table_options_.format_version);
@@ -190,13 +148,6 @@ TableFactory* NewBlockBasedTableFactory(
 
 const std::string BlockBasedTablePropertyNames::kIndexType =
     "rocksdb.block.based.table.index.type";
-const std::string BlockBasedTablePropertyNames::kWholeKeyFiltering =
-    "rocksdb.block.based.table.whole.key.filtering";
-const std::string BlockBasedTablePropertyNames::kPrefixFiltering =
-    "rocksdb.block.based.table.prefix.filtering";
-const std::string kHashIndexPrefixesBlock = "rocksdb.hashindex.prefixes";
-const std::string kHashIndexPrefixesMetadataBlock =
-    "rocksdb.hashindex.metadata";
 const std::string kPropTrue = "1";
 const std::string kPropFalse = "0";
 

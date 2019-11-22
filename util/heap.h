@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include "util/autovector.h"
 
 namespace rocksdb {
 
@@ -134,7 +133,7 @@ class BinaryHeap {
   }
 
   Compare cmp_;
-  autovector<T> data_;
+  std::vector<T> data_;
 };
 
 }  // namespace rocksdb

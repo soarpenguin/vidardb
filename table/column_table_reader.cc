@@ -466,35 +466,16 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
 
   if (prefetch_index) {
     // pre-fetching of blocks is turned on
-    // Will use block cache for index blocks access?
-    if (table_options.cache_index_blocks) {
-      assert(table_options.block_cache != nullptr);
-      // Hack: Call NewIndexIterator() to implicitly add index to the
-      // block_cache
+    // If we don't use block cache for index blocks access, we'll
+    // pre-load these blocks, which will kept in member variables in Rep
+    // and with a same life-time as this table object.
+    IndexReader* index_reader = nullptr;
+    s = new_table->CreateIndexReader(&index_reader);
 
-      // if pin_l0_index_blocks_in_cache is true and this is
-      // a level0 file, then we will pass in this pointer to rep->index
-      // to NewIndexIterator(), which will save the index block in there
-      // else it's a nullptr and nothing special happens
-      CachableEntry<IndexReader>* index_entry = nullptr;
-      if (rep->table_options.pin_l0_index_blocks_in_cache && level == 0) {
-        index_entry = &rep->index_entry;
-      }
-      unique_ptr<InternalIterator> iter(
-          new_table->NewIndexIterator(ReadOptions(), nullptr, index_entry));
-      s = iter->status();
+    if (s.ok()) {
+      rep->index_reader.reset(index_reader);
     } else {
-      // If we don't use block cache for index blocks access, we'll
-      // pre-load these blocks, which will kept in member variables in Rep
-      // and with a same life-time as this table object.
-      IndexReader* index_reader = nullptr;
-      s = new_table->CreateIndexReader(&index_reader);
-
-      if (s.ok()) {
-        rep->index_reader.reset(index_reader);
-      } else {
-        delete index_reader;
-      }
+      delete index_reader;
     }
   }
 
@@ -566,8 +547,8 @@ Status ColumnTable::ReadMetaBlock(Rep* rep,
 }
 
 Status ColumnTable::GetDataBlockFromCache(
-    const Slice& block_cache_key, Cache* block_cache,
-    Statistics* statistics, ColumnTable::CachableEntry<Block>* block) {
+    const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
+    ColumnTable::CachableEntry<Block>* block) {
   Status s;
 
   // Lookup uncompressed cache first
@@ -590,8 +571,7 @@ Status ColumnTable::GetDataBlockFromCache(
 
 Status ColumnTable::PutDataBlockToCache(
     const Slice& block_cache_key, Cache* block_cache,
-    Statistics* statistics, CachableEntry<Block>* block,
-    Block* raw_block) {
+    Statistics* statistics, CachableEntry<Block>* block, Block* raw_block) {
   assert(raw_block->compression_type() == kNoCompression);
   Status s;
   block->value = raw_block;
@@ -806,17 +786,12 @@ class ColumnTable::BlockEntryIteratorState : public TwoLevelIteratorState {
  public:
   BlockEntryIteratorState(ColumnTable* table,
                           const ReadOptions& read_options)
-      : TwoLevelIteratorState(table->rep_->ioptions.prefix_extractor !=
-                              nullptr),
+      : TwoLevelIteratorState(),
         table_(table),
         read_options_(read_options) {}
 
   InternalIterator* NewSecondaryIterator(const Slice& index_value) override {
     return NewDataBlockIterator(table_->rep_, read_options_, index_value);
-  }
-
-  bool PrefixMayMatch(const Slice& internal_key) override {
-    return true;
   }
 
  private:
@@ -1122,8 +1097,7 @@ inline static ReadOptions SanitizeReadOptionsColumns(uint32_t column_num,
 }
 
 InternalIterator* ColumnTable::NewIterator(const ReadOptions& ro,
-                                           Arena* arena,
-                                           bool skip_filters) {
+                                           Arena* arena) {
   ReadOptions read_options = SanitizeReadOptionsColumns(
       rep_->table_options.column_num, ro);
 
@@ -1139,7 +1113,7 @@ InternalIterator* ColumnTable::NewIterator(const ReadOptions& ro,
 }
 
 Status ColumnTable::Get(const ReadOptions& ro, const Slice& key,
-                        GetContext* get_context, bool skip_filters) {
+                        GetContext* get_context) {
   ReadOptions read_options = SanitizeReadOptionsColumns(
       rep_->table_options.column_num, ro);
   std::vector<InternalIterator*> v(read_options.columns.size());

@@ -202,41 +202,6 @@ class DB {
     return Delete(options, DefaultColumnFamily(), key);
   }
 
-  // Remove the database entry for "key". Requires that the key exists
-  // and was not overwritten. Returns OK on success, and a non-OK status
-  // on error.  It is not an error if "key" did not exist in the database.
-  //
-  // If a key is overwritten (by calling Put() multiple times), then the result
-  // of calling SingleDelete() on this key is undefined.  SingleDelete() only
-  // behaves correctly if there has been only one Put() for this key since the
-  // previous call to SingleDelete() for this key.
-  //
-  // This feature is currently an experimental performance optimization
-  // for a very specific workload.  It is up to the caller to ensure that
-  // SingleDelete is only used for a key that is not deleted using Delete() or
-  // written using Merge().  Mixing SingleDelete operations with Deletes and
-  // Merges can result in undefined behavior.
-  //
-  // Note: consider setting options.sync = true.
-  virtual Status SingleDelete(const WriteOptions& options,
-                              ColumnFamilyHandle* column_family,
-                              const Slice& key) = 0;
-  virtual Status SingleDelete(const WriteOptions& options, const Slice& key) {
-    return SingleDelete(options, DefaultColumnFamily(), key);
-  }
-
-  // Merge the database entry for "key" with "value".  Returns OK on success,
-  // and a non-OK status on error. The semantics of this operation is
-  // determined by the user provided merge_operator when opening DB.
-  // Note: consider setting options.sync = true.
-  virtual Status Merge(const WriteOptions& options,
-                       ColumnFamilyHandle* column_family, const Slice& key,
-                       const Slice& value) = 0;
-  virtual Status Merge(const WriteOptions& options, const Slice& key,
-                       const Slice& value) {
-    return Merge(options, DefaultColumnFamily(), key, value);
-  }
-
   // Apply the specified updates to the database.
   // If `updates` contains no update, WAL will still be synced if
   // options.sync=true.
@@ -256,28 +221,6 @@ class DB {
                      std::string* value) = 0;
   virtual Status Get(const ReadOptions& options, const Slice& key, std::string* value) {
     return Get(options, DefaultColumnFamily(), key, value);
-  }
-
-  // If keys[i] does not exist in the database, then the i'th returned
-  // status will be one for which Status::IsNotFound() is true, and
-  // (*values)[i] will be set to some arbitrary value (often ""). Otherwise,
-  // the i'th returned status will have Status::ok() true, and (*values)[i]
-  // will store the value associated with keys[i].
-  //
-  // (*values) will always be resized to be the same size as (keys).
-  // Similarly, the number of returned statuses will be the number of keys.
-  // Note: keys will not be "de-duplicated". Duplicate keys will return
-  // duplicate values in order.
-  virtual std::vector<Status> MultiGet(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_family,
-      const std::vector<Slice>& keys, std::vector<std::string>* values) = 0;
-  virtual std::vector<Status> MultiGet(const ReadOptions& options,
-                                       const std::vector<Slice>& keys,
-                                       std::vector<std::string>* values) {
-    return MultiGet(options, std::vector<ColumnFamilyHandle*>(
-                                 keys.size(), DefaultColumnFamily()),
-                    keys, values);
   }
 
   /***************** Shichao **********************/
@@ -302,27 +245,6 @@ class DB {
     return RangeQuery(options, DefaultColumnFamily(), range, res, filter, group, arg);
   }
   /***************** Shichao **********************/
-
-  // If the key definitely does not exist in the database, then this method
-  // returns false, else true. If the caller wants to obtain value when the key
-  // is found in memory, a bool for 'value_found' must be passed. 'value_found'
-  // will be true on return if value has been set properly.
-  // This check is potentially lighter-weight than invoking DB::Get(). One way
-  // to make this lighter weight is to avoid doing any IOs.
-  // Default implementation here returns true and sets 'value_found' to false
-  virtual bool KeyMayExist(const ReadOptions& /*options*/,
-                           ColumnFamilyHandle* /*column_family*/,
-                           const Slice& /*key*/, std::string* /*value*/,
-                           bool* value_found = nullptr) {
-    if (value_found != nullptr) {
-      *value_found = false;
-    }
-    return true;
-  }
-  virtual bool KeyMayExist(const ReadOptions& options, const Slice& key,
-                           std::string* value, bool* value_found = nullptr) {
-    return KeyMayExist(options, DefaultColumnFamily(), key, value, value_found);
-  }
 
   // Return a heap-allocated iterator over the contents of the database.
   // The result of NewIterator() is initially invalid (caller must

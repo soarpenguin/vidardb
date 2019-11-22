@@ -921,8 +921,7 @@ TEST_F(DBSSTTest, AddExternalSstFile) {
       std::string value = Key(k) + "_val";
       ASSERT_EQ(Get(Key(k)), value);
     }
-  } while (ChangeOptions(kSkipPlainTable | kSkipUniversalCompaction |
-                         kSkipFIFOCompaction));
+  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 
 // This test reporduce a bug that can happen in some cases if the DB started
@@ -1139,8 +1138,7 @@ TEST_F(DBSSTTest, AddExternalSstFileMultiThreaded) {
     }
 
     fprintf(stderr, "Verified %d values\n", num_files * keys_per_file);
-  } while (ChangeOptions(kSkipPlainTable | kSkipUniversalCompaction |
-                         kSkipFIFOCompaction));
+  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 
 TEST_F(DBSSTTest, AddExternalSstFileOverlappingRanges) {
@@ -1239,8 +1237,7 @@ TEST_F(DBSSTTest, AddExternalSstFileOverlappingRanges) {
       ASSERT_EQ(Get(kv.first), kv.second);
     }
     printf("keys/values verified\n");
-  } while (ChangeOptions(kSkipPlainTable | kSkipUniversalCompaction |
-                         kSkipFIFOCompaction));
+  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 
 #endif  // ROCKSDB_LITE

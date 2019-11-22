@@ -686,8 +686,6 @@ void RandomCompressionTypeVector(const size_t count,
 
 CompactionFilterFactory* RandomCompactionFilterFactory(Random* rnd);
 
-const SliceTransform* RandomSliceTransform(Random* rnd, int pre_defined = -1);
-
 TableFactory* RandomTableFactory(Random* rnd, int pre_defined = -1);
 
 std::string RandomName(Random* rnd, const size_t len);

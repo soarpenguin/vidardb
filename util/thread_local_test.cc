@@ -9,7 +9,6 @@
 
 #include "rocksdb/env.h"
 #include "port/port.h"
-#include "util/autovector.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
@@ -439,7 +438,7 @@ TEST_F(ThreadLocalTest, Scrape) {
 
     // Scrape all thread local data. No unref at thread
     // exit or ThreadLocalPtr destruction
-    autovector<void*> ptrs;
+    std::vector<void*> ptrs;
     p.tls1.Scrape(&ptrs, nullptr);
     p.tls2->Scrape(&ptrs, nullptr);
     delete p.tls2;

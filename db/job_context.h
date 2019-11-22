@@ -60,11 +60,11 @@ struct JobContext {
   std::vector<std::string> manifest_delete_files;
 
   // a list of memtables to be free
-  autovector<MemTable*> memtables_to_free;
+  std::vector<MemTable*> memtables_to_free;
 
-  autovector<SuperVersion*> superversions_to_free;
+  std::vector<SuperVersion*> superversions_to_free;
 
-  autovector<log::Writer*> logs_to_free;
+  std::vector<log::Writer*> logs_to_free;
 
   SuperVersion* new_superversion;  // if nullptr no new superversion
 

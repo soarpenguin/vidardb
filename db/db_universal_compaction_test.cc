@@ -164,9 +164,6 @@ TEST_P(DBTestUniversalCompaction, OptimizeFiltersForHits) {
   // trigger compaction if there are >= 4 files
   options.level0_file_num_compaction_trigger = 4;
   BlockBasedTableOptions bbto;
-  bbto.cache_index_and_filter_blocks = true;
-  bbto.filter_policy.reset(NewBloomFilterPolicy(10, false));
-  bbto.whole_key_filtering = true;
   options.table_factory.reset(NewBlockBasedTableFactory(bbto));
   options.optimize_filters_for_hits = true;
   options.statistics = rocksdb::CreateDBStatistics();

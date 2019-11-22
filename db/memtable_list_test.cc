@@ -50,7 +50,7 @@ class MemTableListTest : public testing::Test {
   // structures needed to call this function.
   Status Mock_InstallMemtableFlushResults(
       MemTableList* list, const MutableCFOptions& mutable_cf_options,
-      const autovector<MemTable*>& m, autovector<MemTable*>* to_delete) {
+      const std::vector<MemTable*>& m, std::vector<MemTable*>* to_delete) {
     // Create a mock Logger
     test::NullLogger logger;
     LogBuffer log_buffer(DEBUG_LEVEL, &logger);
@@ -94,11 +94,11 @@ TEST_F(MemTableListTest, Empty) {
   ASSERT_FALSE(list.imm_flush_needed.load(std::memory_order_acquire));
   ASSERT_FALSE(list.IsFlushPending());
 
-  autovector<MemTable*> mems;
+  std::vector<MemTable*> mems;
   list.PickMemtablesToFlush(&mems);
   ASSERT_EQ(0, mems.size());
 
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
   list.current()->Unref(&to_delete);
   ASSERT_EQ(0, to_delete.size());
 }
@@ -114,7 +114,7 @@ TEST_F(MemTableListTest, GetTest) {
   std::string value;
   Status s;
   MergeContext merge_context;
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
 
   LookupKey lkey("key1", seq);
   bool found = list.current()->Get(lkey, &value, &s, &merge_context);
@@ -216,7 +216,7 @@ TEST_F(MemTableListTest, GetFromHistoryTest) {
   std::string value;
   Status s;
   MergeContext merge_context;
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
 
   LookupKey lkey("key1", seq);
   bool found = list.current()->Get(lkey, &value, &s, &merge_context);
@@ -268,7 +268,7 @@ TEST_F(MemTableListTest, GetFromHistoryTest) {
 
   // Flush this memtable from the list.
   // (It will then be a part of the memtable history).
-  autovector<MemTable*> to_flush;
+  std::vector<MemTable*> to_flush;
   list.PickMemtablesToFlush(&to_flush);
   ASSERT_EQ(1, to_flush.size());
 
@@ -391,7 +391,7 @@ TEST_F(MemTableListTest, FlushPendingTest) {
   ImmutableCFOptions ioptions(options);
   InternalKeyComparator cmp(BytewiseComparator());
   WriteBuffer wb(options.db_write_buffer_size);
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
 
   // Create MemTableList
   int min_write_buffer_number_to_merge = 3;
@@ -422,7 +422,7 @@ TEST_F(MemTableListTest, FlushPendingTest) {
   // Nothing to flush
   ASSERT_FALSE(list.IsFlushPending());
   ASSERT_FALSE(list.imm_flush_needed.load(std::memory_order_acquire));
-  autovector<MemTable*> to_flush;
+  std::vector<MemTable*> to_flush;
   list.PickMemtablesToFlush(&to_flush);
   ASSERT_EQ(0, to_flush.size());
 
@@ -484,7 +484,7 @@ TEST_F(MemTableListTest, FlushPendingTest) {
   ASSERT_FALSE(list.imm_flush_needed.load(std::memory_order_acquire));
 
   // Pick tables to flush again
-  autovector<MemTable*> to_flush2;
+  std::vector<MemTable*> to_flush2;
   list.PickMemtablesToFlush(&to_flush2);
   ASSERT_EQ(0, to_flush2.size());
   ASSERT_EQ(3, list.NumNotFlushed());
@@ -532,7 +532,7 @@ TEST_F(MemTableListTest, FlushPendingTest) {
   ASSERT_FALSE(list.imm_flush_needed.load(std::memory_order_acquire));
 
   // Pick tables to flush again
-  autovector<MemTable*> to_flush3;
+  std::vector<MemTable*> to_flush3;
   ASSERT_EQ(0, to_flush3.size());  // nothing not in progress of being flushed
   ASSERT_EQ(5, list.NumNotFlushed());
   ASSERT_FALSE(list.IsFlushPending());

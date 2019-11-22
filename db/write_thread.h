@@ -18,7 +18,6 @@
 #include "rocksdb/status.h"
 #include "rocksdb/types.h"
 #include "rocksdb/write_batch.h"
-#include "util/autovector.h"
 #include "util/instrumented_mutex.h"
 
 namespace rocksdb {
@@ -211,7 +210,7 @@ class WriteThread {
   // returns:                Total batch group byte size
   size_t EnterAsBatchGroupLeader(
       Writer* leader, Writer** last_writer,
-      autovector<WriteThread::Writer*>* write_batch_group);
+      std::vector<WriteThread::Writer*>* write_batch_group);
 
   // Causes JoinBatchGroup to return STATE_PARALLEL_FOLLOWER for all of the
   // non-leader members of this write batch group.  Sets Writer::sequence

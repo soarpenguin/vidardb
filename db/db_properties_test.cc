@@ -296,8 +296,6 @@ TEST_F(DBPropertiesTest, AggregatedTableProperties) {
     options.create_if_missing = true;
 
     BlockBasedTableOptions table_options;
-    table_options.filter_policy.reset(
-        NewBloomFilterPolicy(kBloomBitsPerKey, false));
     table_options.block_size = 1024;
     options.table_factory.reset(new BlockBasedTableFactory(table_options));
 
@@ -426,8 +424,6 @@ TEST_F(DBPropertiesTest, AggregatedTablePropertiesAtLevel) {
   options.disable_auto_compactions = true;
 
   BlockBasedTableOptions table_options;
-  table_options.filter_policy.reset(
-      NewBloomFilterPolicy(kBloomBitsPerKey, false));
   table_options.block_size = 1024;
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
 

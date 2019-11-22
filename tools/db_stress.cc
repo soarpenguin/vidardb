@@ -45,7 +45,6 @@ int main() {
 #include "rocksdb/cache.h"
 #include "rocksdb/env.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/statistics.h"
 #include "rocksdb/write_batch.h"
 #include "util/coding.h"
@@ -989,11 +988,6 @@ class StressTest {
         compressed_cache_(FLAGS_compressed_cache_size >= 0
                               ? NewLRUCache(FLAGS_compressed_cache_size)
                               : nullptr),
-        filter_policy_(FLAGS_bloom_bits >= 0
-                   ? FLAGS_use_block_based_filter
-                     ? NewBloomFilterPolicy(FLAGS_bloom_bits, true)
-                     : NewBloomFilterPolicy(FLAGS_bloom_bits, false)
-                   : nullptr),
         db_(nullptr),
         new_column_family_name_(1),
         num_times_reopened_(0) {
@@ -1568,11 +1562,6 @@ class StressTest {
         SetOptions(thread);
       }
 
-      if (FLAGS_set_in_place_one_in > 0 &&
-          thread->rand.OneIn(FLAGS_set_in_place_one_in)) {
-        options_.inplace_update_support ^= options_.inplace_update_support;
-      }
-
       if (!FLAGS_test_batches_snapshots &&
           FLAGS_clear_column_family_one_in != 0 && FLAGS_column_families > 1) {
         if (thread->rand.OneIn(FLAGS_clear_column_family_one_in)) {
@@ -1747,11 +1736,7 @@ class StressTest {
           }
           shared->Put(rand_column_family, rand_key, value_base);
           Status s;
-          if (FLAGS_use_merge) {
-            s = db_->Merge(write_opts, column_family, key, v);
-          } else {
             s = db_->Put(write_opts, column_family, key, v);
-          }
           if (!s.ok()) {
             fprintf(stderr, "put or merge error: %s\n", s.ToString().c_str());
             std::terminate();
@@ -1788,15 +1773,6 @@ class StressTest {
             thread->stats.AddDeletes(1);
             if (!s.ok()) {
               fprintf(stderr, "delete error: %s\n", s.ToString().c_str());
-              std::terminate();
-            }
-          } else {
-            shared->SingleDelete(rand_column_family, rand_key);
-            Status s = db_->SingleDelete(write_opts, column_family, key);
-            thread->stats.AddSingleDeletes(1);
-            if (!s.ok()) {
-              fprintf(stderr, "single delete error: %s\n",
-                      s.ToString().c_str());
               std::terminate();
             }
           }
@@ -2028,10 +2004,8 @@ class StressTest {
     assert(db_ == nullptr);
     BlockBasedTableOptions block_based_options;
     block_based_options.block_cache = cache_;
-    block_based_options.block_cache_compressed = compressed_cache_;
     block_based_options.block_size = FLAGS_block_size;
     block_based_options.format_version = 2;
-    block_based_options.filter_policy = filter_policy_;
     options_.table_factory.reset(
         NewBlockBasedTableFactory(block_based_options));
     options_.db_write_buffer_size = FLAGS_db_write_buffer_size;
@@ -2045,7 +2019,6 @@ class StressTest {
     options_.max_background_flushes = FLAGS_max_background_flushes;
     options_.compaction_style =
         static_cast<rocksdb::CompactionStyle>(FLAGS_compaction_style);
-    options_.prefix_extractor.reset(NewFixedPrefixTransform(FLAGS_prefix_size));
     options_.max_open_files = FLAGS_open_files;
     options_.statistics = dbstats;
     options_.env = FLAGS_env;
@@ -2066,7 +2039,6 @@ class StressTest {
     options_.create_if_missing = true;
     options_.max_manifest_file_size = 10 * 1024;
     options_.filter_deletes = FLAGS_filter_deletes;
-    options_.inplace_update_support = FLAGS_in_place_update;
     options_.max_subcompactions = static_cast<uint32_t>(FLAGS_subcompactions);
     options_.allow_concurrent_memtable_write =
         FLAGS_allow_concurrent_memtable_write;

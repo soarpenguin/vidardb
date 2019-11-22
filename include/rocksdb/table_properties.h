@@ -156,10 +156,6 @@ struct TableProperties {
   // If column family is unknown, `column_family_name` will be an empty string.
   std::string column_family_name;
 
-  // The name of the filter policy used in this table.
-  // If no filter policy is used, `filter_policy_name` will be an empty string.
-  std::string filter_policy_name;
-
   // The name of the comparator used in this table.
   std::string comparator_name;
 

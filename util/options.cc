@@ -25,7 +25,6 @@
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/merge_operator.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"
 #include "rocksdb/wal_filter.h"
@@ -39,13 +38,10 @@ ImmutableCFOptions::ImmutableCFOptions(const Options& options)
     : compaction_style(options.compaction_style),
       compaction_options_universal(options.compaction_options_universal),
       compaction_options_fifo(options.compaction_options_fifo),
-      prefix_extractor(options.prefix_extractor.get()),
       comparator(options.comparator),
       merge_operator(options.merge_operator.get()),
       compaction_filter(options.compaction_filter),
       compaction_filter_factory(options.compaction_filter_factory.get()),
-      inplace_update_support(options.inplace_update_support),
-      inplace_callback(options.inplace_callback),
       info_log(options.info_log.get()),
       statistics(options.statistics.get()),
       env(options.env),
@@ -58,7 +54,6 @@ ImmutableCFOptions::ImmutableCFOptions(const Options& options)
       table_properties_collector_factories(
           options.table_properties_collector_factories),
       advise_random_on_open(options.advise_random_on_open),
-      bloom_locality(options.bloom_locality),
       purge_redundant_kvs_while_flush(options.purge_redundant_kvs_while_flush),
       disable_data_sync(options.disableDataSync),
       use_fsync(options.use_fsync),
@@ -87,7 +82,6 @@ ColumnFamilyOptions::ColumnFamilyOptions()
       max_write_buffer_number_to_maintain(0),
       compression(Snappy_Supported() ? kSnappyCompression : kNoCompression),
       bottommost_compression(kDisableCompressionOption),
-      prefix_extractor(nullptr),
       num_levels(7),
       level0_file_num_compaction_trigger(4),
       level0_slowdown_writes_trigger(20),
@@ -117,13 +111,6 @@ ColumnFamilyOptions::ColumnFamilyOptions()
       memtable_factory(std::shared_ptr<SkipListFactory>(new SkipListFactory)),
       table_factory(
           std::shared_ptr<TableFactory>(new BlockBasedTableFactory())),
-      inplace_update_support(false),
-      inplace_update_num_locks(10000),
-      inplace_callback(nullptr),
-      memtable_prefix_bloom_bits(0),
-      memtable_prefix_bloom_probes(6),
-      memtable_prefix_bloom_huge_page_tlb_size(0),
-      bloom_locality(0),
       max_successive_merges(0),
       min_partial_merge_operands(2),
       optimize_filters_for_hits(false),
@@ -147,7 +134,6 @@ ColumnFamilyOptions::ColumnFamilyOptions(const Options& options)
       compression_per_level(options.compression_per_level),
       bottommost_compression(options.bottommost_compression),
       compression_opts(options.compression_opts),
-      prefix_extractor(options.prefix_extractor),
       num_levels(options.num_levels),
       level0_file_num_compaction_trigger(
           options.level0_file_num_compaction_trigger),
@@ -186,14 +172,6 @@ ColumnFamilyOptions::ColumnFamilyOptions(const Options& options)
       table_factory(options.table_factory),
       table_properties_collector_factories(
           options.table_properties_collector_factories),
-      inplace_update_support(options.inplace_update_support),
-      inplace_update_num_locks(options.inplace_update_num_locks),
-      inplace_callback(options.inplace_callback),
-      memtable_prefix_bloom_bits(options.memtable_prefix_bloom_bits),
-      memtable_prefix_bloom_probes(options.memtable_prefix_bloom_probes),
-      memtable_prefix_bloom_huge_page_tlb_size(
-          options.memtable_prefix_bloom_huge_page_tlb_size),
-      bloom_locality(options.bloom_locality),
       max_successive_merges(options.max_successive_merges),
       min_partial_merge_operands(options.min_partial_merge_operands),
       optimize_filters_for_hits(options.optimize_filters_for_hits),
@@ -498,8 +476,6 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
            bottommost_compression == kDisableCompressionOption
                ? "Disabled"
                : CompressionTypeToString(bottommost_compression).c_str());
-    Header(log, "      Options.prefix_extractor: %s",
-        prefix_extractor == nullptr ? "nullptr" : prefix_extractor->Name());
     Header(log, "            Options.num_levels: %d", num_levels);
     Header(log, "       Options.min_write_buffer_number_to_merge: %d",
         min_write_buffer_number_to_merge);
@@ -587,24 +563,8 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
     }
     Header(log, "                  Options.table_properties_collectors: %s",
         collector_names.c_str());
-    Header(log, "                  Options.inplace_update_support: %d",
-        inplace_update_support);
-    Header(log,
-         "                Options.inplace_update_num_locks: %" ROCKSDB_PRIszt,
-         inplace_update_num_locks);
     Header(log, "              Options.min_partial_merge_operands: %u",
         min_partial_merge_operands);
-    // TODO: easier config for bloom (maybe based on avg key/value size)
-    Header(log, "              Options.memtable_prefix_bloom_bits: %d",
-        memtable_prefix_bloom_bits);
-    Header(log, "            Options.memtable_prefix_bloom_probes: %d",
-        memtable_prefix_bloom_probes);
-
-    Header(log,
-         "  Options.memtable_prefix_bloom_huge_page_tlb_size: %" ROCKSDB_PRIszt,
-         memtable_prefix_bloom_huge_page_tlb_size);
-    Header(log, "                          Options.bloom_locality: %d",
-        bloom_locality);
 
     Header(log,
          "                   Options.max_successive_merges: %" ROCKSDB_PRIszt,
@@ -819,7 +779,6 @@ ReadOptions::ReadOptions()
       read_tier(kReadAllTier),
       tailing(false),
       total_order_seek(false),
-      prefix_same_as_start(false),
       pin_data(false),
       readahead_size(0),
       unique_key(false) {  // Shichao
@@ -833,7 +792,6 @@ ReadOptions::ReadOptions(bool cksum, bool cache)
       read_tier(kReadAllTier),
       tailing(false),
       total_order_seek(false),
-      prefix_same_as_start(false),
       pin_data(false),
       readahead_size(0),
       unique_key(false) {  // Shichao

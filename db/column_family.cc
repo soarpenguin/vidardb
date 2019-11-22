@@ -27,7 +27,6 @@
 #include "db/version_set.h"
 #include "db/write_controller.h"
 #include "db/writebuffer.h"
-#include "util/autovector.h"
 #include "util/compression.h"
 #include "util/options_helper.h"
 #include "util/thread_status_util.h"
@@ -123,11 +122,6 @@ Status CheckCompressionSupported(const ColumnFamilyOptions& cf_options) {
 }
 
 Status CheckConcurrentWritesSupported(const ColumnFamilyOptions& cf_options) {
-  if (cf_options.inplace_update_support) {
-    return Status::InvalidArgument(
-        "In-place memtable updates (inplace_update_support) is not compatible "
-        "with concurrent writes (allow_concurrent_memtable_write)");
-  }
   if (cf_options.filter_deletes) {
     return Status::InvalidArgument(
         "Delete filtering (filter_deletes) is not compatible with concurrent "
@@ -174,15 +168,6 @@ ColumnFamilyOptions SanitizeOptions(const DBOptions& db_options,
   }
   if (result.max_write_buffer_number_to_maintain < 0) {
     result.max_write_buffer_number_to_maintain = result.max_write_buffer_number;
-  }
-
-  if (!result.prefix_extractor) {
-    assert(result.memtable_factory);
-    Slice name = result.memtable_factory->Name();
-    if (name.compare("HashSkipListRepFactory") == 0 ||
-        name.compare("HashLinkListRepFactory") == 0) {
-      result.memtable_factory = std::make_shared<SkipListFactory>();
-    }
   }
 
   if (result.compaction_style == kCompactionStyleFIFO) {
@@ -447,7 +432,7 @@ ColumnFamilyData::~ColumnFamilyData() {
   if (mem_ != nullptr) {
     delete mem_->Unref();
   }
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
   imm_.current()->Unref(&to_delete);
   for (MemTable* m : to_delete) {
     delete m;
@@ -811,7 +796,7 @@ SuperVersion* ColumnFamilyData::InstallSuperVersion(
 }
 
 void ColumnFamilyData::ResetThreadLocalSuperVersions() {
-  autovector<void*> sv_ptrs;
+  std::vector<void*> sv_ptrs;
   local_sv_->Scrape(&sv_ptrs, SuperVersion::kSVObsolete);
   for (auto ptr : sv_ptrs) {
     assert(ptr);
@@ -939,7 +924,7 @@ ColumnFamilyData* ColumnFamilySet::CreateColumnFamily(
 
 // REQUIRES: DB mutex held
 void ColumnFamilySet::FreeDeadColumnFamilies() {
-  autovector<ColumnFamilyData*> to_delete;
+  std::vector<ColumnFamilyData*> to_delete;
   for (auto cfd = dummy_cfd_->next_; cfd != dummy_cfd_; cfd = cfd->next_) {
     if (cfd->refs_.load(std::memory_order_relaxed) == 0) {
       to_delete.push_back(cfd);

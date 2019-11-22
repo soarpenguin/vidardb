@@ -231,7 +231,7 @@ void WriteThread::JoinBatchGroup(Writer* w) {
 
 size_t WriteThread::EnterAsBatchGroupLeader(
     Writer* leader, WriteThread::Writer** last_writer,
-    autovector<WriteThread::Writer*>* write_batch_group) {
+    std::vector<WriteThread::Writer*>* write_batch_group) {
   assert(leader->link_older == nullptr);
   assert(leader->batch != nullptr);
 

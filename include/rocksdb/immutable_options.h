@@ -25,8 +25,6 @@ struct ImmutableCFOptions {
   CompactionOptionsUniversal compaction_options_universal;
   CompactionOptionsFIFO compaction_options_fifo;
 
-  const SliceTransform* prefix_extractor;
-
   const Comparator* comparator;
 
   MergeOperator* merge_operator;
@@ -34,13 +32,6 @@ struct ImmutableCFOptions {
   const CompactionFilter* compaction_filter;
 
   CompactionFilterFactory* compaction_filter_factory;
-
-  bool inplace_update_support;
-
-  UpdateStatus (*inplace_callback)(char* existing_value,
-                                   uint32_t* existing_value_size,
-                                   Slice delta_value,
-                                   std::string* merged_value);
 
   Logger* info_log;
 
@@ -68,10 +59,6 @@ struct ImmutableCFOptions {
     table_properties_collector_factories;
 
   bool advise_random_on_open;
-
-  // This options is required by PlainTableReader. May need to move it
-  // to PlainTalbeOptions just like bloom_bits_per_key
-  uint32_t bloom_locality;
 
   bool purge_redundant_kvs_while_flush;
 

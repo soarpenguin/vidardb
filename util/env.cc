@@ -15,7 +15,6 @@
 
 #include "rocksdb/options.h"
 #include "util/arena.h"
-#include "util/autovector.h"
 
 namespace rocksdb {
 

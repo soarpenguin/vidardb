@@ -56,7 +56,6 @@ enum ContentFlags : uint32_t {
   DEFERRED = 1 << 0,
   HAS_PUT = 1 << 1,
   HAS_DELETE = 1 << 2,
-  HAS_SINGLE_DELETE = 1 << 3,
   HAS_MERGE = 1 << 4,
   HAS_BEGIN_PREPARE = 1 << 5,
   HAS_END_PREPARE = 1 << 6,
@@ -74,11 +73,6 @@ struct BatchContentClassifier : public WriteBatch::Handler {
 
   Status DeleteCF(uint32_t, const Slice&) override {
     content_flags |= ContentFlags::HAS_DELETE;
-    return Status::OK();
-  }
-
-  Status SingleDeleteCF(uint32_t, const Slice&) override {
-    content_flags |= ContentFlags::HAS_SINGLE_DELETE;
     return Status::OK();
   }
 
@@ -213,10 +207,6 @@ bool WriteBatch::HasDelete() const {
   return (ComputeContentFlags() & ContentFlags::HAS_DELETE) != 0;
 }
 
-bool WriteBatch::HasSingleDelete() const {
-  return (ComputeContentFlags() & ContentFlags::HAS_SINGLE_DELETE) != 0;
-}
-
 bool WriteBatch::HasMerge() const {
   return (ComputeContentFlags() & ContentFlags::HAS_MERGE) != 0;
 }
@@ -274,13 +264,8 @@ Status ReadRecordFromWriteBatch(Slice* input, char* tag,
       }
       break;
     case kTypeColumnFamilyDeletion:
-    case kTypeColumnFamilySingleDeletion:
-      if (!GetVarint32(input, column_family)) {
-        return Status::Corruption("bad WriteBatch Delete");
-      }
     // intentional fallthrough
     case kTypeDeletion:
-    case kTypeSingleDeletion:
       if (!GetLengthPrefixedSlice(input, key)) {
         return Status::Corruption("bad WriteBatch Delete");
       }
@@ -359,13 +344,6 @@ Status WriteBatch::Iterate(Handler* handler) const {
         assert(content_flags_.load(std::memory_order_relaxed) &
                (ContentFlags::DEFERRED | ContentFlags::HAS_DELETE));
         s = handler->DeleteCF(column_family, key);
-        found++;
-        break;
-      case kTypeColumnFamilySingleDeletion:
-      case kTypeSingleDeletion:
-        assert(content_flags_.load(std::memory_order_relaxed) &
-               (ContentFlags::DEFERRED | ContentFlags::HAS_SINGLE_DELETE));
-        s = handler->SingleDeleteCF(column_family, key);
         found++;
         break;
       case kTypeColumnFamilyMerge:
@@ -556,46 +534,6 @@ void WriteBatch::Delete(ColumnFamilyHandle* column_family,
   WriteBatchInternal::Delete(this, GetColumnFamilyID(column_family), key);
 }
 
-void WriteBatchInternal::SingleDelete(WriteBatch* b, uint32_t column_family_id,
-                                      const Slice& key) {
-  WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
-  if (column_family_id == 0) {
-    b->rep_.push_back(static_cast<char>(kTypeSingleDeletion));
-  } else {
-    b->rep_.push_back(static_cast<char>(kTypeColumnFamilySingleDeletion));
-    PutVarint32(&b->rep_, column_family_id);
-  }
-  PutLengthPrefixedSlice(&b->rep_, key);
-  b->content_flags_.store(b->content_flags_.load(std::memory_order_relaxed) |
-                              ContentFlags::HAS_SINGLE_DELETE,
-                          std::memory_order_relaxed);
-}
-
-void WriteBatch::SingleDelete(ColumnFamilyHandle* column_family,
-                              const Slice& key) {
-  WriteBatchInternal::SingleDelete(this, GetColumnFamilyID(column_family), key);
-}
-
-void WriteBatchInternal::SingleDelete(WriteBatch* b, uint32_t column_family_id,
-                                      const SliceParts& key) {
-  WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
-  if (column_family_id == 0) {
-    b->rep_.push_back(static_cast<char>(kTypeSingleDeletion));
-  } else {
-    b->rep_.push_back(static_cast<char>(kTypeColumnFamilySingleDeletion));
-    PutVarint32(&b->rep_, column_family_id);
-  }
-  PutLengthPrefixedSliceParts(&b->rep_, key);
-  b->content_flags_.store(b->content_flags_.load(std::memory_order_relaxed) |
-                              ContentFlags::HAS_SINGLE_DELETE,
-                          std::memory_order_relaxed);
-}
-
-void WriteBatch::SingleDelete(ColumnFamilyHandle* column_family,
-                              const SliceParts& key) {
-  WriteBatchInternal::SingleDelete(this, GetColumnFamilyID(column_family), key);
-}
-
 void WriteBatchInternal::Merge(WriteBatch* b, uint32_t column_family_id,
                                const Slice& key, const Slice& value) {
   WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
@@ -773,48 +711,9 @@ class MemTableInserter : public WriteBatch::Handler {
     }
 
     MemTable* mem = cf_mems_->GetMemTable();
-    auto* moptions = mem->GetMemTableOptions();
-    if (!moptions->inplace_update_support) {
+
       mem->Add(sequence_, kTypeValue, key, value, concurrent_memtable_writes_);
-    } else if (moptions->inplace_callback == nullptr) {
-      assert(!concurrent_memtable_writes_);
-      mem->Update(sequence_, key, value);
-      RecordTick(moptions->statistics, NUMBER_KEYS_UPDATED);
-    } else {
-      assert(!concurrent_memtable_writes_);
-      if (mem->UpdateCallback(sequence_, key, value)) {
-      } else {
-        // key not found in memtable. Do sst get, update, add
-        SnapshotImpl read_from_snapshot;
-        read_from_snapshot.number_ = sequence_;
-        ReadOptions ropts;
-        ropts.snapshot = &read_from_snapshot;
 
-        std::string prev_value;
-        std::string merged_value;
-
-        auto cf_handle = cf_mems_->GetColumnFamilyHandle();
-        if (cf_handle == nullptr) {
-          cf_handle = db_->DefaultColumnFamily();
-        }
-        Status s = db_->Get(ropts, cf_handle, key, &prev_value);
-
-        char* prev_buffer = const_cast<char*>(prev_value.c_str());
-        uint32_t prev_size = static_cast<uint32_t>(prev_value.size());
-        auto status = moptions->inplace_callback(s.ok() ? prev_buffer : nullptr,
-                                                 s.ok() ? &prev_size : nullptr,
-                                                 value, &merged_value);
-        if (status == UpdateStatus::UPDATED_INPLACE) {
-          // prev_value is updated in-place with final value.
-          mem->Add(sequence_, kTypeValue, key, Slice(prev_buffer, prev_size));
-          RecordTick(moptions->statistics, NUMBER_KEYS_WRITTEN);
-        } else if (status == UpdateStatus::UPDATED) {
-          // merged_value contains the final value.
-          mem->Add(sequence_, kTypeValue, key, Slice(merged_value));
-          RecordTick(moptions->statistics, NUMBER_KEYS_WRITTEN);
-        }
-      }
-    }
     // Since all Puts are logged in transaction logs (if enabled), always bump
     // sequence number. Even if the update eventually fails and does not result
     // in memtable add/update.
@@ -838,10 +737,6 @@ class MemTableInserter : public WriteBatch::Handler {
       if (cf_handle == nullptr) {
         cf_handle = db_->DefaultColumnFamily();
       }
-      if (!db_->KeyMayExist(ropts, cf_handle, key, &value)) {
-        RecordTick(moptions->statistics, NUMBER_FILTERED_DELETES);
-        return Status::OK();
-      }
     }
     mem->Add(sequence_, delete_type, key, Slice(), concurrent_memtable_writes_);
     sequence_++;
@@ -863,22 +758,6 @@ class MemTableInserter : public WriteBatch::Handler {
     }
 
     return DeleteImpl(column_family_id, key, kTypeDeletion);
-  }
-
-  virtual Status SingleDeleteCF(uint32_t column_family_id,
-                                const Slice& key) override {
-    if (rebuilding_trx_ != nullptr) {
-      WriteBatchInternal::SingleDelete(rebuilding_trx_, column_family_id, key);
-      return Status::OK();
-    }
-
-    Status seek_status;
-    if (!SeekToColumnFamily(column_family_id, &seek_status)) {
-      ++sequence_;
-      return seek_status;
-    }
-
-    return DeleteImpl(column_family_id, key, kTypeSingleDeletion);
   }
 
   virtual Status MergeCF(uint32_t column_family_id, const Slice& key,
@@ -1083,7 +962,7 @@ class MemTableInserter : public WriteBatch::Handler {
 // 3) During Write(), in a concurrent context where memtables has been cloned
 // The reason is that it calls memtables->Seek(), which has a stateful cache
 Status WriteBatchInternal::InsertInto(
-    const autovector<WriteThread::Writer*>& writers, SequenceNumber sequence,
+    const std::vector<WriteThread::Writer*>& writers, SequenceNumber sequence,
     ColumnFamilyMemTables* memtables, FlushScheduler* flush_scheduler,
     bool ignore_missing_column_families, uint64_t log_number, DB* db,
     const bool dont_filter_deletes, bool concurrent_memtable_writes) {

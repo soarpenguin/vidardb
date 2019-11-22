@@ -6,7 +6,6 @@
 
 #include "db/db_impl_readonly.h"
 
-#include "db/compacted_db_impl.h"
 #include "db/db_impl.h"
 #include "db/merge_context.h"
 #include "db/db_iter.h"
@@ -100,12 +99,7 @@ Status DB::OpenForReadOnly(const Options& options, const std::string& dbname,
                            DB** dbptr, bool error_if_log_file_exist) {
   *dbptr = nullptr;
 
-  // Try to first open DB as fully compacted DB
   Status s;
-  s = CompactedDBImpl::Open(options, dbname, dbptr);
-  if (s.ok()) {
-    return s;
-  }
 
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);

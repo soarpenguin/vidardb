@@ -14,7 +14,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "util/autovector.h"
 #include "port/port.h"
 
 #ifndef ROCKSDB_SUPPORT_THREAD_LOCAL
@@ -61,7 +60,7 @@ class ThreadLocalPtr {
 
   // Reset all thread local data to replacement, and return non-nullptr
   // data for all existing threads
-  void Scrape(autovector<void*>* ptrs, void* const replacement);
+  void Scrape(std::vector<void*>* ptrs, void* const replacement);
 
   // Initialize the static singletons of the ThreadLocalPtr.
   //
@@ -132,7 +131,7 @@ class ThreadLocalPtr {
     bool CompareAndSwap(uint32_t id, void* ptr, void*& expected);
     // Reset all thread local data to replacement, and return non-nullptr
     // data for all existing threads
-    void Scrape(uint32_t id, autovector<void*>* ptrs, void* const replacement);
+    void Scrape(uint32_t id, std::vector<void*>* ptrs, void* const replacement);
 
     // Register the UnrefHandler for id
     void SetHandler(uint32_t id, UnrefHandler handler);
@@ -192,7 +191,7 @@ class ThreadLocalPtr {
     uint32_t next_instance_id_;
     // Used to recycle Ids in case ThreadLocalPtr is instantiated and destroyed
     // frequently. This also prevents it from blowing up the vector space.
-    autovector<uint32_t> free_instance_ids_;
+    std::vector<uint32_t> free_instance_ids_;
     // Chain all thread local structure together. This is necessary since
     // when one ThreadLocalPtr gets destroyed, we need to loop over each
     // thread's version of pointer corresponding to that instance and

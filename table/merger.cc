@@ -19,7 +19,6 @@
 #include "table/iter_heap.h"
 #include "table/iterator_wrapper.h"
 #include "util/arena.h"
-#include "util/autovector.h"
 #include "util/heap.h"
 #include "util/perf_context_imp.h"
 #include "util/stop_watch.h"
@@ -266,7 +265,7 @@ class MergingIterator : public InternalIterator {
 
   bool is_arena_mode_;
   const Comparator* comparator_;
-  autovector<IteratorWrapper, kNumIterReserve> children_;
+  std::vector<IteratorWrapper> children_;
 
   // Cached pointer to child iterator with the current key, or nullptr if no
   // child iterators are valid.  This is the top of minHeap_ or maxHeap_

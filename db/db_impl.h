@@ -39,7 +39,6 @@
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
-#include "util/autovector.h"
 #include "util/event_logger.h"
 #include "util/hash.h"
 #include "util/instrumented_mutex.h"
@@ -69,18 +68,10 @@ class DBImpl : public DB {
   virtual Status Put(const WriteOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
                      const Slice& value) override;
-  using DB::Merge;
-  virtual Status Merge(const WriteOptions& options,
-                       ColumnFamilyHandle* column_family, const Slice& key,
-                       const Slice& value) override;
   using DB::Delete;
   virtual Status Delete(const WriteOptions& options,
                         ColumnFamilyHandle* column_family,
                         const Slice& key) override;
-  using DB::SingleDelete;
-  virtual Status SingleDelete(const WriteOptions& options,
-                              ColumnFamilyHandle* column_family,
-                              const Slice& key) override;
   using DB::Write;
   virtual Status Write(const WriteOptions& options,
                        WriteBatch* updates) override;
@@ -89,12 +80,6 @@ class DBImpl : public DB {
   virtual Status Get(const ReadOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
                      std::string* value) override;
-  using DB::MultiGet;
-  virtual std::vector<Status> MultiGet(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_family,
-      const std::vector<Slice>& keys,
-      std::vector<std::string>* values) override;
 
   /*************************** Shichao ****************************/
   using DB::RangeQuery;
@@ -112,15 +97,6 @@ class DBImpl : public DB {
                                     ColumnFamilyHandle** handle) override;
   virtual Status DropColumnFamily(ColumnFamilyHandle* column_family) override;
 
-  // Returns false if key doesn't exist in the database and true if it may.
-  // If value_found is not passed in as null, then return the value if found in
-  // memory. On return, if value was found, then value_found will be set to true
-  // , otherwise false.
-  using DB::KeyMayExist;
-  virtual bool KeyMayExist(const ReadOptions& options,
-                           ColumnFamilyHandle* column_family, const Slice& key,
-                           std::string* value,
-                           bool* value_found = nullptr) override;
   using DB::NewIterator;
   virtual Iterator* NewIterator(const ReadOptions& options,
                                 ColumnFamilyHandle* column_family) override;
@@ -221,12 +197,6 @@ class DBImpl : public DB {
                              const Slice* begin, const Slice* end);
 
   Status PromoteL0(ColumnFamilyHandle* column_family, int target_level);
-
-  // Similar to Write() but will call the callback once on the single write
-  // thread to determine whether it is safe to perform the write.
-  virtual Status WriteWithCallback(const WriteOptions& write_options,
-                                   WriteBatch* my_batch,
-                                   WriteCallback* callback);
 
   // Returns the sequence number that is guaranteed to be smaller than or equal
   // to the sequence number of any key that could be inserted into the current
@@ -766,7 +736,7 @@ class DBImpl : public DB {
   bool single_column_family_mode_;
   // If this is non-empty, we need to delete these log files in background
   // threads. Protected by db mutex.
-  autovector<log::Writer*> logs_to_free_;
+  std::vector<log::Writer*> logs_to_free_;
 
   bool is_snapshot_supported_;
 

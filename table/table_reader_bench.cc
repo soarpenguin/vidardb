@@ -14,7 +14,6 @@ int main() {
 #include <gflags/gflags.h>
 
 #include "rocksdb/db.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/table.h"
 #include "db/db_impl.h"
 #include "db/dbformat.h"
@@ -99,7 +98,7 @@ void TableReaderBenchmark(Options& opts, EnvOptions& env_options,
                             CompressionType::kNoCompression,
                             CompressionOptions(),
                             nullptr /* compression_dict */,
-                            false /* skip_filters */, kDefaultColumnFamilyName),
+                            kDefaultColumnFamilyName),
         0 /* column_family_id */, file_writer.get());
   } else {
     s = DB::Open(opts, dbname, &db);
@@ -275,10 +274,6 @@ int main(int argc, char** argv) {
 
   std::shared_ptr<rocksdb::TableFactory> tf;
   rocksdb::Options options;
-  if (FLAGS_prefix_len < 16) {
-    options.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(
-        FLAGS_prefix_len));
-  }
   rocksdb::ReadOptions ro;
   rocksdb::EnvOptions env_options;
   options.create_if_missing = true;

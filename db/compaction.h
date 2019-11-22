@@ -9,7 +9,6 @@
 
 #pragma once
 #include "util/arena.h"
-#include "util/autovector.h"
 #include "util/mutable_cf_options.h"
 #include "db/version_set.h"
 
@@ -269,7 +268,7 @@ class Compaction {
   const std::vector<CompactionInputFiles> inputs_;
 
   // A copy of inputs_, organized more closely in memory
-  autovector<LevelFilesBrief, 2> input_levels_;
+  std::vector<LevelFilesBrief> input_levels_;
 
   // State used to check for number of overlapping grandparent files
   // (grandparent == "output_level_ + 1")

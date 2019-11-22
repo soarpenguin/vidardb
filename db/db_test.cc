@@ -36,11 +36,9 @@
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
 #include "rocksdb/options.h"
 #include "rocksdb/perf_context.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/snapshot.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"
@@ -182,107 +180,6 @@ TEST_F(DBTest, ReadOnlyDB) {
   ASSERT_TRUE(db_->SyncWAL().IsNotSupported());
 }
 
-TEST_F(DBTest, CompactedDB) {
-  const uint64_t kFileSize = 1 << 20;
-  Options options = CurrentOptions();
-  options.disable_auto_compactions = true;
-  options.write_buffer_size = kFileSize;
-  options.target_file_size_base = kFileSize;
-  options.max_bytes_for_level_base = 1 << 30;
-  options.compression = kNoCompression;
-  Reopen(options);
-  // 1 L0 file, use CompactedDB if max_open_files = -1
-  ASSERT_OK(Put("aaa", DummyString(kFileSize / 2, '1')));
-  Flush();
-  Close();
-  ASSERT_OK(ReadOnlyReopen(options));
-  Status s = Put("new", "value");
-  ASSERT_EQ(s.ToString(),
-            "Not implemented: Not supported operation in read only mode.");
-  ASSERT_EQ(DummyString(kFileSize / 2, '1'), Get("aaa"));
-  Close();
-  options.max_open_files = -1;
-  ASSERT_OK(ReadOnlyReopen(options));
-  s = Put("new", "value");
-  ASSERT_EQ(s.ToString(),
-            "Not implemented: Not supported in compacted db mode.");
-  ASSERT_EQ(DummyString(kFileSize / 2, '1'), Get("aaa"));
-  Close();
-  Reopen(options);
-  // Add more L0 files
-  ASSERT_OK(Put("bbb", DummyString(kFileSize / 2, '2')));
-  Flush();
-  ASSERT_OK(Put("aaa", DummyString(kFileSize / 2, 'a')));
-  Flush();
-  ASSERT_OK(Put("bbb", DummyString(kFileSize / 2, 'b')));
-  ASSERT_OK(Put("eee", DummyString(kFileSize / 2, 'e')));
-  Flush();
-  Close();
-
-  ASSERT_OK(ReadOnlyReopen(options));
-  // Fallback to read-only DB
-  s = Put("new", "value");
-  ASSERT_EQ(s.ToString(),
-            "Not implemented: Not supported operation in read only mode.");
-  Close();
-
-  // Full compaction
-  Reopen(options);
-  // Add more keys
-  ASSERT_OK(Put("fff", DummyString(kFileSize / 2, 'f')));
-  ASSERT_OK(Put("hhh", DummyString(kFileSize / 2, 'h')));
-  ASSERT_OK(Put("iii", DummyString(kFileSize / 2, 'i')));
-  ASSERT_OK(Put("jjj", DummyString(kFileSize / 2, 'j')));
-  db_->CompactRange(CompactRangeOptions(), nullptr, nullptr);
-  ASSERT_EQ(3, NumTableFilesAtLevel(1));
-  Close();
-
-  // CompactedDB
-  ASSERT_OK(ReadOnlyReopen(options));
-  s = Put("new", "value");
-  ASSERT_EQ(s.ToString(),
-            "Not implemented: Not supported in compacted db mode.");
-  ASSERT_EQ("NOT_FOUND", Get("abc"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'a'), Get("aaa"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'b'), Get("bbb"));
-  ASSERT_EQ("NOT_FOUND", Get("ccc"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'e'), Get("eee"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'f'), Get("fff"));
-  ASSERT_EQ("NOT_FOUND", Get("ggg"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'h'), Get("hhh"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'i'), Get("iii"));
-  ASSERT_EQ(DummyString(kFileSize / 2, 'j'), Get("jjj"));
-  ASSERT_EQ("NOT_FOUND", Get("kkk"));
-
-  // MultiGet
-  std::vector<std::string> values;
-  std::vector<Status> status_list = dbfull()->MultiGet(
-      ReadOptions(),
-      std::vector<Slice>({Slice("aaa"), Slice("ccc"), Slice("eee"),
-                          Slice("ggg"), Slice("iii"), Slice("kkk")}),
-      &values);
-  ASSERT_EQ(status_list.size(), static_cast<uint64_t>(6));
-  ASSERT_EQ(values.size(), static_cast<uint64_t>(6));
-  ASSERT_OK(status_list[0]);
-  ASSERT_EQ(DummyString(kFileSize / 2, 'a'), values[0]);
-  ASSERT_TRUE(status_list[1].IsNotFound());
-  ASSERT_OK(status_list[2]);
-  ASSERT_EQ(DummyString(kFileSize / 2, 'e'), values[2]);
-  ASSERT_TRUE(status_list[3].IsNotFound());
-  ASSERT_OK(status_list[4]);
-  ASSERT_EQ(DummyString(kFileSize / 2, 'i'), values[4]);
-  ASSERT_TRUE(status_list[5].IsNotFound());
-
-  Reopen(options);
-  // Add a key
-  ASSERT_OK(Put("fff", DummyString(kFileSize / 2, 'f')));
-  Close();
-  ASSERT_OK(ReadOnlyReopen(options));
-  s = Put("new", "value");
-  ASSERT_EQ(s.ToString(),
-            "Not implemented: Not supported operation in read only mode.");
-}
-
 TEST_F(DBTest, LevelLimitReopen) {
   Options options = CurrentOptions();
   CreateAndReopenWithCF({"pikachu"}, options);
@@ -316,220 +213,6 @@ TEST_F(DBTest, PutDeleteGet) {
     ASSERT_OK(Delete(1, "foo"));
     ASSERT_EQ("NOT_FOUND", Get(1, "foo"));
   } while (ChangeOptions());
-}
-
-TEST_F(DBTest, PutSingleDeleteGet) {
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-    ASSERT_OK(Put(1, "foo", "v1"));
-    ASSERT_EQ("v1", Get(1, "foo"));
-    ASSERT_OK(Put(1, "foo2", "v2"));
-    ASSERT_EQ("v2", Get(1, "foo2"));
-    ASSERT_OK(SingleDelete(1, "foo"));
-    ASSERT_EQ("NOT_FOUND", Get(1, "foo"));
-    // Skip HashCuckooRep as it does not support single delete. FIFO and
-    // universal compaction do not apply to the test case. Skip MergePut
-    // because single delete does not get removed when it encounters a merge.
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction |
-                         kSkipUniversalCompaction | kSkipMergePut));
-}
-
-TEST_F(DBTest, ReadFromPersistedTier) {
-  do {
-    Random rnd(301);
-    Options options = CurrentOptions();
-    for (int disableWAL = 0; disableWAL <= 1; ++disableWAL) {
-      CreateAndReopenWithCF({"pikachu"}, options);
-      WriteOptions wopt;
-      wopt.disableWAL = (disableWAL == 1);
-      // 1st round: put but not flush
-      ASSERT_OK(db_->Put(wopt, handles_[1], "foo", "first"));
-      ASSERT_OK(db_->Put(wopt, handles_[1], "bar", "one"));
-      ASSERT_EQ("first", Get(1, "foo"));
-      ASSERT_EQ("one", Get(1, "bar"));
-
-      // Read directly from persited data.
-      ReadOptions ropt;
-      ropt.read_tier = kPersistedTier;
-      std::string value;
-      if (wopt.disableWAL) {
-        // as data has not yet being flushed, we expect not found.
-        ASSERT_TRUE(db_->Get(ropt, handles_[1], "foo", &value).IsNotFound());
-        ASSERT_TRUE(db_->Get(ropt, handles_[1], "bar", &value).IsNotFound());
-      } else {
-        ASSERT_OK(db_->Get(ropt, handles_[1], "foo", &value));
-        ASSERT_OK(db_->Get(ropt, handles_[1], "bar", &value));
-      }
-
-      // Multiget
-      std::vector<ColumnFamilyHandle*> multiget_cfs;
-      multiget_cfs.push_back(handles_[1]);
-      multiget_cfs.push_back(handles_[1]);
-      std::vector<Slice> multiget_keys;
-      multiget_keys.push_back("foo");
-      multiget_keys.push_back("bar");
-      std::vector<std::string> multiget_values;
-      auto statuses =
-          db_->MultiGet(ropt, multiget_cfs, multiget_keys, &multiget_values);
-      if (wopt.disableWAL) {
-        ASSERT_TRUE(statuses[0].IsNotFound());
-        ASSERT_TRUE(statuses[1].IsNotFound());
-      } else {
-        ASSERT_OK(statuses[0]);
-        ASSERT_OK(statuses[1]);
-      }
-
-      // 2nd round: flush and put a new value in memtable.
-      ASSERT_OK(Flush(1));
-      ASSERT_OK(db_->Put(wopt, handles_[1], "rocksdb", "hello"));
-
-      // once the data has been flushed, we are able to get the
-      // data when kPersistedTier is used.
-      ASSERT_TRUE(db_->Get(ropt, handles_[1], "foo", &value).ok());
-      ASSERT_EQ(value, "first");
-      ASSERT_TRUE(db_->Get(ropt, handles_[1], "bar", &value).ok());
-      ASSERT_EQ(value, "one");
-      if (wopt.disableWAL) {
-        ASSERT_TRUE(
-            db_->Get(ropt, handles_[1], "rocksdb", &value).IsNotFound());
-      } else {
-        ASSERT_OK(db_->Get(ropt, handles_[1], "rocksdb", &value));
-        ASSERT_EQ(value, "hello");
-      }
-
-      // Expect same result in multiget
-      multiget_cfs.push_back(handles_[1]);
-      multiget_keys.push_back("rocksdb");
-      statuses =
-          db_->MultiGet(ropt, multiget_cfs, multiget_keys, &multiget_values);
-      ASSERT_TRUE(statuses[0].ok());
-      ASSERT_EQ("first", multiget_values[0]);
-      ASSERT_TRUE(statuses[1].ok());
-      ASSERT_EQ("one", multiget_values[1]);
-      if (wopt.disableWAL) {
-        ASSERT_TRUE(statuses[2].IsNotFound());
-      } else {
-        ASSERT_OK(statuses[2]);
-      }
-
-      // 3rd round: delete and flush
-      ASSERT_OK(db_->Delete(wopt, handles_[1], "foo"));
-      Flush(1);
-      ASSERT_OK(db_->Delete(wopt, handles_[1], "bar"));
-
-      ASSERT_TRUE(db_->Get(ropt, handles_[1], "foo", &value).IsNotFound());
-      if (wopt.disableWAL) {
-        // Still expect finding the value as its delete has not yet being
-        // flushed.
-        ASSERT_TRUE(db_->Get(ropt, handles_[1], "bar", &value).ok());
-        ASSERT_EQ(value, "one");
-      } else {
-        ASSERT_TRUE(db_->Get(ropt, handles_[1], "bar", &value).IsNotFound());
-      }
-      ASSERT_TRUE(db_->Get(ropt, handles_[1], "rocksdb", &value).ok());
-      ASSERT_EQ(value, "hello");
-
-      statuses =
-          db_->MultiGet(ropt, multiget_cfs, multiget_keys, &multiget_values);
-      ASSERT_TRUE(statuses[0].IsNotFound());
-      if (wopt.disableWAL) {
-        ASSERT_TRUE(statuses[1].ok());
-        ASSERT_EQ("one", multiget_values[1]);
-      } else {
-        ASSERT_TRUE(statuses[1].IsNotFound());
-      }
-      ASSERT_TRUE(statuses[2].ok());
-      ASSERT_EQ("hello", multiget_values[2]);
-      if (wopt.disableWAL == 0) {
-        DestroyAndReopen(options);
-      }
-    }
-  } while (ChangeOptions(kSkipHashCuckoo));
-}
-
-TEST_F(DBTest, SingleDeleteFlush) {
-  // Test to check whether flushing preserves a single delete hidden
-  // behind a put.
-  do {
-    Random rnd(301);
-
-    Options options = CurrentOptions();
-    options.disable_auto_compactions = true;
-    CreateAndReopenWithCF({"pikachu"}, options);
-
-    // Put values on second level (so that they will not be in the same
-    // compaction as the other operations.
-    Put(1, "foo", "first");
-    Put(1, "bar", "one");
-    ASSERT_OK(Flush(1));
-    MoveFilesToLevel(2, 1);
-
-    // (Single) delete hidden by a put
-    SingleDelete(1, "foo");
-    Put(1, "foo", "second");
-    Delete(1, "bar");
-    Put(1, "bar", "two");
-    ASSERT_OK(Flush(1));
-
-    SingleDelete(1, "foo");
-    Delete(1, "bar");
-    ASSERT_OK(Flush(1));
-
-    dbfull()->CompactRange(CompactRangeOptions(), handles_[1], nullptr,
-                           nullptr);
-
-    ASSERT_EQ("NOT_FOUND", Get(1, "bar"));
-    ASSERT_EQ("NOT_FOUND", Get(1, "foo"));
-    // Skip HashCuckooRep as it does not support single delete. FIFO and
-    // universal compaction do not apply to the test case. Skip MergePut
-    // because merges cannot be combined with single deletions.
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction |
-                         kSkipUniversalCompaction | kSkipMergePut));
-}
-
-TEST_F(DBTest, SingleDeletePutFlush) {
-  // Single deletes that encounter the matching put in a flush should get
-  // removed.
-  do {
-    Random rnd(301);
-
-    Options options = CurrentOptions();
-    options.disable_auto_compactions = true;
-    CreateAndReopenWithCF({"pikachu"}, options);
-
-    Put(1, "foo", Slice());
-    Put(1, "a", Slice());
-    SingleDelete(1, "a");
-    ASSERT_OK(Flush(1));
-
-    ASSERT_EQ("[ ]", AllEntriesFor("a", 1));
-    // Skip HashCuckooRep as it does not support single delete. FIFO and
-    // universal compaction do not apply to the test case. Skip MergePut
-    // because merges cannot be combined with single deletions.
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction |
-                         kSkipUniversalCompaction | kSkipMergePut));
-}
-
-TEST_F(DBTest, EmptyFlush) {
-  // It is possible to produce empty flushes when using single deletes. Tests
-  // whether empty flushes cause issues.
-  do {
-    Random rnd(301);
-
-    Options options = CurrentOptions();
-    options.disable_auto_compactions = true;
-    CreateAndReopenWithCF({"pikachu"}, options);
-
-    Put(1, "a", Slice());
-    SingleDelete(1, "a");
-    ASSERT_OK(Flush(1));
-
-    ASSERT_EQ("[ ]", AllEntriesFor("a", 1));
-    // Skip HashCuckooRep as it does not support single delete. FIFO and
-    // universal compaction do not apply to the test case. Skip MergePut
-    // because merges cannot be combined with single deletions.
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction |
-                         kSkipUniversalCompaction | kSkipMergePut));
 }
 
 // Disable because not all platform can run it.
@@ -627,11 +310,6 @@ TEST_F(DBTest, GetSnapshot) {
       std::string key = (i == 0) ? std::string("foo") : std::string(200, 'x');
       ASSERT_OK(Put(1, key, "v1"));
       const Snapshot* s1 = db_->GetSnapshot();
-      if (option_config_ == kHashCuckoo) {
-        // Unsupported case.
-        ASSERT_TRUE(s1 == nullptr);
-        break;
-      }
       ASSERT_OK(Put(1, key, "v2"));
       ASSERT_EQ("v2", Get(1, key));
       ASSERT_EQ("v1", Get(1, key, s1));
@@ -1416,114 +1094,11 @@ TEST_F(DBTest, ApproximateSizes) {
       ASSERT_GT(NumTableFilesAtLevel(1, 1), 0);
     }
     // ApproximateOffsetOf() is not yet implemented in plain table format.
-  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction |
-                         kSkipPlainTable | kSkipHashIndex));
-}
-
-TEST_F(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
-  do {
-    Options options = CurrentOptions();
-    options.compression = kNoCompression;
-    CreateAndReopenWithCF({"pikachu"}, options);
-
-    Random rnd(301);
-    std::string big1 = RandomString(&rnd, 100000);
-    ASSERT_OK(Put(1, Key(0), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(1, Key(1), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(1, Key(2), big1));
-    ASSERT_OK(Put(1, Key(3), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(1, Key(4), big1));
-    ASSERT_OK(Put(1, Key(5), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(1, Key(6), RandomString(&rnd, 300000)));
-    ASSERT_OK(Put(1, Key(7), RandomString(&rnd, 10000)));
-
-    // Check sizes across recovery by reopening a few times
-    for (int run = 0; run < 3; run++) {
-      ReopenWithColumnFamilies({"default", "pikachu"}, options);
-
-      ASSERT_TRUE(Between(Size("", Key(0), 1), 0, 0));
-      ASSERT_TRUE(Between(Size("", Key(1), 1), 10000, 11000));
-      ASSERT_TRUE(Between(Size("", Key(2), 1), 20000, 21000));
-      ASSERT_TRUE(Between(Size("", Key(3), 1), 120000, 121000));
-      ASSERT_TRUE(Between(Size("", Key(4), 1), 130000, 131000));
-      ASSERT_TRUE(Between(Size("", Key(5), 1), 230000, 231000));
-      ASSERT_TRUE(Between(Size("", Key(6), 1), 240000, 241000));
-      ASSERT_TRUE(Between(Size("", Key(7), 1), 540000, 541000));
-      ASSERT_TRUE(Between(Size("", Key(8), 1), 550000, 560000));
-
-      ASSERT_TRUE(Between(Size(Key(3), Key(5), 1), 110000, 111000));
-
-      dbfull()->TEST_CompactRange(0, nullptr, nullptr, handles_[1]);
-    }
-    // ApproximateOffsetOf() is not yet implemented in plain table format.
-  } while (ChangeOptions(kSkipPlainTable));
+  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 #endif  // ROCKSDB_LITE
 
 #ifndef ROCKSDB_LITE
-TEST_F(DBTest, Snapshot) {
-  anon::OptionsOverride options_override;
-//  options_override.skip_policy = kSkipNoSnapshot;
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions(options_override));
-    Put(0, "foo", "0v1");
-    Put(1, "foo", "1v1");
-
-    const Snapshot* s1 = db_->GetSnapshot();
-    ASSERT_EQ(1U, GetNumSnapshots());
-    uint64_t time_snap1 = GetTimeOldestSnapshots();
-    ASSERT_GT(time_snap1, 0U);
-    Put(0, "foo", "0v2");
-    Put(1, "foo", "1v2");
-
-    env_->addon_time_.fetch_add(1);
-
-    const Snapshot* s2 = db_->GetSnapshot();
-    ASSERT_EQ(2U, GetNumSnapshots());
-    ASSERT_EQ(time_snap1, GetTimeOldestSnapshots());
-    Put(0, "foo", "0v3");
-    Put(1, "foo", "1v3");
-
-    {
-      ManagedSnapshot s3(db_);
-      ASSERT_EQ(3U, GetNumSnapshots());
-      ASSERT_EQ(time_snap1, GetTimeOldestSnapshots());
-
-      Put(0, "foo", "0v4");
-      Put(1, "foo", "1v4");
-      ASSERT_EQ("0v1", Get(0, "foo", s1));
-      ASSERT_EQ("1v1", Get(1, "foo", s1));
-      ASSERT_EQ("0v2", Get(0, "foo", s2));
-      ASSERT_EQ("1v2", Get(1, "foo", s2));
-      ASSERT_EQ("0v3", Get(0, "foo", s3.snapshot()));
-      ASSERT_EQ("1v3", Get(1, "foo", s3.snapshot()));
-      ASSERT_EQ("0v4", Get(0, "foo"));
-      ASSERT_EQ("1v4", Get(1, "foo"));
-    }
-
-    ASSERT_EQ(2U, GetNumSnapshots());
-    ASSERT_EQ(time_snap1, GetTimeOldestSnapshots());
-    ASSERT_EQ("0v1", Get(0, "foo", s1));
-    ASSERT_EQ("1v1", Get(1, "foo", s1));
-    ASSERT_EQ("0v2", Get(0, "foo", s2));
-    ASSERT_EQ("1v2", Get(1, "foo", s2));
-    ASSERT_EQ("0v4", Get(0, "foo"));
-    ASSERT_EQ("1v4", Get(1, "foo"));
-
-    db_->ReleaseSnapshot(s1);
-    ASSERT_EQ("0v2", Get(0, "foo", s2));
-    ASSERT_EQ("1v2", Get(1, "foo", s2));
-    ASSERT_EQ("0v4", Get(0, "foo"));
-    ASSERT_EQ("1v4", Get(1, "foo"));
-    ASSERT_EQ(1U, GetNumSnapshots());
-    ASSERT_LT(time_snap1, GetTimeOldestSnapshots());
-
-    db_->ReleaseSnapshot(s2);
-    ASSERT_EQ(0U, GetNumSnapshots());
-    ASSERT_EQ("0v4", Get(0, "foo"));
-    ASSERT_EQ("1v4", Get(1, "foo"));
-  } while (ChangeOptions(kSkipHashCuckoo));
-}
 
 TEST_F(DBTest, HiddenValuesAreRemoved) {
   anon::OptionsOverride options_override;
@@ -1560,8 +1135,7 @@ TEST_F(DBTest, HiddenValuesAreRemoved) {
     // ApproximateOffsetOf() is not yet implemented in plain table format,
     // which is used by Size().
     // skip HashCuckooRep as it does not support snapshot
-  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction |
-                         kSkipPlainTable | kSkipHashCuckoo));
+  } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 #endif  // ROCKSDB_LITE
 
@@ -1616,56 +1190,7 @@ TEST_F(DBTest, CompactBetweenSnapshots) {
     ASSERT_EQ("sixth", Get(1, "foo"));
     ASSERT_EQ(AllEntriesFor("foo", 1), "[ sixth ]");
     // skip HashCuckooRep as it does not support snapshot
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction));
-}
-
-TEST_F(DBTest, UnremovableSingleDelete) {
-  // If we compact:
-  //
-  // Put(A, v1) Snapshot SingleDelete(A) Put(A, v2)
-  //
-  // We do not want to end up with:
-  //
-  // Put(A, v1) Snapshot Put(A, v2)
-  //
-  // Because a subsequent SingleDelete(A) would delete the Put(A, v2)
-  // but not Put(A, v1), so Get(A) would return v1.
-  anon::OptionsOverride options_override;
-//  options_override.skip_policy = kSkipNoSnapshot;
-  do {
-    Options options = CurrentOptions(options_override);
-    options.disable_auto_compactions = true;
-    CreateAndReopenWithCF({"pikachu"}, options);
-
-    Put(1, "foo", "first");
-    const Snapshot* snapshot = db_->GetSnapshot();
-    SingleDelete(1, "foo");
-    Put(1, "foo", "second");
-    ASSERT_OK(Flush(1));
-
-    ASSERT_EQ("first", Get(1, "foo", snapshot));
-    ASSERT_EQ("second", Get(1, "foo"));
-
-    dbfull()->CompactRange(CompactRangeOptions(), handles_[1], nullptr,
-                           nullptr);
-    ASSERT_EQ("[ second, SDEL, first ]", AllEntriesFor("foo", 1));
-
-    SingleDelete(1, "foo");
-
-    ASSERT_EQ("first", Get(1, "foo", snapshot));
-    ASSERT_EQ("NOT_FOUND", Get(1, "foo"));
-
-    dbfull()->CompactRange(CompactRangeOptions(), handles_[1], nullptr,
-                           nullptr);
-
-    ASSERT_EQ("first", Get(1, "foo", snapshot));
-    ASSERT_EQ("NOT_FOUND", Get(1, "foo"));
-    db_->ReleaseSnapshot(snapshot);
-    // Skip HashCuckooRep as it does not support single delete.  FIFO and
-    // universal compaction do not apply to the test case.  Skip MergePut
-    // because single delete does not get removed when it encounters a merge.
-  } while (ChangeOptions(kSkipHashCuckoo | kSkipFIFOCompaction |
-                         kSkipUniversalCompaction | kSkipMergePut));
+  } while (ChangeOptions(kSkipFIFOCompaction));
 }
 
 #ifndef ROCKSDB_LITE
@@ -2441,46 +1966,6 @@ static void MTThreadBody(void* arg) {
         }
         ASSERT_OK(db->Write(WriteOptions(), &batch));
 //      }
-    } else {
-      // Read a value and verify that it matches the pattern written above
-      // and that writes to all column families were atomic (unique_id is the
-      // same)
-      std::vector<Slice> keys(kColumnFamilies, Slice(keybuf));
-      std::vector<std::string> values;
-      std::vector<Status> statuses =
-          db->MultiGet(ReadOptions(), t->state->test->handles_, keys, &values);
-      Status s = statuses[0];
-      // all statuses have to be the same
-      for (size_t i = 1; i < statuses.size(); ++i) {
-        // they are either both ok or both not-found
-        ASSERT_TRUE((s.ok() && statuses[i].ok()) ||
-                    (s.IsNotFound() && statuses[i].IsNotFound()));
-      }
-      if (s.IsNotFound()) {
-        // Key has not yet been written
-      } else {
-        // Check that the writer thread counter is >= the counter in the value
-        ASSERT_OK(s);
-        int unique_id = -1;
-        for (int i = 0; i < kColumnFamilies; ++i) {
-          int k, w, c, cf, u;
-          ASSERT_EQ(5, sscanf(values[i].c_str(), "%d.%d.%d.%d.%d", &k, &w, &c,
-                              &cf, &u))
-              << values[i];
-          ASSERT_EQ(k, key);
-          ASSERT_GE(w, 0);
-          ASSERT_LT(w, kNumThreads);
-          ASSERT_LE(c, t->state->counter[w].load(std::memory_order_acquire));
-          ASSERT_EQ(cf, i);
-          if (i == 0) {
-            unique_id = u;
-          } else {
-            // this checks that updates across column families happened
-            // atomically -- all unique ids are the same
-            ASSERT_EQ(u, unique_id);
-          }
-        }
-      }
     }
     counter++;
   }
@@ -2499,9 +1984,7 @@ class MultiThreadedDBTest : public DBTest,
     std::vector<int> optionConfigs;
     for (int optionConfig = kDefault; optionConfig < kEnd; ++optionConfig) {
       // skip as HashCuckooRep does not support snapshot
-      if (optionConfig != kHashCuckoo) {
-        optionConfigs.push_back(optionConfig);
-      }
+      optionConfigs.push_back(optionConfig);
     }
     return optionConfigs;
   }
@@ -2657,35 +2140,10 @@ class ModelDB : public DB {
     batch.Delete(cf, key);
     return Write(o, &batch);
   }
-  using DB::SingleDelete;
-  virtual Status SingleDelete(const WriteOptions& o, ColumnFamilyHandle* cf,
-                              const Slice& key) override {
-    WriteBatch batch;
-    batch.SingleDelete(cf, key);
-    return Write(o, &batch);
-  }
-  using DB::Merge;
-  virtual Status Merge(const WriteOptions& o, ColumnFamilyHandle* cf,
-                       const Slice& k, const Slice& v) override {
-    WriteBatch batch;
-    batch.Merge(cf, k, v);
-    return Write(o, &batch);
-  }
   using DB::Get;
   virtual Status Get(const ReadOptions& options, ColumnFamilyHandle* cf,
                      const Slice& key, std::string* value) override {
     return Status::NotSupported(key);
-  }
-
-  using DB::MultiGet;
-  virtual std::vector<Status> MultiGet(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_family,
-      const std::vector<Slice>& keys,
-      std::vector<std::string>* values) override {
-    std::vector<Status> s(keys.size(),
-                          Status::NotSupported("Not implemented."));
-    return s;
   }
 
 #ifndef ROCKSDB_LITE
@@ -2715,16 +2173,6 @@ class ModelDB : public DB {
   }
 #endif  // ROCKSDB_LITE
 
-  using DB::KeyMayExist;
-  virtual bool KeyMayExist(const ReadOptions& options,
-                           ColumnFamilyHandle* column_family, const Slice& key,
-                           std::string* value,
-                           bool* value_found = nullptr) override {
-    if (value_found != nullptr) {
-      *value_found = false;
-    }
-    return true;  // Not Supported directly
-  }
   using DB::NewIterator;
   virtual Iterator* NewIterator(const ReadOptions& options,
                                 ColumnFamilyHandle* column_family) override {
@@ -3010,8 +2458,7 @@ class DBTestRandomized : public DBTest,
     // skip cuckoo hash as it does not support snapshot.
     for (int option_config = kDefault; option_config < kEnd; ++option_config) {
       if (!ShouldSkipOptions(option_config, kSkipDeletesFilterFirst |
-                                                kSkipNoSeekToLast |
-                                                kSkipHashCuckoo)) {
+                                                kSkipNoSeekToLast)) {
         option_configs.push_back(option_config);
       }
     }
@@ -3040,13 +2487,6 @@ TEST_P(DBTestRandomized, Randomized) {
     // TODO(sanjay): Test Get() works
     int p = rnd.Uniform(100);
     int minimum = 0;
-    if (option_config_ == kHashSkipList || option_config_ == kHashLinkList ||
-        option_config_ == kHashCuckoo ||
-        option_config_ == kPlainTableFirstBytePrefix ||
-        option_config_ == kBlockBasedTableWithWholeKeyHashIndex ||
-        option_config_ == kBlockBasedTableWithPrefixHashIndex) {
-      minimum = 1;
-    }
     if (p < 45) {  // Put
       k = RandomKey(&rnd, minimum);
       v = RandomString(&rnd,
@@ -3082,11 +2522,9 @@ TEST_P(DBTestRandomized, Randomized) {
       // For DB instances that use the hash index + block-based table, the
       // iterator will be invalid right when seeking a non-existent key, right
       // than return a key that is close to it.
-      if (option_config_ != kBlockBasedTableWithWholeKeyHashIndex &&
-          option_config_ != kBlockBasedTableWithPrefixHashIndex) {
+
         ASSERT_TRUE(CompareIterators(step, &model, db_, nullptr, nullptr));
         ASSERT_TRUE(CompareIterators(step, &model, db_, model_snap, db_snap));
-      }
 
       // Save a snapshot from each DB this time that we'll use next
       // time we compare things, to make sure the current state is
@@ -3103,68 +2541,6 @@ TEST_P(DBTestRandomized, Randomized) {
   }
   if (model_snap != nullptr) model.ReleaseSnapshot(model_snap);
   if (db_snap != nullptr) db_->ReleaseSnapshot(db_snap);
-}
-
-TEST_F(DBTest, MultiGetSimple) {
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-    ASSERT_OK(Put(1, "k1", "v1"));
-    ASSERT_OK(Put(1, "k2", "v2"));
-    ASSERT_OK(Put(1, "k3", "v3"));
-    ASSERT_OK(Put(1, "k4", "v4"));
-    ASSERT_OK(Delete(1, "k4"));
-    ASSERT_OK(Put(1, "k5", "v5"));
-    ASSERT_OK(Delete(1, "no_key"));
-
-    std::vector<Slice> keys({"k1", "k2", "k3", "k4", "k5", "no_key"});
-
-    std::vector<std::string> values(20, "Temporary data to be overwritten");
-    std::vector<ColumnFamilyHandle*> cfs(keys.size(), handles_[1]);
-
-    std::vector<Status> s = db_->MultiGet(ReadOptions(), cfs, keys, &values);
-    ASSERT_EQ(values.size(), keys.size());
-    ASSERT_EQ(values[0], "v1");
-    ASSERT_EQ(values[1], "v2");
-    ASSERT_EQ(values[2], "v3");
-    ASSERT_EQ(values[4], "v5");
-
-    ASSERT_OK(s[0]);
-    ASSERT_OK(s[1]);
-    ASSERT_OK(s[2]);
-    ASSERT_TRUE(s[3].IsNotFound());
-    ASSERT_OK(s[4]);
-    ASSERT_TRUE(s[5].IsNotFound());
-  } while (ChangeCompactOptions());
-}
-
-TEST_F(DBTest, MultiGetEmpty) {
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-    // Empty Key Set
-    std::vector<Slice> keys;
-    std::vector<std::string> values;
-    std::vector<ColumnFamilyHandle*> cfs;
-    std::vector<Status> s = db_->MultiGet(ReadOptions(), cfs, keys, &values);
-    ASSERT_EQ(s.size(), 0U);
-
-    // Empty Database, Empty Key Set
-    Options options = CurrentOptions();
-    options.create_if_missing = true;
-    DestroyAndReopen(options);
-    CreateAndReopenWithCF({"pikachu"}, options);
-    s = db_->MultiGet(ReadOptions(), cfs, keys, &values);
-    ASSERT_EQ(s.size(), 0U);
-
-    // Empty Database, Search for Keys
-    keys.resize(2);
-    keys[0] = "a";
-    keys[1] = "b";
-    cfs.push_back(handles_[0]);
-    cfs.push_back(handles_[1]);
-    s = db_->MultiGet(ReadOptions(), cfs, keys, &values);
-    ASSERT_EQ(static_cast<int>(s.size()), 2);
-    ASSERT_TRUE(s[0].IsNotFound() && s[1].IsNotFound());
-  } while (ChangeCompactOptions());
 }
 
 TEST_F(DBTest, ChecksumTest) {
@@ -3257,7 +2633,6 @@ TEST_F(DBTest, TableOptionsSanitizeTest) {
   DestroyAndReopen(options);
   ASSERT_EQ(db_->GetOptions().allow_mmap_reads, false);
 
-  options.prefix_extractor.reset(NewNoopTransform());
   Destroy(options);
   ASSERT_TRUE(!TryReopen(options).IsNotSupported());
 
@@ -3269,7 +2644,6 @@ TEST_F(DBTest, TableOptionsSanitizeTest) {
   options.create_if_missing = true;
   options.table_factory.reset(NewBlockBasedTableFactory(to));
   ASSERT_TRUE(TryReopen(options).IsInvalidArgument());
-  options.prefix_extractor.reset(NewFixedPrefixTransform(1));
   ASSERT_OK(TryReopen(options));
 }
 
@@ -4585,7 +3959,6 @@ TEST_F(DBTest, EncodeDecompressedBlockSizeTest) {
          ++first_table_version) {
       BlockBasedTableOptions table_options;
       table_options.format_version = first_table_version;
-      table_options.filter_policy.reset(NewBloomFilterPolicy(10));
       Options options = CurrentOptions();
       options.table_factory.reset(NewBlockBasedTableFactory(table_options));
       options.create_if_missing = true;
@@ -4711,75 +4084,7 @@ class DelayedMergeOperator : public MergeOperator {
   virtual const char* Name() const override { return "DelayedMergeOperator"; }
 };
 
-TEST_F(DBTest, MergeTestTime) {
-  std::string one, two, three;
-  PutFixed64(&one, 1);
-  PutFixed64(&two, 2);
-  PutFixed64(&three, 3);
-
-  // Enable time profiling
-  SetPerfLevel(kEnableTime);
-  this->env_->addon_time_.store(0);
-  this->env_->time_elapse_only_sleep_ = true;
-  this->env_->no_sleep_ = true;
-  Options options = CurrentOptions();
-  options.statistics = rocksdb::CreateDBStatistics();
-  options.merge_operator.reset(new DelayedMergeOperator(this));
-  DestroyAndReopen(options);
-
-  ASSERT_EQ(TestGetTickerCount(options, MERGE_OPERATION_TOTAL_TIME), 0);
-  db_->Put(WriteOptions(), "foo", one);
-  ASSERT_OK(Flush());
-  ASSERT_OK(db_->Merge(WriteOptions(), "foo", two));
-  ASSERT_OK(Flush());
-  ASSERT_OK(db_->Merge(WriteOptions(), "foo", three));
-  ASSERT_OK(Flush());
-
-  ReadOptions opt;
-  opt.verify_checksums = true;
-  opt.snapshot = nullptr;
-  std::string result;
-  db_->Get(opt, "foo", &result);
-
-  ASSERT_EQ(1000000, TestGetTickerCount(options, MERGE_OPERATION_TOTAL_TIME));
-
-  ReadOptions read_options;
-  std::unique_ptr<Iterator> iter(db_->NewIterator(read_options));
-  int count = 0;
-  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-    ASSERT_OK(iter->status());
-    ++count;
-  }
-
-  ASSERT_EQ(1, count);
-  ASSERT_EQ(2000000, TestGetTickerCount(options, MERGE_OPERATION_TOTAL_TIME));
-#ifdef ROCKSDB_USING_THREAD_STATUS
-  ASSERT_GT(TestGetTickerCount(options, FLUSH_WRITE_BYTES), 0);
-#endif  // ROCKSDB_USING_THREAD_STATUS
-  this->env_->time_elapse_only_sleep_ = false;
-}
-
 #ifndef ROCKSDB_LITE
-TEST_P(DBTestWithParam, MergeCompactionTimeTest) {
-  SetPerfLevel(kEnableTime);
-  Options options = CurrentOptions();
-  options.compaction_filter_factory = std::make_shared<KeepFilterFactory>();
-  options.statistics = rocksdb::CreateDBStatistics();
-  options.merge_operator.reset(new DelayedMergeOperator(this));
-  options.compaction_style = kCompactionStyleUniversal;
-  options.max_subcompactions = max_subcompactions_;
-  DestroyAndReopen(options);
-
-  for (int i = 0; i < 1000; i++) {
-    ASSERT_OK(db_->Merge(WriteOptions(), "foo", "TEST"));
-    ASSERT_OK(Flush());
-  }
-  dbfull()->TEST_WaitForFlushMemTable();
-  dbfull()->TEST_WaitForCompact();
-
-  ASSERT_NE(TestGetTickerCount(options, MERGE_OPERATION_TOTAL_TIME), 0);
-}
-
 TEST_P(DBTestWithParam, FilterCompactionTimeTest) {
   Options options = CurrentOptions();
   options.compaction_filter_factory =

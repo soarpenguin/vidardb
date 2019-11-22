@@ -12,11 +12,9 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/compaction_filter.h"
 #include "rocksdb/convenience.h"
-#include "rocksdb/filter_policy.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/merge_operator.h"
 #include "rocksdb/options.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/table.h"
 #include "table/block_based_table_factory.h"
 #include "util/logging.h"
@@ -255,56 +253,6 @@ bool ParseVectorCompressionType(
   return true;
 }
 
-bool ParseSliceTransformHelper(
-    const std::string& kFixedPrefixName, const std::string& kCappedPrefixName,
-    const std::string& value,
-    std::shared_ptr<const SliceTransform>* slice_transform) {
-  static const std::string kNullptrString = "nullptr";
-  auto& pe_value = value;
-  if (pe_value.size() > kFixedPrefixName.size() &&
-      pe_value.compare(0, kFixedPrefixName.size(), kFixedPrefixName) == 0) {
-    int prefix_length = ParseInt(trim(value.substr(kFixedPrefixName.size())));
-    slice_transform->reset(NewFixedPrefixTransform(prefix_length));
-  } else if (pe_value.size() > kCappedPrefixName.size() &&
-             pe_value.compare(0, kCappedPrefixName.size(), kCappedPrefixName) ==
-                 0) {
-    int prefix_length =
-        ParseInt(trim(pe_value.substr(kCappedPrefixName.size())));
-    slice_transform->reset(NewCappedPrefixTransform(prefix_length));
-  } else if (value == kNullptrString) {
-    slice_transform->reset();
-  } else {
-    return false;
-  }
-
-  return true;
-}
-
-bool ParseSliceTransform(
-    const std::string& value,
-    std::shared_ptr<const SliceTransform>* slice_transform) {
-  // While we normally don't convert the string representation of a
-  // pointer-typed option into its instance, here we do so for backward
-  // compatibility as we allow this action in SetOption().
-
-  // TODO(yhchiang): A possible better place for these serialization /
-  // deserialization is inside the class definition of pointer-typed
-  // option itself, but this requires a bigger change of public API.
-  bool result =
-      ParseSliceTransformHelper("fixed:", "capped:", value, slice_transform);
-  if (result) {
-    return result;
-  }
-  result = ParseSliceTransformHelper(
-      "rocksdb.FixedPrefix.", "rocksdb.CappedPrefix.", value, slice_transform);
-  if (result) {
-    return result;
-  }
-  // TODO(yhchiang): we can further support other default
-  //                 SliceTransforms here.
-  return false;
-}
-
 bool ParseOptionHelper(char* opt_address, const OptionType& opt_type,
                        const std::string& value) {
   switch (opt_type) {
@@ -343,10 +291,6 @@ bool ParseOptionHelper(char* opt_address, const OptionType& opt_type,
     case OptionType::kVectorCompressionType:
       return ParseVectorCompressionType(
           value, reinterpret_cast<std::vector<CompressionType>*>(opt_address));
-    case OptionType::kSliceTransform:
-      return ParseSliceTransform(
-          value, reinterpret_cast<std::shared_ptr<const SliceTransform>*>(
-                     opt_address));
     case OptionType::kChecksumType:
       return ParseEnum<ChecksumType>(
           checksum_type_string_map, value,
@@ -355,10 +299,6 @@ bool ParseOptionHelper(char* opt_address, const OptionType& opt_type,
       return ParseEnum<BlockBasedTableOptions::IndexType>(
           block_base_table_index_type_string_map, value,
           reinterpret_cast<BlockBasedTableOptions::IndexType*>(opt_address));
-    case OptionType::kEncodingType:
-      return ParseEnum<EncodingType>(
-          encoding_type_string_map, value,
-          reinterpret_cast<EncodingType*>(opt_address));
     case OptionType::kWALRecoveryMode:
       return ParseEnum<WALRecoveryMode>(
           wal_recovery_mode_string_map, value,
@@ -423,14 +363,6 @@ bool SerializeSingleOptionHelper(const char* opt_address,
           *(reinterpret_cast<const std::vector<CompressionType>*>(opt_address)),
           value);
       break;
-    case OptionType::kSliceTransform: {
-      const auto* slice_transform_ptr =
-          reinterpret_cast<const std::shared_ptr<const SliceTransform>*>(
-              opt_address);
-      *value = slice_transform_ptr->get() ? slice_transform_ptr->get()->Name()
-                                          : kNullptrString;
-      break;
-    }
     case OptionType::kTableFactory: {
       const auto* table_factory_ptr =
           reinterpret_cast<const std::shared_ptr<const TableFactory>*>(
@@ -481,12 +413,6 @@ bool SerializeSingleOptionHelper(const char* opt_address,
       *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
       break;
     }
-    case OptionType::kFilterPolicy: {
-      const auto* ptr =
-          reinterpret_cast<const std::shared_ptr<FilterPolicy>*>(opt_address);
-      *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
-      break;
-    }
     case OptionType::kChecksumType:
       return SerializeEnum<ChecksumType>(
           checksum_type_string_map,
@@ -504,10 +430,6 @@ bool SerializeSingleOptionHelper(const char* opt_address,
       *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
       break;
     }
-    case OptionType::kEncodingType:
-      return SerializeEnum<EncodingType>(
-          encoding_type_string_map,
-          *reinterpret_cast<const EncodingType*>(opt_address), value);
     case OptionType::kWALRecoveryMode:
       return SerializeEnum<WALRecoveryMode>(
           wal_recovery_mode_string_map,
@@ -534,21 +456,12 @@ bool ParseMemtableOptions(const std::string& name, const std::string& value,
     new_options->write_buffer_size = ParseSizeT(value);
   } else if (name == "arena_block_size") {
     new_options->arena_block_size = ParseSizeT(value);
-  } else if (name == "memtable_prefix_bloom_bits") {
-    new_options->memtable_prefix_bloom_bits = ParseUint32(value);
-  } else if (name == "memtable_prefix_bloom_probes") {
-    new_options->memtable_prefix_bloom_probes = ParseUint32(value);
-  } else if (name == "memtable_prefix_bloom_huge_page_tlb_size") {
-    new_options->memtable_prefix_bloom_huge_page_tlb_size =
-      ParseSizeT(value);
   } else if (name == "max_successive_merges") {
     new_options->max_successive_merges = ParseSizeT(value);
   } else if (name == "filter_deletes") {
     new_options->filter_deletes = ParseBoolean(name, value);
   } else if (name == "max_write_buffer_number") {
     new_options->max_write_buffer_number = ParseInt(value);
-  } else if (name == "inplace_update_num_locks") {
-    new_options->inplace_update_num_locks = ParseSizeT(value);
   } else {
     return false;
   }
@@ -1051,27 +964,6 @@ std::string ParseBlockBasedTableOption(const std::string& name,
     if (name == "block_cache") {
       new_options->block_cache = NewLRUCache(ParseSizeT(value));
       return "";
-    } else if (name == "block_cache_compressed") {
-      new_options->block_cache_compressed = NewLRUCache(ParseSizeT(value));
-      return "";
-    } else if (name == "filter_policy") {
-      // Expect the following format
-      // bloomfilter:int:bool
-      const std::string kName = "bloomfilter:";
-      if (value.compare(0, kName.size(), kName) != 0) {
-        return "Invalid filter policy name";
-      }
-      size_t pos = value.find(':', kName.size());
-      if (pos == std::string::npos) {
-        return "Invalid filter policy config, missing bits_per_key";
-      }
-      int bits_per_key =
-          ParseInt(trim(value.substr(kName.size(), pos - kName.size())));
-      bool use_block_based_builder =
-          ParseBoolean("use_block_based_builder", trim(value.substr(pos + 1)));
-      new_options->filter_policy.reset(
-          NewBloomFilterPolicy(bits_per_key, use_block_based_builder));
-      return "";
     }
   }
   const auto iter = block_based_table_type_info.find(name);
@@ -1080,24 +972,6 @@ std::string ParseBlockBasedTableOption(const std::string& name,
   }
   const auto& opt_info = iter->second;
   if (!ParseOptionHelper(reinterpret_cast<char*>(new_options) + opt_info.offset,
-                         opt_info.type, value)) {
-    return "Invalid value";
-  }
-  return "";
-}
-
-std::string ParsePlainTableOptions(const std::string& name,
-                                   const std::string& org_value,
-                                   PlainTableOptions* new_option,
-                                   bool input_strings_escaped = false) {
-  const std::string& value =
-      input_strings_escaped ? UnescapeOptionString(org_value) : org_value;
-  const auto iter = plain_table_type_info.find(name);
-  if (iter == plain_table_type_info.end()) {
-    return "Unrecognized option";
-  }
-  const auto& opt_info = iter->second;
-  if (!ParseOptionHelper(reinterpret_cast<char*>(new_option) + opt_info.offset,
                          opt_info.type, value)) {
     return "Invalid value";
   }
@@ -1142,46 +1016,6 @@ Status GetBlockBasedTableOptionsFromString(
   }
   return GetBlockBasedTableOptionsFromMap(table_options, opts_map,
                                           new_table_options);
-}
-
-Status GetPlainTableOptionsFromMap(
-    const PlainTableOptions& table_options,
-    const std::unordered_map<std::string, std::string>& opts_map,
-    PlainTableOptions* new_table_options, bool input_strings_escaped) {
-  assert(new_table_options);
-  *new_table_options = table_options;
-  for (const auto& o : opts_map) {
-    auto error_message = ParsePlainTableOptions(
-        o.first, o.second, new_table_options, input_strings_escaped);
-    if (error_message != "") {
-      const auto iter = plain_table_type_info.find(o.first);
-      if (iter == plain_table_type_info.end() ||
-          !input_strings_escaped ||  // !input_strings_escaped indicates
-                                     // the old API, where everything is
-                                     // parsable.
-          (iter->second.verification != OptionVerificationType::kByName &&
-           iter->second.verification !=
-               OptionVerificationType::kByNameAllowNull &&
-           iter->second.verification != OptionVerificationType::kDeprecated)) {
-        return Status::InvalidArgument("Can't parse PlainTableOptions:",
-                                        o.first + " " + error_message);
-      }
-    }
-  }
-  return Status::OK();
-}
-
-Status GetPlainTableOptionsFromString(
-    const PlainTableOptions& table_options,
-    const std::string& opts_str,
-    PlainTableOptions* new_table_options) {
-  std::unordered_map<std::string, std::string> opts_map;
-  Status s = StringToMap(opts_str, &opts_map);
-  if (!s.ok()) {
-    return s;
-  }
-  return GetPlainTableOptionsFromMap(table_options, opts_map,
-                                     new_table_options);
 }
 
 Status GetMemTableRepFactoryFromString(const std::string& opts_str,
@@ -1371,16 +1205,8 @@ ColumnFamilyOptions BuildColumnFamilyOptions(
   cf_opts.write_buffer_size = mutable_cf_options.write_buffer_size;
   cf_opts.max_write_buffer_number = mutable_cf_options.max_write_buffer_number;
   cf_opts.arena_block_size = mutable_cf_options.arena_block_size;
-  cf_opts.memtable_prefix_bloom_bits =
-      mutable_cf_options.memtable_prefix_bloom_bits;
-  cf_opts.memtable_prefix_bloom_probes =
-      mutable_cf_options.memtable_prefix_bloom_probes;
-  cf_opts.memtable_prefix_bloom_huge_page_tlb_size =
-      mutable_cf_options.memtable_prefix_bloom_huge_page_tlb_size;
   cf_opts.max_successive_merges = mutable_cf_options.max_successive_merges;
   cf_opts.filter_deletes = mutable_cf_options.filter_deletes;
-  cf_opts.inplace_update_num_locks =
-      mutable_cf_options.inplace_update_num_locks;
 
   // Compaction related options
   cf_opts.disable_auto_compactions =

@@ -478,7 +478,6 @@ TEST_F(DBTestCompactionFilter, CompactionFilterWithMergeOperator) {
   // filter result is ignored.
   ASSERT_OK(db_->Put(WriteOptions(), "foo", two));
   ASSERT_OK(Flush());
-  ASSERT_OK(db_->Merge(WriteOptions(), "foo", one));
   ASSERT_OK(Flush());
   std::string newvalue = Get("foo");
   ASSERT_EQ(newvalue, three);
@@ -493,7 +492,6 @@ TEST_F(DBTestCompactionFilter, CompactionFilterWithMergeOperator) {
   dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr);
   newvalue = Get("bar");
   ASSERT_EQ("NOT_FOUND", newvalue);
-  ASSERT_OK(db_->Merge(WriteOptions(), "bar", two));
   ASSERT_OK(Flush());
   dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr);
   newvalue = Get("bar");
@@ -502,7 +500,6 @@ TEST_F(DBTestCompactionFilter, CompactionFilterWithMergeOperator) {
   // Compaction filter never applies to merge keys.
   ASSERT_OK(db_->Put(WriteOptions(), "foobar", one));
   ASSERT_OK(Flush());
-  ASSERT_OK(db_->Merge(WriteOptions(), "foobar", two));
   ASSERT_OK(Flush());
   newvalue = Get("foobar");
   ASSERT_EQ(newvalue, three);
@@ -515,7 +512,6 @@ TEST_F(DBTestCompactionFilter, CompactionFilterWithMergeOperator) {
   // For both keys, compaction filter results are ignored.
   ASSERT_OK(db_->Put(WriteOptions(), "barfoo", two));
   ASSERT_OK(Flush());
-  ASSERT_OK(db_->Merge(WriteOptions(), "barfoo", two));
   ASSERT_OK(Flush());
   newvalue = Get("barfoo");
   ASSERT_EQ(newvalue, four);

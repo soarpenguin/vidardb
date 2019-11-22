@@ -42,7 +42,6 @@ class TableFactory;
 class MemTableRepFactory;
 class TablePropertiesCollectorFactory;
 class Slice;
-class SliceTransform;
 class Statistics;
 class InternalKeyComparator;
 class WalFilter;
@@ -385,22 +384,6 @@ struct ColumnFamilyOptions {
   // different options for compression algorithms
   CompressionOptions compression_opts;
 
-  // If non-nullptr, use the specified function to determine the
-  // prefixes for keys.  These prefixes will be placed in the filter.
-  // Depending on the workload, this can reduce the number of read-IOP
-  // cost for scans when a prefix is passed via ReadOptions to
-  // db.NewIterator().  For prefix filtering to work properly,
-  // "prefix_extractor" and "comparator" must be such that the following
-  // properties hold:
-  //
-  // 1) key.starts_with(prefix(key))
-  // 2) Compare(prefix(key), key) <= 0.
-  // 3) If Compare(k1, k2) <= 0, then Compare(prefix(k1), prefix(k2)) <= 0
-  // 4) prefix(prefix(key)) == prefix(key)
-  //
-  // Default: nullptr
-  std::shared_ptr<const SliceTransform> prefix_extractor;
-
   // Number of levels for this database
   int num_levels;
 
@@ -686,95 +669,6 @@ struct ColumnFamilyOptions {
   typedef std::vector<std::shared_ptr<TablePropertiesCollectorFactory>>
       TablePropertiesCollectorFactories;
   TablePropertiesCollectorFactories table_properties_collector_factories;
-
-  // Allows thread-safe inplace updates. If this is true, there is no way to
-  // achieve point-in-time consistency using snapshot or iterator (assuming
-  // concurrent updates). Hence iterator and multi-get will return results
-  // which are not consistent as of any point-in-time.
-  // If inplace_callback function is not set,
-  //   Put(key, new_value) will update inplace the existing_value iff
-  //   * key exists in current memtable
-  //   * new sizeof(new_value) <= sizeof(existing_value)
-  //   * existing_value for that key is a put i.e. kTypeValue
-  // If inplace_callback function is set, check doc for inplace_callback.
-  // Default: false.
-  bool inplace_update_support;
-
-  // Number of locks used for inplace update
-  // Default: 10000, if inplace_update_support = true, else 0.
-  //
-  // Dynamically changeable through SetOptions() API
-  size_t inplace_update_num_locks;
-
-  // existing_value - pointer to previous value (from both memtable and sst).
-  //                  nullptr if key doesn't exist
-  // existing_value_size - pointer to size of existing_value).
-  //                       nullptr if key doesn't exist
-  // delta_value - Delta value to be merged with the existing_value.
-  //               Stored in transaction logs.
-  // merged_value - Set when delta is applied on the previous value.
-
-  // Applicable only when inplace_update_support is true,
-  // this callback function is called at the time of updating the memtable
-  // as part of a Put operation, lets say Put(key, delta_value). It allows the
-  // 'delta_value' specified as part of the Put operation to be merged with
-  // an 'existing_value' of the key in the database.
-
-  // If the merged value is smaller in size that the 'existing_value',
-  // then this function can update the 'existing_value' buffer inplace and
-  // the corresponding 'existing_value'_size pointer, if it wishes to.
-  // The callback should return UpdateStatus::UPDATED_INPLACE.
-  // In this case. (In this case, the snapshot-semantics of the rocksdb
-  // Iterator is not atomic anymore).
-
-  // If the merged value is larger in size than the 'existing_value' or the
-  // application does not wish to modify the 'existing_value' buffer inplace,
-  // then the merged value should be returned via *merge_value. It is set by
-  // merging the 'existing_value' and the Put 'delta_value'. The callback should
-  // return UpdateStatus::UPDATED in this case. This merged value will be added
-  // to the memtable.
-
-  // If merging fails or the application does not wish to take any action,
-  // then the callback should return UpdateStatus::UPDATE_FAILED.
-
-  // Please remember that the original call from the application is Put(key,
-  // delta_value). So the transaction log (if enabled) will still contain (key,
-  // delta_value). The 'merged_value' is not stored in the transaction log.
-  // Hence the inplace_callback function should be consistent across db reopens.
-
-  // Default: nullptr
-  UpdateStatus (*inplace_callback)(char* existing_value,
-                                   uint32_t* existing_value_size,
-                                   Slice delta_value,
-                                   std::string* merged_value);
-
-  // if prefix_extractor is set and bloom_bits is not 0, create prefix bloom
-  // for memtable
-  //
-  // Dynamically changeable through SetOptions() API
-  uint32_t memtable_prefix_bloom_bits;
-
-  // number of hash probes per key
-  //
-  // Dynamically changeable through SetOptions() API
-  uint32_t memtable_prefix_bloom_probes;
-
-  // Page size for huge page TLB for bloom in memtable. If <=0, not allocate
-  // from huge page TLB but from malloc.
-  // Need to reserve huge pages for it to be allocated. For example:
-  //      sysctl -w vm.nr_hugepages=20
-  // See linux doc Documentation/vm/hugetlbpage.txt
-  //
-  // Dynamically changeable through SetOptions() API
-  size_t memtable_prefix_bloom_huge_page_tlb_size;
-
-  // Control locality of bloom filter probes to improve cache miss rate.
-  // This option only applies to memtable prefix bloom and plaintable
-  // prefix bloom. It essentially limits every bloom checking to one cache line.
-  // This optimization is turned off when set to 0, and positive number to turn
-  // it on.
-  // Default: 0
-  uint32_t bloom_locality;
 
   // Maximum number of successive merge operations on a key in the memtable.
   //
@@ -1473,14 +1367,6 @@ struct ReadOptions {
   // block based table. It provides a way to read existing data after
   // changing implementation of prefix extractor.
   bool total_order_seek;
-
-  // Enforce that the iterator only iterates over the same prefix as the seek.
-  // This option is effective only for prefix seeks, i.e. prefix_extractor is
-  // non-null for the column family and total_order_seek is false.  Unlike
-  // iterate_upper_bound, prefix_same_as_start only works within a prefix
-  // but in both directions.
-  // Default: false
-  bool prefix_same_as_start;
 
   // Keep the blocks loaded by the iterator pinned in memory as long as the
   // iterator is not deleted, If used when reading from tables created with

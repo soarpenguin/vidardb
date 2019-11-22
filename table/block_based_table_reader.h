@@ -79,20 +79,18 @@ class BlockBasedTable : public TableReader {
                      unique_ptr<RandomAccessFileReader>&& file,
                      uint64_t file_size, unique_ptr<TableReader>* table_reader,
                      bool prefetch_index_and_filter = true,
-                     bool skip_filters = false, int level = -1);
-
-  bool PrefixMayMatch(const Slice& internal_key);
+                     int level = -1);
 
   // Returns a new iterator over the table contents.
   // The result of NewIterator() is initially invalid (caller must
   // call one of the Seek methods on the iterator before using it).
   // @param skip_filters Disables loading/accessing the filter block
-  InternalIterator* NewIterator(const ReadOptions&, Arena* arena = nullptr,
-                                bool skip_filters = false) override;
+  InternalIterator* NewIterator(const ReadOptions&,
+                                Arena* arena = nullptr) override;
 
   // @param skip_filters Disables loading/accessing the filter block
   Status Get(const ReadOptions& readOptions, const Slice& key,
-             GetContext* get_context, bool skip_filters = false) override;
+             GetContext* get_context) override;
 
   // Pre-fetch the disk blocks that correspond to the key range specified by
   // (kbegin, kend). The call will return error status in the event of
@@ -126,7 +124,6 @@ class BlockBasedTable : public TableReader {
 
   ~BlockBasedTable();
 
-  bool TEST_filter_block_preloaded() const;
   bool TEST_index_reader_preloaded() const;
   // Implementation of IndexReader will be exposed to internal cc file only.
   class IndexReader;
@@ -150,11 +147,6 @@ class BlockBasedTable : public TableReader {
       Rep* rep, const ReadOptions& ro, const Slice& index_value,
       BlockIter* input_iter = nullptr);
 
-  // For the following two functions:
-  // if `no_io == true`, we will not try to read filter/index from sst file
-  // were they not present in cache yet.
-  CachableEntry<FilterBlockReader> GetFilter(bool no_io = false) const;
-
   // Get the iterator from the index reader.
   // If input_iter is not set, return new Iterator
   // If input_iter is set, update it and return it as Iterator
@@ -176,11 +168,8 @@ class BlockBasedTable : public TableReader {
   // @param compression_dict Data for presetting the compression library's
   //    dictionary.
   static Status GetDataBlockFromCache(
-      const Slice& block_cache_key, const Slice& compressed_block_cache_key,
-      Cache* block_cache, Cache* block_cache_compressed, Statistics* statistics,
-      const ReadOptions& read_options,
-      BlockBasedTable::CachableEntry<Block>* block, uint32_t format_version,
-      const Slice& compression_dict);
+      const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
+      BlockBasedTable::CachableEntry<Block>* block);
 
   // Put a raw block (maybe compressed) to the corresponding block caches.
   // This method will perform decompression against raw_block if needed and then
@@ -193,11 +182,8 @@ class BlockBasedTable : public TableReader {
   // @param compression_dict Data for presetting the compression library's
   //    dictionary.
   static Status PutDataBlockToCache(
-      const Slice& block_cache_key, const Slice& compressed_block_cache_key,
-      Cache* block_cache, Cache* block_cache_compressed,
-      const ReadOptions& read_options, Statistics* statistics,
-      CachableEntry<Block>* block, Block* raw_block, uint32_t format_version,
-      const Slice& compression_dict);
+      const Slice& block_cache_key, Cache* block_cache,
+      Statistics* statistics, CachableEntry<Block>* block, Block* raw_block);
 
   // Calls (*handle_result)(arg, ...) repeatedly, starting with the entry found
   // after a call to Seek(key), until handle_result returns false.
@@ -215,16 +201,9 @@ class BlockBasedTable : public TableReader {
       IndexReader** index_reader,
       InternalIterator* preloaded_meta_index_iter = nullptr);
 
-  bool FullFilterKeyMayMatch(const ReadOptions& read_options,
-                             FilterBlockReader* filter,
-                             const Slice& user_key) const;
-
   // Read the meta block from sst.
   static Status ReadMetaBlock(Rep* rep, std::unique_ptr<Block>* meta_block,
                               std::unique_ptr<InternalIterator>* iter);
-
-  // Create the filter from the filter block.
-  static FilterBlockReader* ReadFilter(Rep* rep);
 
   static void SetupCacheKeyPrefix(Rep* rep, uint64_t file_size);
 

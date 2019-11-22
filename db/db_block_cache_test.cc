@@ -172,7 +172,6 @@ TEST_F(DBBlockCacheTest, TestWithCompressedBlockCache) {
   std::shared_ptr<Cache> cache = NewLRUCache(0, 0, false);
   std::shared_ptr<Cache> compressed_cache = NewLRUCache(0, 0, false);
   table_options.block_cache = cache;
-  table_options.block_cache_compressed = compressed_cache;
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   Reopen(options);
   RecordCacheCounters(options);
@@ -235,8 +234,6 @@ TEST_F(DBBlockCacheTest, IndexAndFilterBlocksOfNewTableAddedToCache) {
   options.create_if_missing = true;
   options.statistics = rocksdb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
-  table_options.cache_index_and_filter_blocks = true;
-  table_options.filter_policy.reset(NewBloomFilterPolicy(20));
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -258,13 +255,11 @@ TEST_F(DBBlockCacheTest, IndexAndFilterBlocksOfNewTableAddedToCache) {
   // Make sure filter block is in cache.
   std::string value;
   ReadOptions ropt;
-  db_->KeyMayExist(ReadOptions(), handles_[1], "key", &value);
 
   // Miss count should remain the same.
   ASSERT_EQ(1, TestGetTickerCount(options, BLOCK_CACHE_FILTER_MISS));
   ASSERT_EQ(1, TestGetTickerCount(options, BLOCK_CACHE_FILTER_HIT));
 
-  db_->KeyMayExist(ReadOptions(), handles_[1], "key", &value);
   ASSERT_EQ(1, TestGetTickerCount(options, BLOCK_CACHE_FILTER_MISS));
   ASSERT_EQ(2, TestGetTickerCount(options, BLOCK_CACHE_FILTER_HIT));
 
@@ -286,11 +281,9 @@ TEST_F(DBBlockCacheTest, IndexAndFilterBlocksStats) {
   options.create_if_missing = true;
   options.statistics = rocksdb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
-  table_options.cache_index_and_filter_blocks = true;
   // 200 bytes are enough to hold the first two blocks
   std::shared_ptr<Cache> cache = NewLRUCache(200, 0, false);
   table_options.block_cache = cache;
-  table_options.filter_policy.reset(NewBloomFilterPolicy(20));
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -329,8 +322,6 @@ TEST_F(DBBlockCacheTest, ParanoidFileChecks) {
   options.level0_file_num_compaction_trigger = 2;
   options.paranoid_file_checks = true;
   BlockBasedTableOptions table_options;
-  table_options.cache_index_and_filter_blocks = false;
-  table_options.filter_policy.reset(NewBloomFilterPolicy(20));
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -388,27 +379,23 @@ TEST_F(DBBlockCacheTest, CompressedCache) {
       case 0:
         // only uncompressed block cache
         table_options.block_cache = NewLRUCache(8 * 1024);
-        table_options.block_cache_compressed = nullptr;
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
         break;
       case 1:
         // no block cache, only compressed cache
         table_options.no_block_cache = true;
         table_options.block_cache = nullptr;
-        table_options.block_cache_compressed = NewLRUCache(8 * 1024);
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
         break;
       case 2:
         // both compressed and uncompressed block cache
         table_options.block_cache = NewLRUCache(1024);
-        table_options.block_cache_compressed = NewLRUCache(8 * 1024);
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
         break;
       case 3:
         // both block cache and compressed cache, but DB is not compressed
         // also, make block cache sizes bigger, to trigger block cache hits
         table_options.block_cache = NewLRUCache(1024 * 1024);
-        table_options.block_cache_compressed = NewLRUCache(8 * 1024 * 1024);
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
         options.compression = kNoCompression;
         break;

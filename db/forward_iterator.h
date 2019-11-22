@@ -95,7 +95,6 @@ class ForwardIterator : public InternalIterator {
   DBImpl* const db_;
   const ReadOptions read_options_;
   ColumnFamilyData* const cfd_;
-  const SliceTransform* const prefix_extractor_;
   const Comparator* user_comparator_;
   MinIterHeap immutable_min_heap_;
 

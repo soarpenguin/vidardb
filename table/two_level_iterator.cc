@@ -108,11 +108,6 @@ TwoLevelIterator::TwoLevelIterator(TwoLevelIteratorState* state,
       pinned_iters_mgr_(nullptr) {}
 
 void TwoLevelIterator::Seek(const Slice& target) {
-  if (state_->check_prefix_may_match &&
-      !state_->PrefixMayMatch(target)) {
-    SetSecondLevelIterator(nullptr);
-    return;
-  }
   first_level_iter_.Seek(target);
 
   InitDataBlock();

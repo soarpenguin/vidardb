@@ -76,17 +76,6 @@ TableBuilder* ColumnTableFactory::NewTableBuilder(
 Status ColumnTableFactory::SanitizeOptions(
     const DBOptions& db_opts,
     const ColumnFamilyOptions& cf_opts) const {
-  if (table_options_.cache_index_blocks &&
-      table_options_.no_block_cache) {
-    return Status::InvalidArgument("Enable cache_index_blocks, "
-        ", but block cache is disabled");
-  }
-  if (table_options_.pin_l0_index_blocks_in_cache &&
-      table_options_.no_block_cache) {
-    return Status::InvalidArgument(
-        "Enable pin_l0_index_blocks_in_cache, "
-        ", but block cache is disabled");
-  }
   if (!BlockBasedTableSupportedVersion(table_options_.format_version)) {
     return Status::InvalidArgument(
         "Unsupported BlockBasedTable format_version. Please check "
@@ -104,13 +93,6 @@ std::string ColumnTableFactory::GetPrintableTableOptions() const {
   snprintf(buffer, kBufferSize, "  flush_block_policy_factory: %s (%p)\n",
            table_options_.flush_block_policy_factory->Name(),
            static_cast<void*>(table_options_.flush_block_policy_factory.get()));
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  cache_index_blocks: %d\n",
-           table_options_.cache_index_blocks);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize,
-           "  pin_l0_index_blocks_in_cache: %d\n",
-           table_options_.pin_l0_index_blocks_in_cache);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  index_type: %d\n",
            table_options_.index_type);
@@ -140,9 +122,6 @@ std::string ColumnTableFactory::GetPrintableTableOptions() const {
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  index_block_restart_interval: %d\n",
            table_options_.index_block_restart_interval);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  skip_table_builder_flush: %d\n",
-           table_options_.skip_table_builder_flush);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  format_version: %d\n",
            table_options_.format_version);

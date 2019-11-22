@@ -184,18 +184,9 @@ TEST_F(OptionsTest, GetOptionsFromMapTest) {
   ASSERT_EQ(new_cf_opt.filter_deletes, false);
   ASSERT_EQ(new_cf_opt.max_sequential_skip_in_iterations,
             static_cast<uint64_t>(24));
-  ASSERT_EQ(new_cf_opt.inplace_update_support, true);
-  ASSERT_EQ(new_cf_opt.inplace_update_num_locks, 25U);
-  ASSERT_EQ(new_cf_opt.memtable_prefix_bloom_bits, 26U);
-  ASSERT_EQ(new_cf_opt.memtable_prefix_bloom_probes, 27U);
-  ASSERT_EQ(new_cf_opt.memtable_prefix_bloom_huge_page_tlb_size, 28U);
-  ASSERT_EQ(new_cf_opt.bloom_locality, 29U);
   ASSERT_EQ(new_cf_opt.max_successive_merges, 30U);
   ASSERT_EQ(new_cf_opt.min_partial_merge_operands, 31U);
-  ASSERT_TRUE(new_cf_opt.prefix_extractor != nullptr);
   ASSERT_EQ(new_cf_opt.optimize_filters_for_hits, true);
-  ASSERT_EQ(std::string(new_cf_opt.prefix_extractor->Name()),
-            "rocksdb.FixedPrefix.31");
 
   cf_options_map["write_buffer_size"] = "hello";
   ASSERT_NOK(GetColumnFamilyOptionsFromMap(
@@ -302,14 +293,12 @@ TEST_F(OptionsTest, GetColumnFamilyOptionsFromStringTest) {
   ASSERT_OK(GetColumnFamilyOptionsFromString(base_cf_opt,
             "memtable_prefix_bloom_bits=14k;max_write_buffer_number=-15K",
             &new_cf_opt));
-  ASSERT_EQ(new_cf_opt.memtable_prefix_bloom_bits, 14UL * kilo);
   ASSERT_EQ(new_cf_opt.max_write_buffer_number, -15 * kilo);
   // Units (m)
   ASSERT_OK(GetColumnFamilyOptionsFromString(base_cf_opt,
             "max_write_buffer_number=16m;inplace_update_num_locks=17M",
             &new_cf_opt));
   ASSERT_EQ(new_cf_opt.max_write_buffer_number, 16 * mega);
-  ASSERT_EQ(new_cf_opt.inplace_update_num_locks, 17 * mega);
   // Units (g)
   ASSERT_OK(GetColumnFamilyOptionsFromString(
       base_cf_opt,
@@ -319,9 +308,6 @@ TEST_F(OptionsTest, GetColumnFamilyOptionsFromStringTest) {
 
   ASSERT_EQ(new_cf_opt.write_buffer_size, 18 * giga);
   ASSERT_EQ(new_cf_opt.arena_block_size, 19 * giga);
-  ASSERT_TRUE(new_cf_opt.prefix_extractor.get() != nullptr);
-  std::string prefix_name(new_cf_opt.prefix_extractor->Name());
-  ASSERT_EQ(prefix_name, "rocksdb.CappedPrefix.8");
 
   // Units (t)
   ASSERT_OK(GetColumnFamilyOptionsFromString(base_cf_opt,
@@ -425,20 +411,14 @@ TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
             "filter_policy=bloomfilter:4:true;whole_key_filtering=1;"
             "skip_table_builder_flush=1",
             &new_opt));
-  ASSERT_TRUE(new_opt.cache_index_and_filter_blocks);
   ASSERT_EQ(new_opt.index_type, BlockBasedTableOptions::kBinarySearch);
   ASSERT_EQ(new_opt.checksum, ChecksumType::kCRC32c);
-  ASSERT_TRUE(new_opt.hash_index_allow_collision);
   ASSERT_TRUE(new_opt.no_block_cache);
   ASSERT_TRUE(new_opt.block_cache != nullptr);
   ASSERT_EQ(new_opt.block_cache->GetCapacity(), 1024UL*1024UL);
-  ASSERT_TRUE(new_opt.block_cache_compressed != nullptr);
-  ASSERT_EQ(new_opt.block_cache_compressed->GetCapacity(), 1024UL);
   ASSERT_EQ(new_opt.block_size, 1024UL);
   ASSERT_EQ(new_opt.block_size_deviation, 8);
   ASSERT_EQ(new_opt.block_restart_interval, 4);
-  ASSERT_TRUE(new_opt.filter_policy != nullptr);
-  ASSERT_TRUE(new_opt.skip_table_builder_flush);
 
   // unknown option
   ASSERT_NOK(GetBlockBasedTableOptionsFromString(table_opt,
@@ -514,7 +494,6 @@ TEST_F(OptionsTest, GetOptionsFromStringTest) {
   base_options.write_buffer_size = 20;
   base_options.min_write_buffer_number_to_merge = 15;
   BlockBasedTableOptions block_based_table_options;
-  block_based_table_options.cache_index_and_filter_blocks = true;
   base_options.table_factory.reset(
       NewBlockBasedTableFactory(block_based_table_options));
   ASSERT_OK(GetOptionsFromString(
@@ -538,7 +517,6 @@ TEST_F(OptionsTest, GetOptionsFromStringTest) {
   ASSERT_EQ(new_block_based_table_options.block_cache->GetCapacity(), 1U << 20);
   ASSERT_EQ(new_block_based_table_options.block_size, 4U);
   // don't overwrite block based table options
-  ASSERT_TRUE(new_block_based_table_options.cache_index_and_filter_blocks);
 
   ASSERT_EQ(new_options.create_if_missing, true);
   ASSERT_EQ(new_options.max_open_files, 1);
@@ -1123,7 +1101,6 @@ TEST_F(OptionsParserTest, DumpAndParse) {
     Random cf_rnd(0xFB + c);
     test::RandomInitCFOptions(&cf_opt, &cf_rnd);
     if (c < 4) {
-      cf_opt.prefix_extractor.reset(test::RandomSliceTransform(&rnd, c));
     }
     if (c < 3) {
       cf_opt.table_factory.reset(test::RandomTableFactory(&rnd, c));
@@ -1278,8 +1255,6 @@ TEST_F(OptionsSanityCheckTest, SanityCheck) {
   // prefix_extractor
   {
     // Okay to change prefix_extractor form nullptr to non-nullptr
-    ASSERT_EQ(opts.prefix_extractor.get(), nullptr);
-    opts.prefix_extractor.reset(NewCappedPrefixTransform(10));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
 
@@ -1288,13 +1263,11 @@ TEST_F(OptionsSanityCheckTest, SanityCheck) {
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
 
     // use same prefix extractor but with different parameter
-    opts.prefix_extractor.reset(NewCappedPrefixTransform(15));
     // expect pass only in kSanityLevelNone
     ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
 
     // repeat the test with FixedPrefixTransform
-    opts.prefix_extractor.reset(NewFixedPrefixTransform(10));
     ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
 
@@ -1302,14 +1275,11 @@ TEST_F(OptionsSanityCheckTest, SanityCheck) {
     ASSERT_OK(PersistCFOptions(opts));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
 
-    // use same prefix extractor but with different parameter
-    opts.prefix_extractor.reset(NewFixedPrefixTransform(15));
     // expect pass only in kSanityLevelNone
     ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
 
     // Change prefix extractor from non-nullptr to nullptr
-    opts.prefix_extractor.reset();
     // expect pass as it's safe to change prefix_extractor
     // from non-null to null
     ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));

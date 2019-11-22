@@ -10,10 +10,10 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 #include "port/port.h"
 #include "rocksdb/cache.h"
-#include "util/autovector.h"
 #include "util/hash.h"
 #include "util/lru_cache_handle.h"
 #include "util/mutexlock.h"
@@ -183,7 +183,7 @@ class LRUCache {
   // to hold (usage_ + charge) is freed or the lru list is empty
   // This function is not thread safe - it needs to be executed while
   // holding the mutex_
-  void EvictFromLRU(size_t charge, autovector<LRUHandle*>* deleted);
+  void EvictFromLRU(size_t charge, std::vector<LRUHandle*>* deleted);
 
   // Initialized before use.
   size_t capacity_;
@@ -227,7 +227,7 @@ bool LRUCache::Unref(LRUHandle* e) {
 // Call deleter and free
 
 void LRUCache::EraseUnRefEntries() {
-  autovector<LRUHandle*> last_reference_list;
+  std::vector<LRUHandle*> last_reference_list;
   {
     MutexLock l(&mutex_);
     while (lru_.next != &lru_) {
@@ -281,7 +281,7 @@ void LRUCache::LRU_Append(LRUHandle* e) {
   lru_usage_ += e->charge;
 }
 
-void LRUCache::EvictFromLRU(size_t charge, autovector<LRUHandle*>* deleted) {
+void LRUCache::EvictFromLRU(size_t charge, std::vector<LRUHandle*>* deleted) {
   while (usage_ + charge > capacity_ && lru_.next != &lru_) {
     LRUHandle* old = lru_.next;
     assert(old->in_cache);
@@ -296,7 +296,7 @@ void LRUCache::EvictFromLRU(size_t charge, autovector<LRUHandle*>* deleted) {
 }
 
 void LRUCache::SetCapacity(size_t capacity) {
-  autovector<LRUHandle*> last_reference_list;
+  std::vector<LRUHandle*> last_reference_list;
   {
     MutexLock l(&mutex_);
     capacity_ = capacity;
@@ -374,7 +374,7 @@ Status LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
   LRUHandle* e = reinterpret_cast<LRUHandle*>(
       new char[sizeof(LRUHandle) - 1 + key.size()]);
   Status s;
-  autovector<LRUHandle*> last_reference_list;
+  std::vector<LRUHandle*> last_reference_list;
 
   e->value = value;
   e->deleter = deleter;

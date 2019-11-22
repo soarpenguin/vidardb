@@ -259,13 +259,11 @@ TESTS = \
 	db_test \
 	db_test2 \
 	db_block_cache_test \
-	db_bloom_filter_test \
 	db_iter_test \
 	db_log_iter_test \
 	db_compaction_filter_test \
 	db_compaction_test \
 	db_dynamic_level_test \
-	db_inplace_update_test \
 	db_iterator_test \
 	db_sst_test \
 	db_tailing_iter_test \
@@ -274,27 +272,21 @@ TESTS = \
 	db_io_failure_test \
 	db_properties_test \
 	db_table_properties_test \
-	autovector_test \
 	column_family_test \
 	table_properties_collector_test \
 	arena_test \
 	auto_roll_logger_test \
 	block_test \
-	bloom_test \
-	dynamic_bloom_test \
 	cache_test \
 	coding_test \
 	corruption_test \
 	crc32c_test \
-	slice_transform_test \
 	dbformat_test \
 	env_test \
 	fault_injection_test \
 	filelock_test \
 	filename_test \
 	file_reader_writer_test \
-	block_based_filter_block_test \
-	full_filter_block_test \
 	histogram_test \
 	inlineskiplist_test \
 	log_test \
@@ -302,7 +294,6 @@ TESTS = \
 	mock_env_test \
 	memtable_list_test \
 	merge_helper_test \
-	merge_test \
 	merger_test \
 	options_file_test \
 	comparator_db_test \
@@ -811,19 +802,10 @@ db_repl_stress: tools/db_repl_stress.o $(LIBOBJECTS) $(TESTUTIL)
 arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-autovector_test: util/autovector_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 column_family_test: db/column_family_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 table_properties_collector_test: db/table_properties_collector_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-bloom_test: util/bloom_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-dynamic_bloom_test: util/dynamic_bloom_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -844,9 +826,6 @@ corruption_test: db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
 crc32c_test: util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-slice_transform_test: util/slice_transform_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 db_test: db/db_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
@@ -854,9 +833,6 @@ db_test2: db/db_test2.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 db_block_cache_test: db/db_block_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-db_bloom_filter_test: db/db_bloom_filter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 db_log_iter_test: db/db_log_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -869,9 +845,6 @@ db_compaction_test: db/db_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TE
 	$(AM_LINK)
 
 db_dynamic_level_test: db/db_dynamic_level_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-db_inplace_update_test: db/db_inplace_update_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 db_iterator_test: db/db_iterator_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -955,12 +928,6 @@ filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
 file_reader_writer_test: util/file_reader_writer_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-block_based_filter_block_test: table/block_based_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-full_filter_block_test: table/full_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
@@ -998,9 +965,6 @@ write_controller_test: db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 merge_helper_test: db/merge_helper_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-merge_test: db/merge_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 merger_test: table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)

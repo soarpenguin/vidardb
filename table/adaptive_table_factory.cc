@@ -38,11 +38,8 @@ AdaptiveTableFactory::AdaptiveTableFactory(
   /************************ Shichao ***************************/
 }
 
-extern const uint64_t kPlainTableMagicNumber;
-extern const uint64_t kLegacyPlainTableMagicNumber;
 extern const uint64_t kBlockBasedTableMagicNumber;
 extern const uint64_t kLegacyBlockBasedTableMagicNumber;
-extern const uint64_t kCuckooTableMagicNumber;
 extern const uint64_t kColumnTableMagicNumber;  // Shichao
 
 Status AdaptiveTableFactory::NewTableReader(

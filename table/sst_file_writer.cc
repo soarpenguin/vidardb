@@ -118,8 +118,7 @@ Status SstFileWriter::Open(const std::string& file_path) {
   TableBuilderOptions table_builder_options(
       r->ioptions, r->internal_comparator, &int_tbl_prop_collector_factories,
       compression_type, r->ioptions.compression_opts,
-      nullptr /* compression_dict */, false /* skip_filters */,
-      r->column_family_name, r->env_options);  // Shichao
+      nullptr /* compression_dict */, r->column_family_name, r->env_options);  // Shichao
   r->file_writer.reset(
       new WritableFileWriter(std::move(sst_file), r->env_options));
   r->builder.reset(r->ioptions.table_factory->NewTableBuilder(

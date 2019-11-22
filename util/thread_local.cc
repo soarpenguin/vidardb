@@ -297,7 +297,7 @@ bool ThreadLocalPtr::StaticMeta::CompareAndSwap(uint32_t id, void* ptr,
       expected, ptr, std::memory_order_release, std::memory_order_relaxed);
 }
 
-void ThreadLocalPtr::StaticMeta::Scrape(uint32_t id, autovector<void*>* ptrs,
+void ThreadLocalPtr::StaticMeta::Scrape(uint32_t id, std::vector<void*>* ptrs,
     void* const replacement) {
   MutexLock l(Mutex());
   for (ThreadData* t = head_.next; t != &head_; t = t->next) {
@@ -388,7 +388,7 @@ bool ThreadLocalPtr::CompareAndSwap(void* ptr, void*& expected) {
   return Instance()->CompareAndSwap(id_, ptr, expected);
 }
 
-void ThreadLocalPtr::Scrape(autovector<void*>* ptrs, void* const replacement) {
+void ThreadLocalPtr::Scrape(std::vector<void*>* ptrs, void* const replacement) {
   Instance()->Scrape(id_, ptrs, replacement);
 }
 

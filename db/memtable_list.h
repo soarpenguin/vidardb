@@ -19,7 +19,6 @@
 #include "rocksdb/iterator.h"
 #include "rocksdb/options.h"
 #include "rocksdb/types.h"
-#include "util/autovector.h"
 #include "util/instrumented_mutex.h"
 #include "util/log_buffer.h"
 
@@ -44,7 +43,7 @@ class MemTableListVersion {
                                int max_write_buffer_number_to_maintain);
 
   void Ref();
-  void Unref(autovector<MemTable*>* to_delete = nullptr);
+  void Unref(std::vector<MemTable*>* to_delete = nullptr);
 
   // Search all the memtables starting from the most recent one.
   // Return the most recent value found, if any.
@@ -104,11 +103,11 @@ class MemTableListVersion {
 
  private:
   // REQUIRE: m is an immutable memtable
-  void Add(MemTable* m, autovector<MemTable*>* to_delete);
+  void Add(MemTable* m, std::vector<MemTable*>* to_delete);
   // REQUIRE: m is an immutable memtable
-  void Remove(MemTable* m, autovector<MemTable*>* to_delete);
+  void Remove(MemTable* m, std::vector<MemTable*>* to_delete);
 
-  void TrimHistory(autovector<MemTable*>* to_delete);
+  void TrimHistory(std::vector<MemTable*>* to_delete);
 
   bool GetFromList(std::list<MemTable*>* list, const LookupKey& key,
                    std::string* value, Status* s, MergeContext* merge_context,
@@ -116,7 +115,7 @@ class MemTableListVersion {
 
   void AddMemTable(MemTable* m);
 
-  void UnrefMemTable(autovector<MemTable*>* to_delete, MemTable* m);
+  void UnrefMemTable(std::vector<MemTable*>* to_delete, MemTable* m);
 
   friend class MemTableList;
 
@@ -187,23 +186,23 @@ class MemTableList {
 
   // Returns the earliest memtables that needs to be flushed. The returned
   // memtables are guaranteed to be in the ascending order of created time.
-  void PickMemtablesToFlush(autovector<MemTable*>* mems);
+  void PickMemtablesToFlush(std::vector<MemTable*>* mems);
 
   // Reset status of the given memtable list back to pending state so that
   // they can get picked up again on the next round of flush.
-  void RollbackMemtableFlush(const autovector<MemTable*>& mems,
+  void RollbackMemtableFlush(const std::vector<MemTable*>& mems,
                              uint64_t file_number);
 
   // Commit a successful flush in the manifest file
   Status InstallMemtableFlushResults(
       ColumnFamilyData* cfd, const MutableCFOptions& mutable_cf_options,
-      const autovector<MemTable*>& m, VersionSet* vset, InstrumentedMutex* mu,
-      uint64_t file_number, autovector<MemTable*>* to_delete,
+      const std::vector<MemTable*>& m, VersionSet* vset, InstrumentedMutex* mu,
+      uint64_t file_number, std::vector<MemTable*>* to_delete,
       Directory* db_directory, LogBuffer* log_buffer);
 
   // New memtables are inserted at the front of the list.
   // Takes ownership of the referenced held on *m by the caller of Add().
-  void Add(MemTable* m, autovector<MemTable*>* to_delete);
+  void Add(MemTable* m, std::vector<MemTable*>* to_delete);
 
   // Returns an estimate of the number of bytes of data in use.
   size_t ApproximateMemoryUsage();

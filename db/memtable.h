@@ -23,7 +23,6 @@
 #include "rocksdb/immutable_options.h"
 #include "db/memtable_allocator.h"
 #include "util/concurrent_arena.h"
-#include "util/dynamic_bloom.h"
 #include "util/instrumented_mutex.h"
 #include "util/mutable_cf_options.h"
 
@@ -40,15 +39,6 @@ struct MemTableOptions {
       const MutableCFOptions& mutable_cf_options);
   size_t write_buffer_size;
   size_t arena_block_size;
-  uint32_t memtable_prefix_bloom_bits;
-  uint32_t memtable_prefix_bloom_probes;
-  size_t memtable_prefix_bloom_huge_page_tlb_size;
-  bool inplace_update_support;
-  size_t inplace_update_num_locks;
-  UpdateStatus (*inplace_callback)(char* existing_value,
-                                   uint32_t* existing_value_size,
-                                   Slice delta_value,
-                                   std::string* merged_value);
   size_t max_successive_merges;
   bool filter_deletes;
   Statistics* statistics;
@@ -310,13 +300,10 @@ class MemTable {
   // return true if the current MemTableRep supports snapshots.
   // inplace update prevents snapshots,
   bool IsSnapshotSupported() const {
-    return table_->IsSnapshotSupported() && !moptions_.inplace_update_support;
+    return table_->IsSnapshotSupported();
   }
 
   uint64_t ApproximateSize(const Slice& start_ikey, const Slice& end_ikey);
-
-  // Get the lock associated for the key
-  port::RWMutex* GetLock(const Slice& key);
 
   const InternalKeyComparator& GetInternalKeyComparator() const {
     return comparator_.comparator;
@@ -366,12 +353,6 @@ class MemTable {
   // the earliest log containing a prepared section
   // which has been inserted into this memtable.
   std::atomic<uint64_t> min_prep_log_referenced_;
-
-  // rw locks for inplace updates
-  std::vector<port::RWMutex> locks_;
-
-  const SliceTransform* const prefix_extractor_;
-  std::unique_ptr<DynamicBloom> prefix_bloom_;
 
   std::atomic<FlushStateEnum> flush_state_;
 

@@ -176,32 +176,14 @@ void RandomCompressionTypeVector(const size_t count,
   }
 }
 
-const SliceTransform* RandomSliceTransform(Random* rnd, int pre_defined) {
-  int random_num = pre_defined >= 0 ? pre_defined : rnd->Uniform(4);
-  switch (random_num) {
-    case 0:
-      return NewFixedPrefixTransform(rnd->Uniform(20) + 1);
-    case 1:
-      return NewCappedPrefixTransform(rnd->Uniform(20) + 1);
-    case 2:
-      return NewNoopTransform();
-    default:
-      return nullptr;
-  }
-}
-
 BlockBasedTableOptions RandomBlockBasedTableOptions(Random* rnd) {
   BlockBasedTableOptions opt;
-  opt.cache_index_and_filter_blocks = rnd->Uniform(2);
-  opt.pin_l0_filter_and_index_blocks_in_cache = rnd->Uniform(2);
   opt.index_type = BlockBasedTableOptions::kBinarySearch;
-  opt.hash_index_allow_collision = rnd->Uniform(2);
   opt.checksum = static_cast<ChecksumType>(rnd->Uniform(3));
   opt.block_size = rnd->Uniform(10000000);
   opt.block_size_deviation = rnd->Uniform(100);
   opt.block_restart_interval = rnd->Uniform(100);
   opt.index_block_restart_interval = rnd->Uniform(100);
-  opt.whole_key_filtering = rnd->Uniform(2);
 
   return opt;
 }
@@ -292,7 +274,6 @@ void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd) {
   cf_opt->report_bg_io_stats = rnd->Uniform(2);
   cf_opt->disable_auto_compactions = rnd->Uniform(2);
   cf_opt->filter_deletes = rnd->Uniform(2);
-  cf_opt->inplace_update_support = rnd->Uniform(2);
   cf_opt->level_compaction_dynamic_level_bytes = rnd->Uniform(2);
   cf_opt->optimize_filters_for_hits = rnd->Uniform(2);
   cf_opt->paranoid_file_checks = rnd->Uniform(2);
@@ -320,15 +301,10 @@ void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd) {
 
   // size_t options
   cf_opt->arena_block_size = rnd->Uniform(10000);
-  cf_opt->inplace_update_num_locks = rnd->Uniform(10000);
   cf_opt->max_successive_merges = rnd->Uniform(10000);
-  cf_opt->memtable_prefix_bloom_huge_page_tlb_size = rnd->Uniform(10000);
   cf_opt->write_buffer_size = rnd->Uniform(10000);
 
   // uint32_t options
-  cf_opt->bloom_locality = rnd->Uniform(10000);
-  cf_opt->memtable_prefix_bloom_bits = rnd->Uniform(10000);
-  cf_opt->memtable_prefix_bloom_probes = rnd->Uniform(10000);
   cf_opt->min_partial_merge_operands = rnd->Uniform(10000);
   cf_opt->max_bytes_for_level_base = rnd->Uniform(10000);
 
@@ -341,7 +317,6 @@ void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd) {
   cf_opt->rate_limit_delay_max_milliseconds = rnd->Uniform(10000);
 
   // pointer typed options
-  cf_opt->prefix_extractor.reset(RandomSliceTransform(rnd));
   cf_opt->table_factory.reset(RandomTableFactory(rnd));
   cf_opt->merge_operator.reset(RandomMergeOperator(rnd));
   if (cf_opt->compaction_filter) {

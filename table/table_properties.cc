@@ -82,12 +82,6 @@ std::string TableProperties::ToString(
                  kv_delim);
   AppendProperty(result, "(estimated) table size",
                  data_size + index_size + filter_size, prop_delim, kv_delim);
-
-  AppendProperty(
-      result, "filter policy name",
-      filter_policy_name.empty() ? std::string("N/A") : filter_policy_name,
-      prop_delim, kv_delim);
-
   AppendProperty(result, "column family ID",
                  column_family_id == rocksdb::TablePropertiesCollectorFactory::
                                          Context::kUnknownColumnFamily

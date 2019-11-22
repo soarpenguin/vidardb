@@ -3,7 +3,6 @@ LIB_SOURCES =                                                   \
   db/auto_roll_logger.cc                                        \
   db/builder.cc                                                 \
   db/column_family.cc                                           \
-  db/compacted_db_impl.cc                                       \
   db/compaction.cc                                              \
   db/compaction_iterator.cc                                     \
   db/compaction_job.cc                                          \
@@ -48,7 +47,6 @@ LIB_SOURCES =                                                   \
   port/stack_trace.cc                                           \
   port/port_posix.cc                                            \
   table/adaptive_table_factory.cc                               \
-  table/block_based_filter_block.cc                             \
   table/block_based_table_builder.cc                            \
   table/block_based_table_factory.cc                            \
   table/block_based_table_reader.cc                             \
@@ -59,7 +57,6 @@ LIB_SOURCES =                                                   \
   table/block.cc                                                \
   table/flush_block_policy.cc                                   \
   table/format.cc                                               \
-  table/full_filter_block.cc                                    \
   table/get_context.cc                                          \
   table/iterator.cc                                             \
   table/merger.cc                                               \
@@ -68,7 +65,6 @@ LIB_SOURCES =                                                   \
   table/table_properties.cc                                     \
   table/two_level_iterator.cc                                   \
   util/arena.cc                                                 \
-  util/bloom.cc                                                 \
   util/build_version.cc                                         \
   util/cache.cc                                                 \
   util/coding.cc                                                \
@@ -77,7 +73,6 @@ LIB_SOURCES =                                                   \
   util/concurrent_arena.cc                                      \
   util/crc32c.cc                                                \
   util/delete_scheduler.cc                                      \
-  util/dynamic_bloom.cc                                         \
   util/env.cc                                                   \
   util/env_posix.cc                                             \
   util/io_posix.cc                                              \
@@ -85,7 +80,6 @@ LIB_SOURCES =                                                   \
   util/sst_file_manager_impl.cc                                 \
   util/file_util.cc                                             \
   util/file_reader_writer.cc                                    \
-  util/filter_policy.cc                                         \
   util/hash.cc                                                  \
   util/histogram.cc                                             \
   util/instrumented_mutex.cc                                    \
@@ -140,11 +134,9 @@ TEST_BENCH_SOURCES =                                                    \
   db/db_test.cc                                                         \
 	db/db_block_cache_test.cc																							\
   db/db_io_failure_test.cc                                              \
-  db/db_bloom_filter_test.cc                                            \
   db/db_compaction_filter_test.cc                                       \
   db/db_compaction_test.cc                                              \
   db/db_dynamic_level_test.cc                                           \
-  db/db_inplace_update_test.cc                                          \
 	db/db_iterator_test.cc																								\
   db/db_log_iter_test.cc                                                \
 	db/db_sst_test.cc																											\
@@ -162,7 +154,6 @@ TEST_BENCH_SOURCES =                                                    \
   db/log_test.cc                                                        \
   db/manual_compaction_test.cc                                          \
   db/memtablerep_bench.cc                                               \
-  db/merge_test.cc                                                      \
   db/options_file_test.cc                                               \
   db/perf_context_test.cc                                               \
   db/skiplist_test.cc                                                   \
@@ -175,22 +166,17 @@ TEST_BENCH_SOURCES =                                                    \
   db/write_batch_test.cc                                                \
   db/write_controller_test.cc                                           \
   db/write_callback_test.cc                                             \
-  table/block_based_filter_block_test.cc                                \
   table/block_test.cc                                                   \
-  table/full_filter_block_test.cc                                       \
   table/merger_test.cc                                                  \
   table/table_reader_bench.cc                                           \
   table/table_test.cc                                                   \
   tools/db_bench_tool_test.cc                                           \
   tools/db_sanity_test.cc                                               \
   util/arena_test.cc                                                    \
-  util/autovector_test.cc                                               \
-  util/bloom_test.cc                                                    \
   util/cache_bench.cc                                                   \
   util/cache_test.cc                                                    \
   util/coding_test.cc                                                   \
   util/crc32c_test.cc                                                   \
-  util/dynamic_bloom_test.cc                                            \
   util/env_test.cc                                                      \
   util/filelock_test.cc                                                 \
   util/histogram_test.cc                                                \
@@ -201,7 +187,6 @@ TEST_BENCH_SOURCES =                                                    \
   util/options_test.cc                                                  \
   util/event_logger_test.cc                                             \
   util/rate_limiter_test.cc                                             \
-  util/slice_transform_test.cc                                          \
   util/testharness.cc                                                   \
   util/testutil.cc                                                      \
   util/thread_list_test.cc                                              \

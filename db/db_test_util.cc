@@ -100,28 +100,6 @@ bool DBTestBase::ShouldSkipOptions(int option_config, int skip_mask) {
          option_config == kUniversalCompactionMultiLevel)) {
       return true;
     }
-    if ((skip_mask & kSkipMergePut) && option_config == kMergePut) {
-      return true;
-    }
-    if ((skip_mask & kSkipNoSeekToLast) &&
-        (option_config == kHashLinkList || option_config == kHashSkipList)) {
-      return true;
-    }
-    if ((skip_mask & kSkipPlainTable) &&
-        (option_config == kPlainTableAllBytesPrefix ||
-         option_config == kPlainTableFirstBytePrefix ||
-         option_config == kPlainTableCappedPrefix ||
-         option_config == kPlainTableCappedPrefixNonMmap)) {
-      return true;
-    }
-    if ((skip_mask & kSkipHashIndex) &&
-        (option_config == kBlockBasedTableWithPrefixHashIndex ||
-         option_config == kBlockBasedTableWithWholeKeyHashIndex)) {
-      return true;
-    }
-    if ((skip_mask & kSkipHashCuckoo) && (option_config == kHashCuckoo)) {
-      return true;
-    }
     if ((skip_mask & kSkipFIFOCompaction) && option_config == kFIFOCompaction) {
       return true;
     }
@@ -228,14 +206,6 @@ Options DBTestBase::CurrentOptions(
   BlockBasedTableOptions table_options;
   bool set_block_based_table_factory = true;
   switch (option_config_) {
-    case kFilter:
-      table_options.filter_policy.reset(NewBloomFilterPolicy(10, true));
-      break;
-    case kFullFilterWithNewTableReaderForCompactions:
-      table_options.filter_policy.reset(NewBloomFilterPolicy(10, false));
-      options.new_table_reader_for_compaction_inputs = true;
-      options.compaction_readahead_size = 10 * 1024 * 1024;
-      break;
     case kUncompressed:
       options.compression = kNoCompression;
       break;
@@ -270,10 +240,6 @@ Options DBTestBase::CurrentOptions(
     case kUniversalCompactionMultiLevel:
       options.compaction_style = kCompactionStyleUniversal;
       options.num_levels = 8;
-      break;
-    case kCompressedBlockCache:
-      options.allow_mmap_writes = true;
-      table_options.block_cache_compressed = NewLRUCache(8 * 1024 * 1024);
       break;
     case kInfiniteMaxOpenFiles:
       options.max_open_files = -1;
@@ -319,9 +285,6 @@ Options DBTestBase::CurrentOptions(
       break;
   }
 
-  if (options_override.filter_policy) {
-    table_options.filter_policy = options_override.filter_policy;
-  }
   if (set_block_based_table_factory) {
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
   }
@@ -421,20 +384,12 @@ Status DBTestBase::Flush(int cf) {
 }
 
 Status DBTestBase::Put(const Slice& k, const Slice& v, WriteOptions wo) {
-  if (kMergePut == option_config_) {
-    return db_->Merge(wo, k, v);
-  } else {
     return db_->Put(wo, k, v);
-  }
 }
 
 Status DBTestBase::Put(int cf, const Slice& k, const Slice& v,
                        WriteOptions wo) {
-  if (kMergePut == option_config_) {
-    return db_->Merge(wo, handles_[cf], k, v);
-  } else {
     return db_->Put(wo, handles_[cf], k, v);
-  }
 }
 
 Status DBTestBase::Delete(const std::string& k) {
@@ -443,14 +398,6 @@ Status DBTestBase::Delete(const std::string& k) {
 
 Status DBTestBase::Delete(int cf, const std::string& k) {
   return db_->Delete(WriteOptions(), handles_[cf], k);
-}
-
-Status DBTestBase::SingleDelete(const std::string& k) {
-  return db_->SingleDelete(WriteOptions(), k);
-}
-
-Status DBTestBase::SingleDelete(int cf, const std::string& k) {
-  return db_->SingleDelete(WriteOptions(), handles_[cf], k);
 }
 
 std::string DBTestBase::Get(const std::string& k, const Snapshot* snapshot) {

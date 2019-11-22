@@ -85,7 +85,7 @@ int FindFileInRange(const InternalKeyComparator& icmp,
 class FilePicker {
  public:
   FilePicker(std::vector<FileMetaData*>* files, const Slice& user_key,
-             const Slice& ikey, autovector<LevelFilesBrief>* file_levels,
+             const Slice& ikey, std::vector<LevelFilesBrief>* file_levels,
              unsigned int num_levels, FileIndexer* file_indexer,
              const Comparator* user_comparator,
              const InternalKeyComparator* internal_comparator)
@@ -275,7 +275,7 @@ class FilePicker {
 #ifndef NDEBUG
   std::vector<FileMetaData*>* files_;
 #endif
-  autovector<LevelFilesBrief>* level_files_brief_;
+  std::vector<LevelFilesBrief>* level_files_brief_;
   bool search_ended_;
   bool is_hit_file_last_in_level_;
   LevelFilesBrief* curr_file_level_;
@@ -539,15 +539,14 @@ class LevelFileIteratorState : public TwoLevelIteratorState {
                          const EnvOptions& env_options,
                          const InternalKeyComparator& icomparator,
                          HistogramImpl* file_read_hist, bool for_compaction,
-                         bool prefix_enabled, bool skip_filters, int level)
-      : TwoLevelIteratorState(prefix_enabled),
+                         int level)
+      : TwoLevelIteratorState(),
         table_cache_(table_cache),
         read_options_(read_options),
         env_options_(env_options),
         icomparator_(icomparator),
         file_read_hist_(file_read_hist),
         for_compaction_(for_compaction),
-        skip_filters_(skip_filters),
         level_(level) {}
 
   InternalIterator* NewSecondaryIterator(const Slice& meta_handle) override {
@@ -560,12 +559,8 @@ class LevelFileIteratorState : public TwoLevelIteratorState {
       return table_cache_->NewIterator(
           read_options_, env_options_, icomparator_, *fd,
           nullptr /* don't need reference to table*/, file_read_hist_,
-          for_compaction_, nullptr /* arena */, skip_filters_, level_);
+          for_compaction_, nullptr /* arena */, level_);
     }
-  }
-
-  bool PrefixMayMatch(const Slice& internal_key) override {
-    return true;
   }
 
  private:
@@ -575,7 +570,6 @@ class LevelFileIteratorState : public TwoLevelIteratorState {
   const InternalKeyComparator& icomparator_;
   HistogramImpl* file_read_hist_;
   bool for_compaction_;
-  bool skip_filters_;
   int level_;
 };
 
@@ -873,9 +867,7 @@ void Version::AddIterators(const ReadOptions& read_options,
           LevelFileIteratorState(cfd_->table_cache(), read_options, soptions,
                                  cfd_->internal_comparator(),
                                  cfd_->internal_stats()->GetFileReadHist(level),
-                                 false /* for_compaction */,
-                                 cfd_->ioptions()->prefix_extractor != nullptr,
-                                 IsFilterSkipped(level), level);
+                                 false /* for_compaction */, level);
       mem = arena->AllocateAligned(sizeof(LevelFileNumIterator));
       auto* first_level_iter = new (mem) LevelFileNumIterator(
           cfd_->internal_comparator(), &storage_info_.LevelFilesBrief(level));
@@ -979,8 +971,6 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
     *status = table_cache_->Get(
         read_options, *internal_comparator(), f->fd, ikey, &get_context,
         cfd_->internal_stats()->GetFileReadHist(fp.GetHitFileLevel()),
-        IsFilterSkipped(static_cast<int>(fp.GetHitFileLevel()),
-                        fp.IsHitFileLastInLevel()),
         fp.GetCurrentLevel());
     // TODO: examine the behavior for corrupted key
     if (!status->ok()) {
@@ -1062,7 +1052,7 @@ void Version::RangeQuery(const ReadOptions& read_options,
   while (f != nullptr) {
     std::unique_ptr<InternalIterator> iter(table_cache_->NewIterator(
         read_options, vset_->env_options_, *internal_comparator(), f->fd,
-        nullptr, nullptr, true, nullptr, true, -1, false));
+        nullptr, nullptr, true, nullptr, -1, false));
     *status = iter->status();
     if (!status->ok()) {
       return;
@@ -3437,8 +3427,7 @@ InternalIterator* VersionSet::MakeInputIterator(const Compaction* c) {
                 cfd->table_cache(), read_options, env_options_,
                 cfd->internal_comparator(),
                 nullptr /* no per level latency histogram */,
-                true /* for_compaction */, false /* prefix enabled */,
-                false /* skip_filters */, (int)which /* level */),
+                true /* for_compaction */, (int)which /* level */),
             new LevelFileNumIterator(cfd->internal_comparator(),
                                      c->input_levels(which)));
       }

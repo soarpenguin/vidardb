@@ -104,7 +104,7 @@ void FlushJob::ReportStartedFlush() {
   IOSTATS_RESET(bytes_written);
 }
 
-void FlushJob::ReportFlushInputSize(const autovector<MemTable*>& mems) {
+void FlushJob::ReportFlushInputSize(const std::vector<MemTable*>& mems) {
   uint64_t input_size = 0;
   for (auto* mem : mems) {
     input_size += mem->ApproximateMemoryUsage();
@@ -141,7 +141,7 @@ Status FlushJob::Run(FileMetaData* file_meta) {
 
   // Save the contents of the earliest memtable as a new Table
   FileMetaData meta;
-  autovector<MemTable*> mems;
+  std::vector<MemTable*> mems;
   cfd_->imm()->PickMemtablesToFlush(&mems);
   if (mems.empty()) {
     LogToBuffer(log_buffer_, "[%s] Nothing in memtable to flush",
@@ -214,7 +214,7 @@ Status FlushJob::Run(FileMetaData* file_meta) {
   return s;
 }
 
-Status FlushJob::WriteLevel0Table(const autovector<MemTable*>& mems,
+Status FlushJob::WriteLevel0Table(const std::vector<MemTable*>& mems,
                                   VersionEdit* edit, FileMetaData* meta) {
   AutoThreadOperationStageUpdater stage_updater(
       ThreadStatus::STAGE_FLUSH_WRITE_L0);

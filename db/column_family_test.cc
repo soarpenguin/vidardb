@@ -304,9 +304,7 @@ class ColumnFamilyTest : public testing::Test {
   Status Put(int cf, const std::string& key, const std::string& value) {
     return db_->Put(WriteOptions(), handles_[cf], Slice(key), Slice(value));
   }
-  Status Merge(int cf, const std::string& key, const std::string& value) {
-    return db_->Merge(WriteOptions(), handles_[cf], Slice(key), Slice(value));
-  }
+
   Status Flush(int cf) {
     return db_->Flush(FlushOptions(), handles_[cf]);
   }
@@ -615,15 +613,6 @@ TEST_F(ColumnFamilyTest, IgnoreRecoveredLog) {
   PutFixed64(&one, 1);
   PutFixed64(&two, 2);
   PutFixed64(&three, 3);
-  ASSERT_OK(Merge(0, "foo", one));
-  ASSERT_OK(Merge(1, "mirko", one));
-  ASSERT_OK(Merge(0, "foo", one));
-  ASSERT_OK(Merge(2, "bla", one));
-  ASSERT_OK(Merge(2, "fodor", one));
-  ASSERT_OK(Merge(0, "bar", one));
-  ASSERT_OK(Merge(2, "bla", one));
-  ASSERT_OK(Merge(1, "mirko", two));
-  ASSERT_OK(Merge(1, "franjo", one));
 
   // copy the logs to backup
   std::vector<std::string> logs;
@@ -897,17 +886,14 @@ TEST_F(ColumnFamilyTest, DifferentMergeOperators) {
 
   ASSERT_OK(Put(0, "foo", two));
   ASSERT_OK(Put(0, "foo", one));
-  ASSERT_TRUE(Merge(0, "foo", two).IsNotSupported());
   ASSERT_EQ(Get(0, "foo"), one);
 
   ASSERT_OK(Put(1, "foo", two));
   ASSERT_OK(Put(1, "foo", one));
-  ASSERT_OK(Merge(1, "foo", two));
   ASSERT_EQ(Get(1, "foo"), three);
 
   ASSERT_OK(Put(2, "foo", two));
   ASSERT_OK(Put(2, "foo", one));
-  ASSERT_OK(Merge(2, "foo", two));
   ASSERT_EQ(Get(2, "foo"), one + "," + two);
   Close();
 }

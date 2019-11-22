@@ -18,11 +18,11 @@ int main() {
   Options options;
   options.create_if_missing = true;
 
-//  shared_ptr<TableFactory> column_table_factory(NewColumnTableFactory());
-//  static_cast<ColumnTableOptions*>(column_table_factory->GetOptions())->column_num = M;
-//  options.table_factory.reset(column_table_factory.get());
+  shared_ptr<TableFactory> column_table_factory(NewColumnTableFactory());
+  static_cast<ColumnTableOptions*>(column_table_factory->GetOptions())->column_num = M;
+  options.table_factory.reset(column_table_factory.get());
 
-  options.table_factory.reset(NewBlockBasedTableFactory());
+//  options.table_factory.reset(NewBlockBasedTableFactory());
 
   Status s = DB::Open(options, kDBPath, &db);
   assert(s.ok());

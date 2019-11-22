@@ -35,7 +35,6 @@
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
 #include "rocksdb/options.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/statistics.h"
@@ -180,9 +179,9 @@ class SpecialSkipListFactory : public MemTableRepFactory {
 
   virtual MemTableRep* CreateMemTableRep(
       const MemTableRep::KeyComparator& compare, MemTableAllocator* allocator,
-      const SliceTransform* transform, Logger* logger) override {
+      Logger* logger) override {
     return new SpecialMemTableRep(
-        allocator, factory_.CreateMemTableRep(compare, allocator, transform, 0),
+        allocator, factory_.CreateMemTableRep(compare, allocator, 0),
         num_entries_flush_);
   }
   virtual const char* Name() const override { return "SkipListFactory"; }
@@ -527,16 +526,6 @@ class DBTestBase : public testing::Test {
   // Sequence of option configurations to try
   enum OptionConfig {
     kDefault = 0,
-    kBlockBasedTableWithPrefixHashIndex = 1,
-    kBlockBasedTableWithWholeKeyHashIndex = 2,
-    kPlainTableFirstBytePrefix = 3,
-    kPlainTableCappedPrefix = 4,
-    kPlainTableCappedPrefixNonMmap = 5,
-    kPlainTableAllBytesPrefix = 6,
-    kVectorRep = 7,
-    kHashLinkList = 8,
-    kHashCuckoo = 9,
-    kMergePut = 10,
     kFilter = 11,
     kFullFilterWithNewTableReaderForCompactions = 12,
     kUncompressed = 13,
@@ -546,7 +535,6 @@ class DBTestBase : public testing::Test {
     kManifestFileSize = 17,
     kPerfOptions = 18,
     kDeletesFilterFirst = 19,
-    kHashSkipList = 20,
     kUniversalCompaction = 21,
     kUniversalCompactionMultiLevel = 22,
     kCompressedBlockCache = 23,
@@ -581,11 +569,7 @@ class DBTestBase : public testing::Test {
     kNoSkip = 0,
     kSkipDeletesFilterFirst = 1,
     kSkipUniversalCompaction = 2,
-    kSkipMergePut = 4,
-    kSkipPlainTable = 8,
-    kSkipHashIndex = 16,
     kSkipNoSeekToLast = 32,
-    kSkipHashCuckoo = 64,
     kSkipFIFOCompaction = 128,
     kSkipMmapReads = 256,
   };
@@ -669,10 +653,6 @@ class DBTestBase : public testing::Test {
   Status Delete(const std::string& k);
 
   Status Delete(int cf, const std::string& k);
-
-  Status SingleDelete(const std::string& k);
-
-  Status SingleDelete(int cf, const std::string& k);
 
   std::string Get(const std::string& k, const Snapshot* snapshot = nullptr);
 

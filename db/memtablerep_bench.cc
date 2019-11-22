@@ -34,7 +34,6 @@ int main() {
 #include "rocksdb/comparator.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/options.h"
-#include "rocksdb/slice_transform.h"
 #include "util/arena.h"
 #include "util/mutexlock.h"
 #include "util/stop_watch.h"
@@ -605,7 +604,6 @@ int main(int argc, char** argv) {
   auto createMemtableRep = [&] {
     sequence = 0;
     return factory->CreateMemTableRep(key_comp, &memtable_allocator,
-                                      options.prefix_extractor.get(),
                                       options.info_log.get());
   };
   std::unique_ptr<rocksdb::MemTableRep> memtablerep;

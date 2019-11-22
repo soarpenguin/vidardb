@@ -14,7 +14,6 @@
 #include <vector>
 #include "port/port.h"
 #include "util/arena.h"
-#include "util/autovector.h"
 
 namespace rocksdb {
 
@@ -135,7 +134,7 @@ class FileIndexer {
       std::function<int(const FileMetaData*, const FileMetaData*)> cmp_op,
       std::function<void(IndexUnit*, int32_t)> set_index);
 
-  autovector<IndexLevel> next_level_index_;
+  std::vector<IndexLevel> next_level_index_;
   int32_t* level_rb_;
 };
 

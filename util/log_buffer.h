@@ -7,7 +7,6 @@
 
 #include "rocksdb/env.h"
 #include "util/arena.h"
-#include "util/autovector.h"
 #include "port/sys_time.h"
 #include <ctime>
 
@@ -41,7 +40,7 @@ class LogBuffer {
   const InfoLogLevel log_level_;
   Logger* info_log_;
   Arena arena_;
-  autovector<BufferedLog*> logs_;
+  std::vector<BufferedLog*> logs_;
 };
 
 // Add log to the LogBuffer for a delayed info logging. It can be used when

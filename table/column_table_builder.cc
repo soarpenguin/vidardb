@@ -498,7 +498,7 @@ void ColumnTableBuilder::Flush() {
   if (!ok()) return;
   if (r->data_block.empty()) return;
   WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
-  if (ok() && !r->table_options.skip_table_builder_flush) {
+  if (ok()) {
     r->status = r->file->Flush();
   }
   r->props.data_size = r->offset;

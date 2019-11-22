@@ -15,8 +15,6 @@
 #include "rocksdb/status.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/table.h"
-#include "rocksdb/slice_transform.h"
-#include "rocksdb/filter_policy.h"
 #include "port/port.h"
 #include "util/string_util.h"
 
@@ -199,7 +197,6 @@ class SanityTestBloomFilter : public SanityTest {
  public:
   explicit SanityTestBloomFilter(const std::string& path) : SanityTest(path) {
     BlockBasedTableOptions table_options;
-    table_options.filter_policy.reset(NewBloomFilterPolicy(10));
     options_.table_factory.reset(NewBlockBasedTableFactory(table_options));
   }
   ~SanityTestBloomFilter() {}

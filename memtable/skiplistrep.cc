@@ -13,16 +13,14 @@ namespace {
 class SkipListRep : public MemTableRep {
   InlineSkipList<const MemTableRep::KeyComparator&> skip_list_;
   const MemTableRep::KeyComparator& cmp_;
-  const SliceTransform* transform_;
   const size_t lookahead_;
 
   friend class LookaheadIterator;
 public:
   explicit SkipListRep(const MemTableRep::KeyComparator& compare,
-                       MemTableAllocator* allocator,
-                       const SliceTransform* transform, const size_t lookahead)
+                       MemTableAllocator* allocator, const size_t lookahead)
     : MemTableRep(allocator), skip_list_(compare, allocator), cmp_(compare),
-      transform_(transform), lookahead_(lookahead) {
+      lookahead_(lookahead) {
   }
 
   virtual KeyHandle Allocate(const size_t len, char** buf) override {
@@ -179,11 +177,6 @@ public:
         if (k1.compare(k2) == 0) {
           // same user key, don't move prev_
           advance_prev = false;
-        } else if (rep_.transform_) {
-          // only advance prev_ if it has the same prefix as iter_
-          auto t1 = rep_.transform_->Transform(k1);
-          auto t2 = rep_.transform_->Transform(k2);
-          advance_prev = t1.compare(t2) == 0;
         }
       }
 
@@ -260,8 +253,8 @@ public:
 
 MemTableRep* SkipListFactory::CreateMemTableRep(
     const MemTableRep::KeyComparator& compare, MemTableAllocator* allocator,
-    const SliceTransform* transform, Logger* logger) {
-  return new SkipListRep(compare, allocator, transform, lookahead_);
+    Logger* logger) {
+  return new SkipListRep(compare, allocator, lookahead_);
 }
 
 } // namespace rocksdb

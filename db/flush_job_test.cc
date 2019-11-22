@@ -121,7 +121,7 @@ TEST_F(FlushJobTest, NonEmpty) {
     inserted_keys.insert({internal_key.Encode().ToString(), value});
   }
 
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
   cfd->imm()->Add(new_mem, &to_delete);
   for (auto& m : to_delete) {
     delete m;
@@ -185,7 +185,7 @@ TEST_F(FlushJobTest, Snapshots) {
     }
   }
 
-  autovector<MemTable*> to_delete;
+  std::vector<MemTable*> to_delete;
   cfd->imm()->Add(new_mem, &to_delete);
   for (auto& m : to_delete) {
     delete m;

@@ -71,19 +71,6 @@ class WriteBatch : public WriteBatchBase {
               const SliceParts& key) override;
   void Delete(const SliceParts& key) override { Delete(nullptr, key); }
 
-  using WriteBatchBase::SingleDelete;
-  // WriteBatch implementation of DB::SingleDelete().  See db.h.
-  void SingleDelete(ColumnFamilyHandle* column_family,
-                    const Slice& key) override;
-  void SingleDelete(const Slice& key) override { SingleDelete(nullptr, key); }
-
-  // variant that takes SliceParts
-  void SingleDelete(ColumnFamilyHandle* column_family,
-                    const SliceParts& key) override;
-  void SingleDelete(const SliceParts& key) override {
-    SingleDelete(nullptr, key);
-  }
-
   using WriteBatchBase::Merge;
   // Merge "value" with the existing value of "key" in the database.
   // "key->merge(existing, value)"
@@ -224,9 +211,6 @@ class WriteBatch : public WriteBatchBase {
 
   // Returns true if DeleteCF will be called during Iterate
   bool HasDelete() const;
-
-  // Returns true if SingleDeleteCF will be called during Iterate
-  bool HasSingleDelete() const;
 
   // Returns trie if MergeCF will be called during Iterate
   bool HasMerge() const;

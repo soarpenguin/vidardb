@@ -12,9 +12,7 @@
 #include <string>
 #include "rocksdb/comparator.h"
 #include "rocksdb/db.h"
-#include "rocksdb/filter_policy.h"
 #include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
 #include "rocksdb/table.h"
 #include "rocksdb/types.h"
 #include "util/coding.h"
@@ -38,7 +36,6 @@ enum ValueType : unsigned char {
   kTypeColumnFamilyValue = 0x5,     // WAL only.
   kTypeColumnFamilyMerge = 0x6,     // WAL only.
   kTypeSingleDeletion = 0x7,
-  kTypeColumnFamilySingleDeletion = 0x8,  // WAL only.
   kTypeBeginPrepareXID = 0x9,             // WAL only.
   kTypeEndPrepareXID = 0xA,               // WAL only.
   kTypeCommitXID = 0xB,                   // WAL only.
@@ -491,36 +488,6 @@ class IterKey {
   // No copying allowed
   IterKey(const IterKey&) = delete;
   void operator=(const IterKey&) = delete;
-};
-
-class InternalKeySliceTransform : public SliceTransform {
- public:
-  explicit InternalKeySliceTransform(const SliceTransform* transform)
-      : transform_(transform) {}
-
-  virtual const char* Name() const override { return transform_->Name(); }
-
-  virtual Slice Transform(const Slice& src) const override {
-    auto user_key = ExtractUserKey(src);
-    return transform_->Transform(user_key);
-  }
-
-  virtual bool InDomain(const Slice& src) const override {
-    auto user_key = ExtractUserKey(src);
-    return transform_->InDomain(user_key);
-  }
-
-  virtual bool InRange(const Slice& dst) const override {
-    auto user_key = ExtractUserKey(dst);
-    return transform_->InRange(user_key);
-  }
-
-  const SliceTransform* user_prefix_extractor() const { return transform_; }
-
- private:
-  // Like comparator, InternalKeySliceTransform will not take care of the
-  // deletion of transform_
-  const SliceTransform* const transform_;
 };
 
 // Read the key of a record from a write batch.

@@ -116,8 +116,7 @@ TEST_F(DBIteratorTest, NonBlockingIteration) {
     // This test verifies block cache behaviors, which is not used by plain
     // table format.
     // Exclude kHashCuckoo as it does not support iteration currently
-  } while (ChangeOptions(kSkipPlainTable | kSkipNoSeekToLast | kSkipHashCuckoo |
-                         kSkipMmapReads));
+  } while (ChangeOptions(kSkipNoSeekToLast | kSkipMmapReads));
 }
 
 #ifndef ROCKSDB_LITE
@@ -181,8 +180,7 @@ TEST_F(DBIteratorTest, ManagedNonBlockingIteration) {
     // This test verifies block cache behaviors, which is not used by plain
     // table format.
     // Exclude kHashCuckoo as it does not support iteration currently
-  } while (ChangeOptions(kSkipPlainTable | kSkipNoSeekToLast | kSkipHashCuckoo |
-                         kSkipMmapReads));
+  } while (ChangeOptions(kSkipNoSeekToLast | kSkipMmapReads));
 }
 #endif  // ROCKSDB_LITE
 
@@ -585,31 +583,6 @@ TEST_F(DBIteratorTest, IterSmallAndLargeMix) {
   } while (ChangeCompactOptions());
 }
 
-TEST_F(DBIteratorTest, IterMultiWithDelete) {
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-    ASSERT_OK(Put(1, "ka", "va"));
-    ASSERT_OK(Put(1, "kb", "vb"));
-    ASSERT_OK(Put(1, "kc", "vc"));
-    ASSERT_OK(Delete(1, "kb"));
-    ASSERT_EQ("NOT_FOUND", Get(1, "kb"));
-
-    Iterator* iter = db_->NewIterator(ReadOptions(), handles_[1]);
-    iter->Seek("kc");
-    ASSERT_EQ(IterStatus(iter), "kc->vc");
-    if (!CurrentOptions().merge_operator) {
-      // TODO: merge operator does not support backward iteration yet
-      if (kPlainTableAllBytesPrefix != option_config_ &&
-          kBlockBasedTableWithWholeKeyHashIndex != option_config_ &&
-          kHashLinkList != option_config_) {
-        iter->Prev();
-        ASSERT_EQ(IterStatus(iter), "ka->va");
-      }
-    }
-    delete iter;
-  } while (ChangeOptions());
-}
-
 TEST_F(DBIteratorTest, IterPrevMaxSkip) {
   do {
     CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
@@ -637,54 +610,9 @@ TEST_F(DBIteratorTest, IterPrevMaxSkip) {
 
     ASSERT_OK(Delete(1, "key1"));
     VerifyIterLast("(invalid)", 1);
-  } while (ChangeOptions(kSkipMergePut | kSkipNoSeekToLast));
+  } while (ChangeOptions(kSkipNoSeekToLast));
 }
 
-TEST_F(DBIteratorTest, IterWithSnapshot) {
-  anon::OptionsOverride options_override;
-//  options_override.skip_policy = kSkipNoSnapshot;
-  do {
-    CreateAndReopenWithCF({"pikachu"}, CurrentOptions(options_override));
-    ASSERT_OK(Put(1, "key1", "val1"));
-    ASSERT_OK(Put(1, "key2", "val2"));
-    ASSERT_OK(Put(1, "key3", "val3"));
-    ASSERT_OK(Put(1, "key4", "val4"));
-    ASSERT_OK(Put(1, "key5", "val5"));
-
-    const Snapshot* snapshot = db_->GetSnapshot();
-    ReadOptions options;
-    options.snapshot = snapshot;
-    Iterator* iter = db_->NewIterator(options, handles_[1]);
-
-    // Put more values after the snapshot
-    ASSERT_OK(Put(1, "key100", "val100"));
-    ASSERT_OK(Put(1, "key101", "val101"));
-
-    iter->Seek("key5");
-    ASSERT_EQ(IterStatus(iter), "key5->val5");
-    if (!CurrentOptions().merge_operator) {
-      // TODO: merge operator does not support backward iteration yet
-      if (kPlainTableAllBytesPrefix != option_config_ &&
-          kBlockBasedTableWithWholeKeyHashIndex != option_config_ &&
-          kHashLinkList != option_config_) {
-        iter->Prev();
-        ASSERT_EQ(IterStatus(iter), "key4->val4");
-        iter->Prev();
-        ASSERT_EQ(IterStatus(iter), "key3->val3");
-
-        iter->Next();
-        ASSERT_EQ(IterStatus(iter), "key4->val4");
-        iter->Next();
-        ASSERT_EQ(IterStatus(iter), "key5->val5");
-      }
-      iter->Next();
-      ASSERT_TRUE(!iter->Valid());
-    }
-    db_->ReleaseSnapshot(snapshot);
-    delete iter;
-    // skip as HashCuckooRep does not support snapshot
-  } while (ChangeOptions(kSkipHashCuckoo));
-}
 
 TEST_F(DBIteratorTest, IteratorPinsRef) {
   do {
@@ -717,7 +645,6 @@ TEST_F(DBIteratorTest, DBIteratorBoundTest) {
   options.env = env_;
   options.create_if_missing = true;
 
-  options.prefix_extractor = nullptr;
   DestroyAndReopen(options);
   ASSERT_OK(Put("a", "0"));
   ASSERT_OK(Put("foo", "bar"));
@@ -782,9 +709,6 @@ TEST_F(DBIteratorTest, DBIteratorBoundTest) {
     ASSERT_EQ(iter->key().compare(Slice("a")), 0);
   }
 
-  // prefix is the first letter of the key
-  options.prefix_extractor.reset(NewFixedPrefixTransform(1));
-
   DestroyAndReopen(options);
   ASSERT_OK(Put("a", "0"));
   ASSERT_OK(Put("foo", "bar"));
@@ -817,7 +741,6 @@ TEST_F(DBIteratorTest, DBIteratorBoundTest) {
   // testing that iterate_upper_bound prevents iterating over deleted items
   // if the bound has already reached
   {
-    options.prefix_extractor = nullptr;
     DestroyAndReopen(options);
     ASSERT_OK(Put("a", "0"));
     ASSERT_OK(Put("b", "0"));
@@ -873,30 +796,6 @@ TEST_F(DBIteratorTest, DBIteratorBoundTest) {
   }
 }
 
-// TODO(3.13): fix the issue of Seek() + Prev() which might not necessary
-//             return the biggest key which is smaller than the seek key.
-TEST_F(DBIteratorTest, PrevAfterMerge) {
-  Options options;
-  options.create_if_missing = true;
-  DestroyAndReopen(options);
-
-  // write three entries with different keys using Merge()
-  WriteOptions wopts;
-  db_->Merge(wopts, "1", "data1");
-  db_->Merge(wopts, "2", "data2");
-  db_->Merge(wopts, "3", "data3");
-
-  std::unique_ptr<Iterator> it(db_->NewIterator(ReadOptions()));
-
-  it->Seek("2");
-  ASSERT_TRUE(it->Valid());
-  ASSERT_EQ("2", it->key().ToString());
-
-  it->Prev();
-  ASSERT_TRUE(it->Valid());
-  ASSERT_EQ("1", it->key().ToString());
-}
-
 TEST_F(DBIteratorTest, PinnedDataIteratorRandomized) {
   enum TestConfig {
     NORMAL,
@@ -939,7 +838,6 @@ TEST_F(DBIteratorTest, PinnedDataIteratorRandomized) {
       // Insert data to true_data map and to DB
       true_data[k] = v;
       if (rnd.OneIn(static_cast<int>(100.0 / merge_percentage))) {
-        ASSERT_OK(db_->Merge(WriteOptions(), k, v));
       } else {
         ASSERT_OK(Put(k, v));
       }
@@ -1116,65 +1014,6 @@ TEST_F(DBIteratorTest, PinnedDataIteratorMultipleFiles) {
 }
 #endif
 
-TEST_F(DBIteratorTest, PinnedDataIteratorMergeOperator) {
-  Options options = CurrentOptions();
-  BlockBasedTableOptions table_options;
-  table_options.use_delta_encoding = false;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  DestroyAndReopen(options);
-
-  std::string numbers[7];
-  for (int val = 0; val <= 6; val++) {
-    PutFixed64(numbers + val, val);
-  }
-
-  // +1 all keys in range [ 0 => 999]
-  for (int i = 0; i < 1000; i++) {
-    WriteOptions wo;
-    ASSERT_OK(db_->Merge(wo, Key(i), numbers[1]));
-  }
-
-  // +2 all keys divisible by 2 in range [ 0 => 999]
-  for (int i = 0; i < 1000; i += 2) {
-    WriteOptions wo;
-    ASSERT_OK(db_->Merge(wo, Key(i), numbers[2]));
-  }
-
-  // +3 all keys divisible by 5 in range [ 0 => 999]
-  for (int i = 0; i < 1000; i += 5) {
-    WriteOptions wo;
-    ASSERT_OK(db_->Merge(wo, Key(i), numbers[3]));
-  }
-
-  ReadOptions ro;
-  ro.pin_data = true;
-  auto iter = db_->NewIterator(ro);
-
-  std::vector<std::pair<Slice, std::string>> results;
-  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-    std::string prop_value;
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.is-key-pinned", &prop_value));
-    ASSERT_EQ("1", prop_value);
-    results.emplace_back(iter->key(), iter->value().ToString());
-  }
-
-  ASSERT_EQ(results.size(), 1000);
-  for (size_t i = 0; i < results.size(); i++) {
-    auto& kv = results[i];
-    ASSERT_EQ(kv.first, Key(static_cast<int>(i)));
-    int expected_val = 1;
-    if (i % 2 == 0) {
-      expected_val += 2;
-    }
-    if (i % 5 == 0) {
-      expected_val += 3;
-    }
-    ASSERT_EQ(kv.second, numbers[expected_val]);
-  }
-
-  delete iter;
-}
-
 TEST_F(DBIteratorTest, PinnedDataIteratorReadAfterUpdate) {
   Options options = CurrentOptions();
   BlockBasedTableOptions table_options;
@@ -1250,17 +1089,6 @@ TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocks) {
   ASSERT_OK(Flush());
 
   // Second file containing 9 blocks of merge operands
-  ASSERT_OK(db_->Merge(WriteOptions(), "key1", "val1.1"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key1", "val1.2"));
-
-  ASSERT_OK(db_->Merge(WriteOptions(), "key2", "val2.1"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key2", "val2.2"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key2", "val2.3"));
-
-  ASSERT_OK(db_->Merge(WriteOptions(), "key3", "val3.1"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key3", "val3.2"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key3", "val3.3"));
-  ASSERT_OK(db_->Merge(WriteOptions(), "key3", "val3.4"));
   ASSERT_OK(Flush());
 
   {
@@ -1348,7 +1176,6 @@ TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
       gen_key = Key(i);
       gen_val = RandomString(&rnd, kValSize);
 
-      ASSERT_OK(db_->Merge(WriteOptions(), gen_key, gen_val));
       true_data[gen_key] += "," + gen_val;
     }
   }
