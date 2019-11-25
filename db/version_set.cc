@@ -29,12 +29,10 @@
 #include "db/log_reader.h"
 #include "db/log_writer.h"
 #include "db/memtable.h"
-#include "db/merge_context.h"
 #include "db/table_cache.h"
 #include "db/version_builder.h"
 #include "db/writebuffer.h"
 #include "rocksdb/env.h"
-#include "rocksdb/merge_operator.h"
 #include "table/format.h"
 #include "table/get_context.h"
 #include "table/internal_iterator.h"
@@ -942,8 +940,7 @@ Version::Version(ColumnFamilyData* column_family_data, VersionSet* vset,
       version_number_(version_number) {}
 
 void Version::Get(const ReadOptions& read_options, const LookupKey& k,
-                  std::string* value, Status* status,
-                  MergeContext* merge_context, bool* value_found,
+                  std::string* value, Status* status, bool* value_found,
                   bool* key_exists, SequenceNumber* seq) {
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();

@@ -50,7 +50,6 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/memtable_list.h"
-#include "db/merge_context.h"
 #include "db/table_cache.h"
 #include "db/table_properties_collector.h"
 #include "db/transaction_log_impl.h"
@@ -63,7 +62,6 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/sst_file_writer.h"
 #include "rocksdb/statistics.h"
 #include "rocksdb/status.h"
@@ -3639,8 +3637,6 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
   }
   // Acquire SuperVersion
   SuperVersion* sv = GetAndRefSuperVersion(cfd);
-  // Prepare to store a list of merge operations if merge occurs.
-  MergeContext merge_context;
 
   Status s;
   // First look in the memtable, then in the immutable memtable (if any).
@@ -3653,18 +3649,17 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
       (read_options.read_tier == kPersistedTier && has_unpersisted_data_);
   bool done = false;
   if (!skip_memtable) {
-    if (sv->mem->Get(lkey, value, &s, &merge_context)) {
+    if (sv->mem->Get(lkey, value, &s)) {
       done = true;
       RecordTick(stats_, MEMTABLE_HIT);
-    } else if (sv->imm->Get(lkey, value, &s, &merge_context)) {
+    } else if (sv->imm->Get(lkey, value, &s)) {
       done = true;
       RecordTick(stats_, MEMTABLE_HIT);
     }
   }
   if (!done) {
     PERF_TIMER_GUARD(get_from_output_files_time);
-    sv->current->Get(read_options, lkey, value, &s, &merge_context,
-                     value_found);
+    sv->current->Get(read_options, lkey, value, &s, value_found);
     RecordTick(stats_, MEMTABLE_MISS);
   }
 
@@ -6000,7 +5995,6 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
                                        bool cache_only, SequenceNumber* seq,
                                        bool* found_record_for_key) {
   Status s;
-  MergeContext merge_context;
 
   SequenceNumber current_seq = versions_->LastSequence();
   LookupKey lkey(key, current_seq);
@@ -6009,7 +6003,7 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
   *found_record_for_key = false;
 
   // Check if there is a record for this key in the latest memtable
-  sv->mem->Get(lkey, nullptr, &s, &merge_context, seq);
+  sv->mem->Get(lkey, nullptr, &s, seq);
 
   if (!(s.ok() || s.IsNotFound() || s.IsMergeInProgress())) {
     // unexpected error reading memtable.
@@ -6027,7 +6021,7 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
   }
 
   // Check if there is a record for this key in the immutable memtables
-  sv->imm->Get(lkey, nullptr, &s, &merge_context, seq);
+  sv->imm->Get(lkey, nullptr, &s, seq);
 
   if (!(s.ok() || s.IsNotFound() || s.IsMergeInProgress())) {
     // unexpected error reading memtable.
@@ -6045,7 +6039,7 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
   }
 
   // Check if there is a record for this key in the immutable memtables
-  sv->imm->GetFromHistory(lkey, nullptr, &s, &merge_context, seq);
+  sv->imm->GetFromHistory(lkey, nullptr, &s, seq);
 
   if (!(s.ok() || s.IsNotFound() || s.IsMergeInProgress())) {
     // unexpected error reading memtable.
@@ -6068,8 +6062,8 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
     // Check tables
     ReadOptions read_options;
 
-    sv->current->Get(read_options, lkey, nullptr, &s, &merge_context,
-                     nullptr /* value_found */, found_record_for_key, seq);
+    sv->current->Get(read_options, lkey, nullptr, &s, nullptr /* value_found */,
+                     found_record_for_key, seq);
 
     if (!(s.ok() || s.IsNotFound() || s.IsMergeInProgress())) {
       // unexpected error reading SST files

@@ -42,7 +42,6 @@
 #include "db/memtable.h"
 #include "db/snapshot_impl.h"
 #include "db/write_batch_internal.h"
-#include "rocksdb/merge_operator.h"
 #include "util/coding.h"
 #include "util/perf_context_imp.h"
 #include "util/statistics.h"

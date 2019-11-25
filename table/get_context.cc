@@ -5,7 +5,6 @@
 
 #include "table/get_context.h"
 #include "rocksdb/env.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/statistics.h"
 #include "util/perf_context_imp.h"
 #include "util/statistics.h"

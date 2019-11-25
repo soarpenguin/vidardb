@@ -22,7 +22,6 @@
 #include "rocksdb/env.h"
 #include "rocksdb/sst_file_manager.h"
 #include "rocksdb/memtablerep.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"

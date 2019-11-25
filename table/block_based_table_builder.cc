@@ -25,7 +25,6 @@
 #include "rocksdb/comparator.h"
 #include "rocksdb/env.h"
 #include "rocksdb/flush_block_policy.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/table.h"
 
 #include "table/block.h"

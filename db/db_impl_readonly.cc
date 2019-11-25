@@ -7,7 +7,6 @@
 #include "db/db_impl_readonly.h"
 
 #include "db/db_impl.h"
-#include "db/merge_context.h"
 #include "db/db_iter.h"
 #include "util/perf_context_imp.h"
 
@@ -34,12 +33,11 @@ Status DBImplReadOnly::Get(const ReadOptions& read_options,
   auto cfh = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family);
   auto cfd = cfh->cfd();
   SuperVersion* super_version = cfd->GetSuperVersion();
-  MergeContext merge_context;
   LookupKey lkey(key, snapshot);
-  if (super_version->mem->Get(lkey, value, &s, &merge_context)) {
+  if (super_version->mem->Get(lkey, value, &s)) {
   } else {
     PERF_TIMER_GUARD(get_from_output_files_time);
-    super_version->current->Get(read_options, lkey, value, &s, &merge_context);
+    super_version->current->Get(read_options, lkey, value, &s);
   }
   return s;
 }

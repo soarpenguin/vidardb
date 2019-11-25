@@ -163,12 +163,11 @@ class MemTable {
   // On success, *s may be set to OK, NotFound, or MergeInProgress.  Any other
   // status returned indicates a corruption or other unexpected error.
   bool Get(const LookupKey& key, std::string* value, Status* s,
-           MergeContext* merge_context, SequenceNumber* seq);
+           SequenceNumber* seq);
 
-  bool Get(const LookupKey& key, std::string* value, Status* s,
-           MergeContext* merge_context) {
+  bool Get(const LookupKey& key, std::string* value, Status* s) {
     SequenceNumber seq;
-    return Get(key, value, s, merge_context, &seq);
+    return Get(key, value, s, &seq);
   }
 
   /******************************* Shichao *******************************/

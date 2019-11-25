@@ -15,12 +15,10 @@
 
 #include "db/dbformat.h"
 #include "db/filename.h"
-#include "db/merge_context.h"
 #include "db/pinned_iterators_manager.h"
 #include "port/port.h"
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/options.h"
 #include "table/internal_iterator.h"
 #include "util/arena.h"

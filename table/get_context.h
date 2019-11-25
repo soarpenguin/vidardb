@@ -5,12 +5,11 @@
 
 #pragma once
 #include <string>
-#include "db/merge_context.h"
 #include "rocksdb/env.h"
 #include "rocksdb/types.h"
+#include "db/dbformat.h"
 
 namespace rocksdb {
-class MergeContext;
 
 class GetContext {
  public:

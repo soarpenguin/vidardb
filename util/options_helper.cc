@@ -12,7 +12,6 @@
 #include "rocksdb/cache.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/memtablerep.h"
-#include "rocksdb/merge_operator.h"
 #include "rocksdb/options.h"
 #include "rocksdb/table.h"
 #include "table/block_based_table_factory.h"

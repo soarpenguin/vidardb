@@ -52,12 +52,11 @@ class MemTableListVersion {
   // will be stored in *seq on success (regardless of whether true/false is
   // returned).  Otherwise, *seq will be set to kMaxSequenceNumber.
   bool Get(const LookupKey& key, std::string* value, Status* s,
-           MergeContext* merge_context, SequenceNumber* seq);
+           SequenceNumber* seq);
 
-  bool Get(const LookupKey& key, std::string* value, Status* s,
-           MergeContext* merge_context) {
+  bool Get(const LookupKey& key, std::string* value, Status* s) {
     SequenceNumber seq;
-    return Get(key, value, s, merge_context, &seq);
+    return Get(key, value, s, &seq);
   }
 
   /******************************* Shichao *******************************/
@@ -75,11 +74,10 @@ class MemTableListVersion {
   // queries (such as Transaction validation) as the history may contain
   // writes that are also present in the SST files.
   bool GetFromHistory(const LookupKey& key, std::string* value, Status* s,
-                      MergeContext* merge_context, SequenceNumber* seq);
-  bool GetFromHistory(const LookupKey& key, std::string* value, Status* s,
-                      MergeContext* merge_context) {
+                      SequenceNumber* seq);
+  bool GetFromHistory(const LookupKey& key, std::string* value, Status* s) {
     SequenceNumber seq;
-    return GetFromHistory(key, value, s, merge_context, &seq);
+    return GetFromHistory(key, value, s, &seq);
   }
 
   void AddIterators(const ReadOptions& options,
@@ -110,8 +108,7 @@ class MemTableListVersion {
   void TrimHistory(std::vector<MemTable*>* to_delete);
 
   bool GetFromList(std::list<MemTable*>* list, const LookupKey& key,
-                   std::string* value, Status* s, MergeContext* merge_context,
-                   SequenceNumber* seq);
+                   std::string* value, Status* s, SequenceNumber* seq);
 
   void AddMemTable(MemTable* m);
 

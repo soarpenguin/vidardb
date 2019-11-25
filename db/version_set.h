@@ -444,9 +444,8 @@ class Version {
   //
   // REQUIRES: lock is not held
   void Get(const ReadOptions&, const LookupKey& key, std::string* val,
-           Status* status, MergeContext* merge_context,
-           bool* value_found = nullptr, bool* key_exists = nullptr,
-           SequenceNumber* seq = nullptr);
+           Status* status, bool* value_found = nullptr,
+           bool* key_exists = nullptr, SequenceNumber* seq = nullptr);
 
   /**************** Shichao *******************/
   void RangeQuery(const ReadOptions& options,

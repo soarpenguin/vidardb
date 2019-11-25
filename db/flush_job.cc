@@ -27,7 +27,6 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/memtable_list.h"
-#include "db/merge_context.h"
 #include "db/version_set.h"
 #include "port/likely.h"
 #include "port/port.h"
