@@ -35,17 +35,6 @@ class WriteBatchBase {
                    const SliceParts& value);
   virtual void Put(const SliceParts& key, const SliceParts& value);
 
-  // Merge "value" with the existing value of "key" in the database.
-  // "key->merge(existing, value)"
-  virtual void Merge(ColumnFamilyHandle* column_family, const Slice& key,
-                     const Slice& value) = 0;
-  virtual void Merge(const Slice& key, const Slice& value) = 0;
-
-  // variant that takes SliceParts
-  virtual void Merge(ColumnFamilyHandle* column_family, const SliceParts& key,
-                     const SliceParts& value);
-  virtual void Merge(const SliceParts& key, const SliceParts& value);
-
   // If the database contains a mapping for "key", erase it.  Else do nothing.
   virtual void Delete(ColumnFamilyHandle* column_family, const Slice& key) = 0;
   virtual void Delete(const Slice& key) = 0;

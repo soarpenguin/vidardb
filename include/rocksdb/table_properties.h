@@ -159,10 +159,6 @@ struct TableProperties {
   // The name of the comparator used in this table.
   std::string comparator_name;
 
-  // The name of the merge operator used in this table.
-  // If no merge operator is used, `merge_operator_name` will be "nullptr".
-  std::string merge_operator_name;
-
   // The names of the property collectors factories used in this table
   // separated by commas
   // {collector_name[1]},{collector_name[2]},{collector_name[3]} ..

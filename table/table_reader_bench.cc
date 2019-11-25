@@ -164,11 +164,10 @@ void TableReaderBenchmark(Options& opts, EnvOptions& env_options,
           uint64_t start_time = Now(env, measured_by_nanosecond);
           if (!through_db) {
             std::string value;
-            MergeContext merge_context;
-            GetContext get_context(ioptions.comparator, ioptions.merge_operator,
+            GetContext get_context(ioptions.comparator,
                                    ioptions.info_log, ioptions.statistics,
                                    GetContext::kNotFound, Slice(key), &value,
-                                   nullptr, &merge_context, env);
+                                   nullptr, env);
             s = table_reader->Get(read_options, key, &get_context);
           } else {
             s = db->Get(read_options, key, &result);

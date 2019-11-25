@@ -650,9 +650,6 @@ Status ColumnTableBuilder::Finish() {
       r->props.comparator_name = r->ioptions.comparator != nullptr
                                      ? r->ioptions.comparator->Name()
                                      : "nullptr";
-      r->props.merge_operator_name = r->ioptions.merge_operator != nullptr
-                                         ? r->ioptions.merge_operator->Name()
-                                         : "nullptr";
       r->props.compression_name = CompressionTypeToString(r->compression_type);
 
       if (r->main_column) {

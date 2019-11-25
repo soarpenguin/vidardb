@@ -27,8 +27,6 @@ LIB_SOURCES =                                                   \
   db/memtable_allocator.cc                                      \
   db/memtable.cc                                                \
   db/memtable_list.cc                                           \
-  db/merge_helper.cc                                            \
-  db/merge_operator.cc                                          \
   db/repair.cc                                                  \
   db/slice.cc                                                   \
   db/snapshot_impl.cc                                           \
@@ -134,7 +132,6 @@ TEST_BENCH_SOURCES =                                                    \
   db/db_test.cc                                                         \
 	db/db_block_cache_test.cc																							\
   db/db_io_failure_test.cc                                              \
-  db/db_compaction_filter_test.cc                                       \
   db/db_compaction_test.cc                                              \
   db/db_dynamic_level_test.cc                                           \
 	db/db_iterator_test.cc																								\

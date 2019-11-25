@@ -195,9 +195,6 @@ class Compaction {
   // to pick up the next file to be compacted from files_by_size_
   void ResetNextCompactionIndex();
 
-  // Create a CompactionFilter from compaction_filter_factory
-  std::unique_ptr<CompactionFilter> CreateCompactionFilter() const;
-
   // Is the input level corresponding to output_level_ empty?
   bool IsOutputLevelEmpty() const;
 

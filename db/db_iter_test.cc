@@ -45,14 +45,6 @@ class TestIterator : public InternalIterator {
     Add(argkey, kTypeDeletion, std::string());
   }
 
-  void AddSingleDeletion(std::string argkey) {
-    Add(argkey, kTypeSingleDeletion, std::string());
-  }
-
-  void AddMerge(std::string argkey, std::string argvalue) {
-    Add(argkey, kTypeMerge, argvalue);
-  }
-
   void Add(std::string argkey, ValueType type, std::string argvalue) {
     Add(argkey, type, argvalue, sequence_number_++);
   }
@@ -648,8 +640,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
   {
     for (size_t i = 0; i < 200; ++i) {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-      internal_iter->AddMerge("b", "merge_1");
-      internal_iter->AddMerge("a", "merge_2");
       for (size_t k = 0; k < 200; ++k) {
         internal_iter->AddPut("c", ToString(k));
       }
@@ -683,8 +673,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
   {
     for (size_t i = 0; i < 200; ++i) {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-      internal_iter->AddMerge("b", "merge_1");
-      internal_iter->AddMerge("a", "merge_2");
       for (size_t k = 0; k < 200; ++k) {
         internal_iter->AddDeletion("c");
       }
@@ -711,8 +699,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
 
     {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-      internal_iter->AddMerge("b", "merge_1");
-      internal_iter->AddMerge("a", "merge_2");
       for (size_t i = 0; i < 200; ++i) {
         internal_iter->AddDeletion("c");
       }
@@ -790,8 +776,6 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
   {
     for (size_t i = 0; i < 200; ++i) {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-      internal_iter->AddMerge("b", "merge_1");
-      internal_iter->AddMerge("a", "merge_2");
       for (size_t k = 0; k < 200; ++k) {
         internal_iter->AddPut("d", ToString(k));
       }
@@ -828,10 +812,7 @@ TEST_F(DBIteratorTest, DBIteratorUseSkip) {
   {
     for (size_t i = 0; i < 200; ++i) {
       TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-      internal_iter->AddMerge("b", "b");
-      internal_iter->AddMerge("a", "a");
       for (size_t k = 0; k < 200; ++k) {
-        internal_iter->AddMerge("c", ToString(k));
       }
       internal_iter->Finish();
 
@@ -871,8 +852,6 @@ TEST_F(DBIteratorTest, DBIterator1) {
   internal_iter->AddPut("a", "0");
   internal_iter->AddPut("b", "0");
   internal_iter->AddDeletion("b");
-  internal_iter->AddMerge("a", "1");
-  internal_iter->AddMerge("b", "2");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -896,8 +875,6 @@ TEST_F(DBIteratorTest, DBIterator2) {
   internal_iter->AddPut("a", "0");
   internal_iter->AddPut("b", "0");
   internal_iter->AddDeletion("b");
-  internal_iter->AddMerge("a", "1");
-  internal_iter->AddMerge("b", "2");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -918,8 +895,6 @@ TEST_F(DBIteratorTest, DBIterator3) {
   internal_iter->AddPut("a", "0");
   internal_iter->AddPut("b", "0");
   internal_iter->AddDeletion("b");
-  internal_iter->AddMerge("a", "1");
-  internal_iter->AddMerge("b", "2");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -939,8 +914,6 @@ TEST_F(DBIteratorTest, DBIterator4) {
   internal_iter->AddPut("a", "0");
   internal_iter->AddPut("b", "0");
   internal_iter->AddDeletion("b");
-  internal_iter->AddMerge("a", "1");
-  internal_iter->AddMerge("b", "2");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -962,13 +935,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
   Options options;
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -984,14 +951,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
-    internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
         env_, ImmutableCFOptions(options), BytewiseComparator(), internal_iter,
@@ -1006,13 +966,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1028,13 +982,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1050,13 +998,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1072,13 +1014,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1094,13 +1030,7 @@ TEST_F(DBIteratorTest, DBIterator5) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddPut("a", "put_1");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1119,13 +1049,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
   Options options;
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1141,13 +1065,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1163,13 +1081,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1185,13 +1097,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1203,13 +1109,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1225,13 +1125,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1247,13 +1141,7 @@ TEST_F(DBIteratorTest, DBIterator6) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("a", "merge_3");
     internal_iter->AddDeletion("a");
-    internal_iter->AddMerge("a", "merge_4");
-    internal_iter->AddMerge("a", "merge_5");
-    internal_iter->AddMerge("a", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1272,24 +1160,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
   Options options;
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1306,23 +1179,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
 
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
@@ -1346,24 +1205,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1386,24 +1230,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1431,24 +1260,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1477,24 +1291,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1517,24 +1316,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1563,24 +1347,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1610,24 +1379,9 @@ TEST_F(DBIteratorTest, DBIterator7) {
 
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
     internal_iter->AddPut("b", "val");
-    internal_iter->AddMerge("b", "merge_2");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_3");
-
-    internal_iter->AddMerge("c", "merge_4");
-    internal_iter->AddMerge("c", "merge_5");
-
     internal_iter->AddDeletion("b");
-    internal_iter->AddMerge("b", "merge_6");
-    internal_iter->AddMerge("b", "merge_7");
-    internal_iter->AddMerge("b", "merge_8");
-    internal_iter->AddMerge("b", "merge_9");
-    internal_iter->AddMerge("b", "merge_10");
-    internal_iter->AddMerge("b", "merge_11");
-
     internal_iter->AddDeletion("c");
     internal_iter->Finish();
 
@@ -1679,12 +1433,6 @@ TEST_F(DBIteratorTest, DBIterator9) {
   Options options;
   {
     TestIterator* internal_iter = new TestIterator(BytewiseComparator());
-    internal_iter->AddMerge("a", "merge_1");
-    internal_iter->AddMerge("a", "merge_2");
-    internal_iter->AddMerge("b", "merge_3");
-    internal_iter->AddMerge("b", "merge_4");
-    internal_iter->AddMerge("d", "merge_5");
-    internal_iter->AddMerge("d", "merge_6");
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1753,7 +1501,6 @@ TEST_F(DBIteratorTest, DBIterator10) {
 
 TEST_F(DBIteratorTest, SeekToLastOccurrenceSeq0) {
   Options options;
-  options.merge_operator = nullptr;
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "1");
@@ -1781,9 +1528,6 @@ TEST_F(DBIteratorTest, DBIterator11) {
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "0");
   internal_iter->AddPut("b", "0");
-  internal_iter->AddSingleDeletion("b");
-  internal_iter->AddMerge("a", "1");
-  internal_iter->AddMerge("b", "2");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(NewDBIterator(
@@ -1802,13 +1546,11 @@ TEST_F(DBIteratorTest, DBIterator11) {
 
 TEST_F(DBIteratorTest, DBIterator12) {
   Options options;
-  options.merge_operator = nullptr;
 
   TestIterator* internal_iter = new TestIterator(BytewiseComparator());
   internal_iter->AddPut("a", "1");
   internal_iter->AddPut("b", "2");
   internal_iter->AddPut("c", "3");
-  internal_iter->AddSingleDeletion("b");
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(
@@ -1830,7 +1572,6 @@ class DBIterWithMergeIterTest : public testing::Test {
  public:
   DBIterWithMergeIterTest()
       : env_(Env::Default()), icomp_(BytewiseComparator()) {
-    options_.merge_operator = nullptr;
 
     internal_iter1_ = new TestIterator(BytewiseComparator());
     internal_iter1_->Add("a", kTypeValue, "1", 3u);

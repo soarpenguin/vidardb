@@ -41,7 +41,6 @@ MemTableOptions::MemTableOptions(
     max_successive_merges(mutable_cf_options.max_successive_merges),
     filter_deletes(mutable_cf_options.filter_deletes),
     statistics(ioptions.statistics),
-    merge_operator(ioptions.merge_operator),
     info_log(ioptions.info_log) {}
 
 MemTable::MemTable(const InternalKeyComparator& cmp,
@@ -387,13 +386,9 @@ struct Saver {
   const LookupKey* key;
   const LookupRange* range;  // Shichao
   bool* found_final_value;  // Is value set correctly? Used by KeyMayExist
-  bool* merge_in_progress;
   std::string* value;
   std::map<std::string, SeqTypeVal>* res;  // Shichao
   SequenceNumber seq;
-  const MergeOperator* merge_operator;
-  // the merge operations encountered;
-  MergeContext* merge_context;
   MemTable* mem;
   Logger* logger;
   Statistics* statistics;
@@ -407,10 +402,8 @@ struct Saver {
 
 static bool SaveValue(void* arg, const char* entry) {
   Saver* s = reinterpret_cast<Saver*>(arg);
-  MergeContext* merge_context = s->merge_context;
-  const MergeOperator* merge_operator = s->merge_operator;
 
-  assert(s != nullptr && merge_context != nullptr);
+  assert(s != nullptr);
 
   // entry format is:
   //    klength  varint32
@@ -434,24 +427,7 @@ static bool SaveValue(void* arg, const char* entry) {
       case kTypeValue: {
         Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
         *(s->status) = Status::OK();
-        if (*(s->merge_in_progress)) {
-          assert(merge_operator);
-          bool merge_success = false;
-          {
-            StopWatchNano timer(s->env_, s->statistics != nullptr);
-            PERF_TIMER_GUARD(merge_operator_time_nanos);
-            merge_success = merge_operator->FullMerge(
-                s->key->user_key(), &v, merge_context->GetOperands(), s->value,
-                s->logger);
-            RecordTick(s->statistics, MERGE_OPERATION_TOTAL_TIME,
-                       timer.ElapsedNanos());
-          }
-          if (!merge_success) {
-            RecordTick(s->statistics, NUMBER_MERGE_FAILURES);
-            *(s->status) =
-                Status::Corruption("Error: Could not perform merge.");
-          }
-        } else if (s->value != nullptr) {
+        if (s->value != nullptr) {
           s->value->assign(v.data(), v.size());
         }
         *(s->found_final_value) = true;
@@ -459,45 +435,9 @@ static bool SaveValue(void* arg, const char* entry) {
       }
       case kTypeDeletion:
       case kTypeSingleDeletion: {
-        if (*(s->merge_in_progress)) {
-          assert(merge_operator != nullptr);
-          *(s->status) = Status::OK();
-          bool merge_success = false;
-          {
-            StopWatchNano timer(s->env_, s->statistics != nullptr);
-            PERF_TIMER_GUARD(merge_operator_time_nanos);
-            merge_success = merge_operator->FullMerge(
-                s->key->user_key(), nullptr, merge_context->GetOperands(),
-                s->value, s->logger);
-            RecordTick(s->statistics, MERGE_OPERATION_TOTAL_TIME,
-                       timer.ElapsedNanos());
-          }
-          if (!merge_success) {
-            RecordTick(s->statistics, NUMBER_MERGE_FAILURES);
-            *(s->status) =
-                Status::Corruption("Error: Could not perform merge.");
-          }
-        } else {
-          *(s->status) = Status::NotFound();
-        }
+        *(s->status) = Status::NotFound();
         *(s->found_final_value) = true;
         return false;
-      }
-      case kTypeMerge: {
-        if (!merge_operator) {
-          *(s->status) = Status::InvalidArgument(
-              "merge_operator is not properly initialized.");
-          // Normally we continue the loop (return true) when we see a merge
-          // operand.  But in case of an error, we should stop the loop
-          // immediately and pretend we have found the value to stop further
-          // seek.  Otherwise, the later call will override this error status.
-          *(s->found_final_value) = true;
-          return false;
-        }
-        Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
-        *(s->merge_in_progress) = true;
-        merge_context->PushOperand(v);
-        return true;
       }
       default:
         assert(false);
@@ -550,12 +490,12 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
             }
           }
         }
-        [[gnu::fallthrough]];
+        [[gnu::fallthrough]];  // check should fall through?
       }
-      case kTypeMerge: {
-        *(s->status) = Status::OK();
-        return true;
-      }
+//      case kTypeMerge: {
+//        *(s->status) = Status::OK();
+//        return true;
+//      }
       default:
         *(s->status) = Status::Corruption(Slice());
         return false;
@@ -582,13 +522,10 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
     Saver saver;
     saver.status = s;
     saver.found_final_value = &found_final_value;
-    saver.merge_in_progress = &merge_in_progress;
     saver.key = &key;
     saver.value = value;
     saver.seq = kMaxSequenceNumber;
     saver.mem = this;
-    saver.merge_context = merge_context;
-    saver.merge_operator = moptions_.merge_operator;
     saver.logger = moptions_.info_log;
     saver.statistics = moptions_.statistics;
     saver.env_ = env_;
@@ -691,40 +628,6 @@ void MemTable::Update(SequenceNumber seq,
   Add(seq, kTypeValue, key, value);
 }
 
-size_t MemTable::CountSuccessiveMergeEntries(const LookupKey& key) {
-  Slice memkey = key.memtable_key();
-
-  // A total ordered iterator is costly for some memtablerep (prefix aware
-  // reps). By passing in the user key, we allow efficient iterator creation.
-  // The iterator only needs to be ordered within the same user key.
-  std::unique_ptr<MemTableRep::Iterator> iter(
-      table_->GetDynamicPrefixIterator());
-  iter->Seek(key.internal_key(), memkey.data());
-
-  size_t num_successive_merges = 0;
-
-  for (; iter->Valid(); iter->Next()) {
-    const char* entry = iter->key();
-    uint32_t key_length = 0;
-    const char* iter_key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
-    if (!comparator_.comparator.user_comparator()->Equal(
-            Slice(iter_key_ptr, key_length - 8), key.user_key())) {
-      break;
-    }
-
-    const uint64_t tag = DecodeFixed64(iter_key_ptr + key_length - 8);
-    ValueType type;
-    uint64_t unused;
-    UnPackSequenceAndType(tag, &unused, &type);
-    if (type != kTypeMerge) {
-      break;
-    }
-
-    ++num_successive_merges;
-  }
-
-  return num_successive_merges;
-}
 
 void MemTableRep::Get(const LookupKey& k, void* callback_args,
                       bool (*callback_func)(void* arg, const char* entry)) {

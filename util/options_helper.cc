@@ -10,7 +10,6 @@
 #include <unordered_set>
 #include <vector>
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/merge_operator.h"
@@ -386,30 +385,10 @@ bool SerializeSingleOptionHelper(const char* opt_address,
       }
       break;
     }
-    case OptionType::kCompactionFilter: {
-      // it's a const pointer of const CompactionFilter*
-      const auto* ptr =
-          reinterpret_cast<const CompactionFilter* const*>(opt_address);
-      *value = *ptr ? (*ptr)->Name() : kNullptrString;
-      break;
-    }
-    case OptionType::kCompactionFilterFactory: {
-      const auto* ptr =
-          reinterpret_cast<const std::shared_ptr<CompactionFilterFactory>*>(
-              opt_address);
-      *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
-      break;
-    }
     case OptionType::kMemTableRepFactory: {
       const auto* ptr =
           reinterpret_cast<const std::shared_ptr<MemTableRepFactory>*>(
               opt_address);
-      *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
-      break;
-    }
-    case OptionType::kMergeOperator: {
-      const auto* ptr =
-          reinterpret_cast<const std::shared_ptr<MergeOperator>*>(opt_address);
       *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
       break;
     }

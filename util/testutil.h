@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"
 #include "rocksdb/merge_operator.h"
@@ -402,36 +401,6 @@ class SleepingBackgroundTask {
   bool sleeping_;
 };
 
-// Filters merge operands and values that are equal to `num`.
-class FilterNumber : public CompactionFilter {
- public:
-  explicit FilterNumber(uint64_t num) : num_(num) {}
-
-  std::string last_merge_operand_key() { return last_merge_operand_key_; }
-
-  bool Filter(int level, const rocksdb::Slice& key, const rocksdb::Slice& value,
-              std::string* new_value, bool* value_changed) const override {
-    if (value.size() == sizeof(uint64_t)) {
-      return num_ == DecodeFixed64(value.data());
-    }
-    return true;
-  }
-
-  bool FilterMergeOperand(int level, const rocksdb::Slice& key,
-                          const rocksdb::Slice& value) const override {
-    last_merge_operand_key_ = key.ToString();
-    if (value.size() == sizeof(uint64_t)) {
-      return num_ == DecodeFixed64(value.data());
-    }
-    return true;
-  }
-
-  const char* Name() const override { return "FilterBadMergeOperand"; }
-
- private:
-  mutable std::string last_merge_operand_key_;
-  uint64_t num_;
-};
 
 inline std::string EncodeInt(uint64_t x) {
   std::string result;
@@ -603,80 +572,6 @@ void RandomInitDBOptions(DBOptions* db_opt, Random* rnd);
 // Note that the caller is responsible for releasing non-null
 // cf_opt->compaction_filter.
 void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd);
-
-// A dummy merge operator which can change its name
-class ChanglingMergeOperator : public MergeOperator {
- public:
-  explicit ChanglingMergeOperator(const std::string& name)
-      : name_(name + "MergeOperator") {}
-  ~ChanglingMergeOperator() {}
-
-  void SetName(const std::string& name) { name_ = name; }
-
-  virtual bool FullMerge(const Slice& key, const Slice* existing_value,
-                         const std::deque<std::string>& operand_list,
-                         std::string* new_value,
-                         Logger* logger) const override {
-    return false;
-  }
-  virtual bool PartialMergeMulti(const Slice& key,
-                                 const std::deque<Slice>& operand_list,
-                                 std::string* new_value,
-                                 Logger* logger) const override {
-    return false;
-  }
-  virtual const char* Name() const override { return name_.c_str(); }
-
- protected:
-  std::string name_;
-};
-
-// Returns a dummy merge operator with random name.
-MergeOperator* RandomMergeOperator(Random* rnd);
-
-// A dummy compaction filter which can change its name
-class ChanglingCompactionFilter : public CompactionFilter {
- public:
-  explicit ChanglingCompactionFilter(const std::string& name)
-      : name_(name + "CompactionFilter") {}
-  ~ChanglingCompactionFilter() {}
-
-  void SetName(const std::string& name) { name_ = name; }
-
-  bool Filter(int level, const Slice& key, const Slice& existing_value,
-              std::string* new_value, bool* value_changed) const override {
-    return false;
-  }
-
-  const char* Name() const override { return name_.c_str(); }
-
- private:
-  std::string name_;
-};
-
-// Returns a dummy compaction filter with a random name.
-CompactionFilter* RandomCompactionFilter(Random* rnd);
-
-// A dummy compaction filter factory which can change its name
-class ChanglingCompactionFilterFactory : public CompactionFilterFactory {
- public:
-  explicit ChanglingCompactionFilterFactory(const std::string& name)
-      : name_(name + "CompactionFilterFactory") {}
-  ~ChanglingCompactionFilterFactory() {}
-
-  void SetName(const std::string& name) { name_ = name; }
-
-  std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) override {
-    return std::unique_ptr<CompactionFilter>();
-  }
-
-  // Returns a name that identifies this compaction filter factory.
-  const char* Name() const override { return name_.c_str(); }
-
- protected:
-  std::string name_;
-};
 
 CompressionType RandomCompressionType(Random* rnd);
 

@@ -18,7 +18,6 @@
 #include "db/event_helpers.h"
 #include "db/filename.h"
 #include "db/internal_stats.h"
-#include "db/merge_helper.h"
 #include "db/table_cache.h"
 #include "db/version_edit.h"
 #include "rocksdb/db.h"
@@ -111,14 +110,8 @@ Status BuildTable(
           compression_opts, env_options);  // Shichao
     }
 
-    MergeHelper merge(env, internal_comparator.user_comparator(),
-                      ioptions.merge_operator, nullptr, ioptions.info_log,
-                      mutable_cf_options.min_partial_merge_operands,
-                      true /* internal key corruption is not ok */,
-                      snapshots.empty() ? 0 : snapshots.back());
-
     CompactionIterator c_iter(iter, internal_comparator.user_comparator(),
-                              &merge, kMaxSequenceNumber, &snapshots,
+                              kMaxSequenceNumber, &snapshots,
                               earliest_write_conflict_snapshot, env,
                               true /* internal key corruption is not ok */);
     c_iter.SeekToFirst();

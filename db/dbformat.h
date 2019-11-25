@@ -30,11 +30,9 @@ class InternalKey;
 enum ValueType : unsigned char {
   kTypeDeletion = 0x0,
   kTypeValue = 0x1,
-  kTypeMerge = 0x2,
   kTypeLogData = 0x3,               // WAL only.
   kTypeColumnFamilyDeletion = 0x4,  // WAL only.
   kTypeColumnFamilyValue = 0x5,     // WAL only.
-  kTypeColumnFamilyMerge = 0x6,     // WAL only.
   kTypeSingleDeletion = 0x7,
   kTypeBeginPrepareXID = 0x9,             // WAL only.
   kTypeEndPrepareXID = 0xA,               // WAL only.
@@ -55,7 +53,7 @@ static const ValueType kValueTypeForSeek = kTypeSingleDeletion;
 // Checks whether a type is a value type (i.e. a type used in memtables and sst
 // files).
 inline bool IsValueType(ValueType t) {
-  return t <= kTypeMerge || t == kTypeSingleDeletion;
+  return t < kTypeLogData || t == kTypeSingleDeletion;
 }
 
 // We leave eight bits empty at the bottom so a type and sequence#

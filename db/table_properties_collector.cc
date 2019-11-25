@@ -20,11 +20,8 @@ Status InternalKeyPropertiesCollector::InternalAdd(const Slice& key,
   }
 
   // Note: We count both, deletions and single deletions here.
-  if (ikey.type == ValueType::kTypeDeletion ||
-      ikey.type == ValueType::kTypeSingleDeletion) {
+  if (ikey.type == ValueType::kTypeDeletion) {
     ++deleted_keys_;
-  } else if (ikey.type == ValueType::kTypeMerge) {
-    ++merge_operands_;
   }
 
   return Status::OK();
@@ -65,10 +62,6 @@ EntryType GetEntryType(ValueType value_type) {
       return kEntryPut;
     case kTypeDeletion:
       return kEntryDelete;
-    case kTypeSingleDeletion:
-      return kEntrySingleDelete;
-    case kTypeMerge:
-      return kEntryMerge;
     default:
       return kEntryOther;
   }

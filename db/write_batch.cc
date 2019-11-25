@@ -270,17 +270,6 @@ Status ReadRecordFromWriteBatch(Slice* input, char* tag,
         return Status::Corruption("bad WriteBatch Delete");
       }
       break;
-    case kTypeColumnFamilyMerge:
-      if (!GetVarint32(input, column_family)) {
-        return Status::Corruption("bad WriteBatch Merge");
-      }
-    // intentional fallthrough
-    case kTypeMerge:
-      if (!GetLengthPrefixedSlice(input, key) ||
-          !GetLengthPrefixedSlice(input, value)) {
-        return Status::Corruption("bad WriteBatch Merge");
-      }
-      break;
     case kTypeLogData:
       assert(blob != nullptr);
       if (!GetLengthPrefixedSlice(input, blob)) {
@@ -344,13 +333,6 @@ Status WriteBatch::Iterate(Handler* handler) const {
         assert(content_flags_.load(std::memory_order_relaxed) &
                (ContentFlags::DEFERRED | ContentFlags::HAS_DELETE));
         s = handler->DeleteCF(column_family, key);
-        found++;
-        break;
-      case kTypeColumnFamilyMerge:
-      case kTypeMerge:
-        assert(content_flags_.load(std::memory_order_relaxed) &
-               (ContentFlags::DEFERRED | ContentFlags::HAS_MERGE));
-        s = handler->MergeCF(column_family, key, value);
         found++;
         break;
       case kTypeLogData:
@@ -534,51 +516,6 @@ void WriteBatch::Delete(ColumnFamilyHandle* column_family,
   WriteBatchInternal::Delete(this, GetColumnFamilyID(column_family), key);
 }
 
-void WriteBatchInternal::Merge(WriteBatch* b, uint32_t column_family_id,
-                               const Slice& key, const Slice& value) {
-  WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
-  if (column_family_id == 0) {
-    b->rep_.push_back(static_cast<char>(kTypeMerge));
-  } else {
-    b->rep_.push_back(static_cast<char>(kTypeColumnFamilyMerge));
-    PutVarint32(&b->rep_, column_family_id);
-  }
-  PutLengthPrefixedSlice(&b->rep_, key);
-  PutLengthPrefixedSlice(&b->rep_, value);
-  b->content_flags_.store(b->content_flags_.load(std::memory_order_relaxed) |
-                              ContentFlags::HAS_MERGE,
-                          std::memory_order_relaxed);
-}
-
-void WriteBatch::Merge(ColumnFamilyHandle* column_family, const Slice& key,
-                       const Slice& value) {
-  WriteBatchInternal::Merge(this, GetColumnFamilyID(column_family), key, value);
-}
-
-void WriteBatchInternal::Merge(WriteBatch* b, uint32_t column_family_id,
-                               const SliceParts& key,
-                               const SliceParts& value) {
-  WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
-  if (column_family_id == 0) {
-    b->rep_.push_back(static_cast<char>(kTypeMerge));
-  } else {
-    b->rep_.push_back(static_cast<char>(kTypeColumnFamilyMerge));
-    PutVarint32(&b->rep_, column_family_id);
-  }
-  PutLengthPrefixedSliceParts(&b->rep_, key);
-  PutLengthPrefixedSliceParts(&b->rep_, value);
-  b->content_flags_.store(b->content_flags_.load(std::memory_order_relaxed) |
-                              ContentFlags::HAS_MERGE,
-                          std::memory_order_relaxed);
-}
-
-void WriteBatch::Merge(ColumnFamilyHandle* column_family,
-                       const SliceParts& key,
-                       const SliceParts& value) {
-  WriteBatchInternal::Merge(this, GetColumnFamilyID(column_family),
-                            key, value);
-}
-
 void WriteBatch::PutLogData(const Slice& blob) {
   rep_.push_back(static_cast<char>(kTypeLogData));
   PutLengthPrefixedSlice(&rep_, blob);
@@ -758,93 +695,6 @@ class MemTableInserter : public WriteBatch::Handler {
     }
 
     return DeleteImpl(column_family_id, key, kTypeDeletion);
-  }
-
-  virtual Status MergeCF(uint32_t column_family_id, const Slice& key,
-                         const Slice& value) override {
-    assert(!concurrent_memtable_writes_);
-    if (rebuilding_trx_ != nullptr) {
-      WriteBatchInternal::Merge(rebuilding_trx_, column_family_id, key, value);
-      return Status::OK();
-    }
-
-    Status seek_status;
-    if (!SeekToColumnFamily(column_family_id, &seek_status)) {
-      ++sequence_;
-      return seek_status;
-    }
-
-    MemTable* mem = cf_mems_->GetMemTable();
-    auto* moptions = mem->GetMemTableOptions();
-    bool perform_merge = false;
-
-    if (moptions->max_successive_merges > 0 && db_ != nullptr) {
-      LookupKey lkey(key, sequence_);
-
-      // Count the number of successive merges at the head
-      // of the key in the memtable
-      size_t num_merges = mem->CountSuccessiveMergeEntries(lkey);
-
-      if (num_merges >= moptions->max_successive_merges) {
-        perform_merge = true;
-      }
-    }
-
-    if (perform_merge) {
-      // 1) Get the existing value
-      std::string get_value;
-
-      // Pass in the sequence number so that we also include previous merge
-      // operations in the same batch.
-      SnapshotImpl read_from_snapshot;
-      read_from_snapshot.number_ = sequence_;
-      ReadOptions read_options;
-      read_options.snapshot = &read_from_snapshot;
-
-      auto cf_handle = cf_mems_->GetColumnFamilyHandle();
-      if (cf_handle == nullptr) {
-        cf_handle = db_->DefaultColumnFamily();
-      }
-      db_->Get(read_options, cf_handle, key, &get_value);
-      Slice get_value_slice = Slice(get_value);
-
-      // 2) Apply this merge
-      auto merge_operator = moptions->merge_operator;
-      assert(merge_operator);
-
-      std::deque<std::string> operands;
-      operands.push_front(value.ToString());
-      std::string new_value;
-      bool merge_success = false;
-      {
-        StopWatchNano timer(Env::Default(), moptions->statistics != nullptr);
-        PERF_TIMER_GUARD(merge_operator_time_nanos);
-        merge_success = merge_operator->FullMerge(
-            key, &get_value_slice, operands, &new_value, moptions->info_log);
-        RecordTick(moptions->statistics, MERGE_OPERATION_TOTAL_TIME,
-                   timer.ElapsedNanos());
-      }
-
-      if (!merge_success) {
-          // Failed to merge!
-        RecordTick(moptions->statistics, NUMBER_MERGE_FAILURES);
-
-        // Store the delta in memtable
-        perform_merge = false;
-      } else {
-        // 3) Add value to memtable
-        mem->Add(sequence_, kTypeValue, key, new_value);
-      }
-    }
-
-    if (!perform_merge) {
-      // Add merge operator to memtable
-      mem->Add(sequence_, kTypeMerge, key, value);
-    }
-
-    sequence_++;
-    CheckMemtableFull();
-    return Status::OK();
   }
 
   void CheckMemtableFull() {

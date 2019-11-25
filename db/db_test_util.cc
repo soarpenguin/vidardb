@@ -502,10 +502,6 @@ std::string DBTestBase::AllEntriesFor(const Slice& user_key, int cf) {
           case kTypeValue:
             result += iter->value().ToString();
             break;
-          case kTypeMerge:
-            // keep it the same as kTypeValue for testing kMergePut
-            result += iter->value().ToString();
-            break;
           case kTypeDeletion:
             result += "DEL";
             break;

@@ -42,7 +42,6 @@ struct MemTableOptions {
   size_t max_successive_merges;
   bool filter_deletes;
   Statistics* statistics;
-  MergeOperator* merge_operator;
   Logger* info_log;
 };
 
@@ -216,11 +215,6 @@ class MemTable {
   bool UpdateCallback(SequenceNumber seq,
                       const Slice& key,
                       const Slice& delta);
-
-  // Returns the number of successive merge entries starting from the newest
-  // entry for the key up to the last non-merge entry or last entry for the
-  // key in the memtable.
-  size_t CountSuccessiveMergeEntries(const LookupKey& key);
 
   // Get total number of entries in the mem table.
   // REQUIRES: external synchronization to prevent simultaneous

@@ -31,20 +31,17 @@ void appendToReplayLog(std::string* replay_log, ValueType type, Slice value) {
 }  // namespace
 
 GetContext::GetContext(const Comparator* ucmp,
-                       const MergeOperator* merge_operator, Logger* logger,
+                       Logger* logger,
                        Statistics* statistics, GetState init_state,
                        const Slice& user_key, std::string* ret_value,
-                       bool* value_found, MergeContext* merge_context, Env* env,
-                       SequenceNumber* seq)
+                       bool* value_found, Env* env, SequenceNumber* seq)
     : ucmp_(ucmp),
-      merge_operator_(merge_operator),
       logger_(logger),
       statistics_(statistics),
       state_(init_state),
       user_key_(user_key),
       value_(ret_value),
       value_found_(value_found),
-      merge_context_(merge_context),
       env_(env),
       seq_(seq),
       replay_log_(nullptr) {
@@ -77,8 +74,6 @@ void GetContext::SaveValue(const Slice& value, SequenceNumber seq) {
 
 bool GetContext::SaveValue(const ParsedInternalKey& parsed_key,
                            const Slice& value) {
-  assert((state_ != kMerge && parsed_key.type != kTypeMerge) ||
-         merge_context_ != nullptr);
   if (ucmp_->Equal(parsed_key.user_key, user_key_)) {
     appendToReplayLog(replay_log_, parsed_key.type, value);
 
@@ -92,67 +87,23 @@ bool GetContext::SaveValue(const ParsedInternalKey& parsed_key,
     // Key matches. Process it
     switch (parsed_key.type) {
       case kTypeValue:
-        assert(state_ == kNotFound || state_ == kMerge);
+        assert(state_ == kNotFound);
         if (kNotFound == state_) {
           state_ = kFound;
           if (value_ != nullptr) {
             value_->assign(value.data(), value.size());
           }
-        } else if (kMerge == state_) {
-          assert(merge_operator_ != nullptr);
-          state_ = kFound;
-          if (value_ != nullptr) {
-            bool merge_success = false;
-            {
-              StopWatchNano timer(env_, statistics_ != nullptr);
-              PERF_TIMER_GUARD(merge_operator_time_nanos);
-              merge_success = merge_operator_->FullMerge(
-                  user_key_, &value, merge_context_->GetOperands(), value_,
-                  logger_);
-              RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME,
-                         timer.ElapsedNanosSafe());
-            }
-            if (!merge_success) {
-              RecordTick(statistics_, NUMBER_MERGE_FAILURES);
-              state_ = kCorrupt;
-            }
-          }
         }
         return false;
 
       case kTypeDeletion:
-      case kTypeSingleDeletion:
         // TODO(noetzli): Verify correctness once merge of single-deletes
         // is supported
-        assert(state_ == kNotFound || state_ == kMerge);
+        assert(state_ == kNotFound);
         if (kNotFound == state_) {
           state_ = kDeleted;
-        } else if (kMerge == state_) {
-          state_ = kFound;
-          if (value_ != nullptr) {
-            bool merge_success = false;
-            {
-              StopWatchNano timer(env_, statistics_ != nullptr);
-              PERF_TIMER_GUARD(merge_operator_time_nanos);
-              merge_success = merge_operator_->FullMerge(
-                  user_key_, nullptr, merge_context_->GetOperands(), value_,
-                  logger_);
-              RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME,
-                         timer.ElapsedNanosSafe());
-            }
-            if (!merge_success) {
-              RecordTick(statistics_, NUMBER_MERGE_FAILURES);
-              state_ = kCorrupt;
-            }
-          }
         }
         return false;
-
-      case kTypeMerge:
-        assert(state_ == kNotFound || state_ == kMerge);
-        state_ = kMerge;
-        merge_context_->PushOperand(value);
-        return true;
 
       default:
         assert(false);

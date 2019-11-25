@@ -64,15 +64,6 @@ static std::string PrintContents(WriteBatch* b) {
         count++;
         delete_count++;
         break;
-      case kTypeMerge:
-        state.append("Merge(");
-        state.append(ikey.user_key.ToString());
-        state.append(", ");
-        state.append(iter->value().ToString());
-        state.append(")");
-        count++;
-        merge_count++;
-        break;
       default:
         assert(false);
         break;
@@ -244,16 +235,6 @@ TEST_F(WriteBatchTest, DeleteNotImplemented) {
   ASSERT_OK(batch.Iterate(&handler));
 }
 
-TEST_F(WriteBatchTest, MergeNotImplemented) {
-  WriteBatch batch;
-  batch.Merge(Slice("foo"), Slice("bar"));
-  ASSERT_EQ(1, batch.Count());
-  ASSERT_EQ("Merge(foo, bar)@0", PrintContents(&batch));
-
-  WriteBatch::Handler handler;
-  ASSERT_OK(batch.Iterate(&handler));
-}
-
 TEST_F(WriteBatchTest, Blob) {
   WriteBatch batch;
   batch.Put(Slice("k1"), Slice("v1"));
@@ -262,7 +243,6 @@ TEST_F(WriteBatchTest, Blob) {
   batch.PutLogData(Slice("blob1"));
   batch.Delete(Slice("k2"));
   batch.PutLogData(Slice("blob2"));
-  batch.Merge(Slice("foo"), Slice("bar"));
   ASSERT_EQ(6, batch.Count());
   ASSERT_EQ(
       "Merge(foo, bar)@5"
@@ -441,11 +421,6 @@ TEST_F(WriteBatchTest, Continue) {
       ++num_seen;
       return TestHandler::DeleteCF(column_family_id, key);
     }
-    virtual Status MergeCF(uint32_t column_family_id, const Slice& key,
-                           const Slice& value) override {
-      ++num_seen;
-      return TestHandler::MergeCF(column_family_id, key, value);
-    }
     virtual void LogData(const Slice& blob) override {
       ++num_seen;
       TestHandler::LogData(blob);
@@ -458,7 +433,6 @@ TEST_F(WriteBatchTest, Continue) {
   batch.PutLogData(Slice("blob1"));
   batch.Delete(Slice("k1"));
   batch.PutLogData(Slice("blob2"));
-  batch.Merge(Slice("foo"), Slice("bar"));
   batch.Iterate(&handler);
   ASSERT_EQ(
       "Put(k1, v1)"
@@ -519,9 +493,7 @@ TEST_F(WriteBatchTest, ColumnFamiliesBatchTest) {
   batch.Put(&two, Slice("twofoo"), Slice("bar2"));
   batch.Put(&eight, Slice("eightfoo"), Slice("bar8"));
   batch.Delete(&eight, Slice("eightfoo"));
-  batch.Merge(&three, Slice("threethree"), Slice("3three"));
   batch.Put(&zero, Slice("foo"), Slice("bar"));
-  batch.Merge(Slice("omom"), Slice("nom"));
 
   TestHandler handler;
   batch.Iterate(&handler);

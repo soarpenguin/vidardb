@@ -927,8 +927,6 @@ Version::Version(ColumnFamilyData* column_family_data, VersionSet* vset,
       db_statistics_((cfd_ == nullptr) ? nullptr
                                        : cfd_->ioptions()->statistics),
       table_cache_((cfd_ == nullptr) ? nullptr : cfd_->table_cache()),
-      merge_operator_((cfd_ == nullptr) ? nullptr
-                                        : cfd_->ioptions()->merge_operator),
       storage_info_((cfd_ == nullptr) ? nullptr : &cfd_->internal_comparator(),
                     (cfd_ == nullptr) ? nullptr : cfd_->user_comparator(),
                     cfd_ == nullptr ? 0 : cfd_->NumberLevels(),
@@ -958,9 +956,9 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
   }
 
   GetContext get_context(
-      user_comparator(), merge_operator_, info_log_, db_statistics_,
-      status->ok() ? GetContext::kNotFound : GetContext::kMerge, user_key,
-      value, value_found, merge_context, this->env_, seq);
+      user_comparator(), info_log_, db_statistics_,
+      GetContext::kNotFound, user_key,
+      value, value_found, this->env_, seq);
 
   FilePicker fp(
       storage_info_.files_, user_key, ikey, &storage_info_.level_files_brief_,
@@ -997,42 +995,14 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
       case GetContext::kCorrupt:
         *status = Status::Corruption("corrupted key for ", user_key);
         return;
-      case GetContext::kMerge:
-        break;
     }
     f = fp.GetNextFile();
   }
 
-  if (GetContext::kMerge == get_context.State()) {
-    if (!merge_operator_) {
-      *status =  Status::InvalidArgument(
-          "merge_operator is not properly initialized.");
-      return;
-    }
-    // merge_operands are in saver and we hit the beginning of the key history
-    // do a final merge of nullptr and operands;
-    bool merge_success = false;
-    {
-      StopWatchNano timer(env_, db_statistics_ != nullptr);
-      PERF_TIMER_GUARD(merge_operator_time_nanos);
-      merge_success = merge_operator_->FullMerge(
-          user_key, nullptr, merge_context->GetOperands(), value, info_log_);
-      RecordTick(db_statistics_, MERGE_OPERATION_TOTAL_TIME,
-                 timer.ElapsedNanos());
-    }
-    if (merge_success) {
-      *status = Status::OK();
-    } else {
-      RecordTick(db_statistics_, NUMBER_MERGE_FAILURES);
-      *status = Status::Corruption("could not perform end-of-key merge for ",
-                                   user_key);
-    }
-  } else {
     if (key_exists != nullptr) {
       *key_exists = false;
     }
     *status = Status::NotFound(); // Use an empty error message for speed
-  }
 }
 
 /******************************** Shichao ********************************/

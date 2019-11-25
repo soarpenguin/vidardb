@@ -296,12 +296,6 @@ TEST_F(OptionsSettableTest, DBOptionsAllFieldsSettable) {
 TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
   const OffsetGap kColumnFamilyOptionsBlacklist = {
       {offsetof(struct ColumnFamilyOptions, comparator), sizeof(Comparator*)},
-      {offsetof(struct ColumnFamilyOptions, merge_operator),
-       sizeof(std::shared_ptr<MergeOperator>)},
-      {offsetof(struct ColumnFamilyOptions, compaction_filter),
-       sizeof(const CompactionFilter*)},
-      {offsetof(struct ColumnFamilyOptions, compaction_filter_factory),
-       sizeof(std::shared_ptr<CompactionFilterFactory>)},
       {offsetof(struct ColumnFamilyOptions, compression_per_level),
        sizeof(std::vector<CompressionType>)},
       {offsetof(struct ColumnFamilyOptions,

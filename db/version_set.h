@@ -561,7 +561,6 @@ class Version {
   Logger* info_log_;
   Statistics* db_statistics_;
   TableCache* table_cache_;
-  const MergeOperator* merge_operator_;
 
   VersionStorageInfo storage_info_;
   VersionSet* vset_;            // VersionSet to which this Version belongs

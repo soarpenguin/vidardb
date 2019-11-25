@@ -843,7 +843,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
       if (!ParseInternalKey(iter_->key(), &parsed_key)) {
         return Status::Corruption("corrupted internal key in Table::Iter");
       }
-      if (parsed_key.sequence <= sequence_num && parsed_key.type != kTypeMerge) {
+      if (parsed_key.sequence <= sequence_num) {
         user_key.assign(iter_->key().data(), iter_->key().size() - 8);
         val.assign(iter_->value().data(), iter_->value().size());
 

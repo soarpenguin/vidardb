@@ -51,7 +51,6 @@
 #include "db/memtable.h"
 #include "db/memtable_list.h"
 #include "db/merge_context.h"
-#include "db/merge_helper.h"
 #include "db/table_cache.h"
 #include "db/table_properties_collector.h"
 #include "db/transaction_log_impl.h"
@@ -62,7 +61,6 @@
 #include "port/likely.h"
 #include "port/port.h"
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
 #include "rocksdb/merge_operator.h"
@@ -1865,9 +1863,7 @@ Status DBImpl::CompactRange(const CompactRangeOptions& options,
           // Skip bottommost level compaction
           continue;
         } else if (options.bottommost_level_compaction ==
-                       BottommostLevelCompaction::kIfHaveCompactionFilter &&
-                   cfd->ioptions()->compaction_filter == nullptr &&
-                   cfd->ioptions()->compaction_filter_factory == nullptr) {
+                       BottommostLevelCompaction::kIfHaveCompactionFilter) {
           // Skip bottommost level compaction since we don't have a compaction
           // filter
           continue;
@@ -5667,12 +5663,6 @@ Status DB::Open(const DBOptions& db_options, const std::string& dbname,
       }
       if (!cfd->mem()->IsSnapshotSupported()) {
         impl->is_snapshot_supported_ = false;
-      }
-      if (cfd->ioptions()->merge_operator != nullptr &&
-          !cfd->mem()->IsMergeOperatorSupported()) {
-        s = Status::InvalidArgument(
-            "The memtable of column family %s does not support merge operator "
-            "its options.merge_operator is non-null", cfd->GetName().c_str());
       }
       if (!s.ok()) {
         break;

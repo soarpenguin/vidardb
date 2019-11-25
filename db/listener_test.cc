@@ -10,7 +10,6 @@
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
 #include "rocksdb/options.h"

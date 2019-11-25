@@ -18,7 +18,6 @@
 #include <limits>
 
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/env.h"
 #include "rocksdb/sst_file_manager.h"
@@ -39,9 +38,6 @@ ImmutableCFOptions::ImmutableCFOptions(const Options& options)
       compaction_options_universal(options.compaction_options_universal),
       compaction_options_fifo(options.compaction_options_fifo),
       comparator(options.comparator),
-      merge_operator(options.merge_operator.get()),
-      compaction_filter(options.compaction_filter),
-      compaction_filter_factory(options.compaction_filter_factory.get()),
       info_log(options.info_log.get()),
       statistics(options.statistics.get()),
       env(options.env),
@@ -73,9 +69,6 @@ ImmutableCFOptions::ImmutableCFOptions(const Options& options)
 
 ColumnFamilyOptions::ColumnFamilyOptions()
     : comparator(BytewiseComparator()),
-      merge_operator(nullptr),
-      compaction_filter(nullptr),
-      compaction_filter_factory(nullptr),
       write_buffer_size(64 << 20),
       max_write_buffer_number(2),
       min_write_buffer_number_to_merge(1),
@@ -121,9 +114,6 @@ ColumnFamilyOptions::ColumnFamilyOptions()
 
 ColumnFamilyOptions::ColumnFamilyOptions(const Options& options)
     : comparator(options.comparator),
-      merge_operator(options.merge_operator),
-      compaction_filter(options.compaction_filter),
-      compaction_filter_factory(options.compaction_filter_factory),
       write_buffer_size(options.write_buffer_size),
       max_write_buffer_number(options.max_write_buffer_number),
       min_write_buffer_number_to_merge(
@@ -450,12 +440,6 @@ void DBOptions::Dump(Logger* log) const {
 
 void ColumnFamilyOptions::Dump(Logger* log) const {
   Header(log, "              Options.comparator: %s", comparator->Name());
-  Header(log, "          Options.merge_operator: %s",
-      merge_operator ? merge_operator->Name() : "None");
-  Header(log, "       Options.compaction_filter: %s",
-      compaction_filter ? compaction_filter->Name() : "None");
-  Header(log, "       Options.compaction_filter_factory: %s",
-      compaction_filter_factory ? compaction_filter_factory->Name() : "None");
   Header(log, "        Options.memtable_factory: %s", memtable_factory->Name());
   Header(log, "           Options.table_factory: %s", table_factory->Name());
   Header(log, "           table_factory options: %s",

@@ -9,7 +9,6 @@
 #include <cstdlib>
 
 #include "rocksdb/db.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/write_batch.h"
 #include "util/testharness.h"
@@ -42,21 +41,6 @@ class ManualCompactionTest : public testing::Test {
   std::string dbname_;
 };
 
-class DestroyAllCompactionFilter : public CompactionFilter {
- public:
-  DestroyAllCompactionFilter() {}
-
-  virtual bool Filter(int level, const Slice& key, const Slice& existing_value,
-                      std::string* new_value,
-                      bool* value_changed) const override {
-    return existing_value.ToString() == "destroy";
-  }
-
-  virtual const char* Name() const override {
-    return "DestroyAllCompactionFilter";
-  }
-};
-
 TEST_F(ManualCompactionTest, CompactTouchesAllKeys) {
   for (int iter = 0; iter < 2; ++iter) {
     DB* db;
@@ -69,7 +53,6 @@ TEST_F(ManualCompactionTest, CompactTouchesAllKeys) {
     }
     options.create_if_missing = true;
     options.compression = rocksdb::kNoCompression;
-    options.compaction_filter = new DestroyAllCompactionFilter();
     ASSERT_OK(DB::Open(options, dbname_, &db));
 
     db->Put(WriteOptions(), Slice("key1"), Slice("destroy"));
@@ -87,7 +70,6 @@ TEST_F(ManualCompactionTest, CompactTouchesAllKeys) {
     ASSERT_TRUE(!itr->Valid());
     delete itr;
 
-    delete options.compaction_filter;
     delete db;
     DestroyDB(dbname_, options);
   }

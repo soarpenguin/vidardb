@@ -97,11 +97,6 @@ std::string TableProperties::ToString(
                  comparator_name.empty() ? std::string("N/A") : comparator_name,
                  prop_delim, kv_delim);
 
-  AppendProperty(
-      result, "merge operator name",
-      merge_operator_name.empty() ? std::string("N/A") : merge_operator_name,
-      prop_delim, kv_delim);
-
   AppendProperty(result, "property collectors names",
                  property_collectors_names.empty() ? std::string("N/A")
                                                    : property_collectors_names,

@@ -261,7 +261,6 @@ TESTS = \
 	db_block_cache_test \
 	db_iter_test \
 	db_log_iter_test \
-	db_compaction_filter_test \
 	db_compaction_test \
 	db_dynamic_level_test \
 	db_iterator_test \
@@ -293,7 +292,6 @@ TESTS = \
 	manual_compaction_test \
 	mock_env_test \
 	memtable_list_test \
-	merge_helper_test \
 	merger_test \
 	options_file_test \
 	comparator_db_test \
@@ -329,7 +327,6 @@ TESTS = \
 
 PARALLEL_TEST = \
 	backupable_db_test \
-	db_compaction_filter_test \
 	db_compaction_test \
 	db_test \
 	db_universal_compaction_test \
@@ -838,9 +835,6 @@ db_block_cache_test: db/db_block_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(
 db_log_iter_test: db/db_log_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_compaction_filter_test: db/db_compaction_filter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
 db_compaction_test: db/db_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
@@ -962,9 +956,6 @@ write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 write_controller_test: db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-merge_helper_test: db/merge_helper_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 merger_test: table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)

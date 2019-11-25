@@ -12,8 +12,6 @@
 #include <vector>
 
 #include "db/compaction.h"
-#include "db/merge_helper.h"
-#include "rocksdb/compaction_filter.h"
 #include "util/log_buffer.h"
 
 namespace rocksdb {
@@ -38,12 +36,11 @@ struct CompactionIteratorStats {
 class CompactionIterator {
  public:
   CompactionIterator(InternalIterator* input, const Comparator* cmp,
-                     MergeHelper* merge_helper, SequenceNumber last_sequence,
+                     SequenceNumber last_sequence,
                      std::vector<SequenceNumber>* snapshots,
                      SequenceNumber earliest_write_conflict_snapshot, Env* env,
                      bool expect_valid_internal_key,
                      const Compaction* compaction = nullptr,
-                     const CompactionFilter* compaction_filter = nullptr,
                      LogBuffer* log_buffer = nullptr);
 
   void ResetRecordCounts();
@@ -87,13 +84,11 @@ class CompactionIterator {
 
   InternalIterator* input_;
   const Comparator* cmp_;
-  MergeHelper* merge_helper_;
   const std::vector<SequenceNumber>* snapshots_;
   const SequenceNumber earliest_write_conflict_snapshot_;
   Env* env_;
   bool expect_valid_internal_key_;
   const Compaction* compaction_;
-  const CompactionFilter* compaction_filter_;
   LogBuffer* log_buffer_;
   bool bottommost_level_;
   bool valid_ = false;
@@ -135,7 +130,6 @@ class CompactionIterator {
   // compaction rules.  This is used for outputting a put after a single delete.
   bool clear_and_output_next_key_ = false;
 
-  MergeOutputIterator merge_out_iter_;
   std::string compaction_filter_value_;
   // "level_ptrs" holds indices that remember which file of an associated
   // level we were last checking during the last call to compaction->

@@ -11,23 +11,19 @@
 namespace rocksdb {
 
 CompactionIterator::CompactionIterator(
-    InternalIterator* input, const Comparator* cmp, MergeHelper* merge_helper,
+    InternalIterator* input, const Comparator* cmp,
     SequenceNumber last_sequence, std::vector<SequenceNumber>* snapshots,
     SequenceNumber earliest_write_conflict_snapshot, Env* env,
     bool expect_valid_internal_key, const Compaction* compaction,
-    const CompactionFilter* compaction_filter, LogBuffer* log_buffer)
+    LogBuffer* log_buffer)
     : input_(input),
       cmp_(cmp),
-      merge_helper_(merge_helper),
       snapshots_(snapshots),
       earliest_write_conflict_snapshot_(earliest_write_conflict_snapshot),
       env_(env),
       expect_valid_internal_key_(expect_valid_internal_key),
       compaction_(compaction),
-      compaction_filter_(compaction_filter),
-      log_buffer_(log_buffer),
-      merge_out_iter_(merge_helper_) {
-  assert(compaction_filter_ == nullptr || compaction_ != nullptr);
+      log_buffer_(log_buffer) {
   bottommost_level_ =
       compaction_ == nullptr ? false : compaction_->bottommost_level();
   if (compaction_ != nullptr) {
@@ -44,11 +40,7 @@ CompactionIterator::CompactionIterator(
     earliest_snapshot_ = snapshots_->at(0);
     latest_snapshot_ = snapshots_->back();
   }
-  if (compaction_filter_ != nullptr && compaction_filter_->IgnoreSnapshots()) {
-    ignore_snapshots_ = true;
-  } else {
-    ignore_snapshots_ = false;
-  }
+  ignore_snapshots_ = false;
 }
 
 void CompactionIterator::ResetRecordCounts() {
@@ -65,37 +57,12 @@ void CompactionIterator::SeekToFirst() {
 void CompactionIterator::Next() {
   // If there is a merge output, return it before continuing to process the
   // input.
-  if (merge_out_iter_.Valid()) {
-    merge_out_iter_.Next();
-
-    // Check if we returned all records of the merge output.
-    if (merge_out_iter_.Valid()) {
-      key_ = merge_out_iter_.key();
-      value_ = merge_out_iter_.value();
-      bool valid_key __attribute__((__unused__)) =
-          ParseInternalKey(key_, &ikey_);
-      // MergeUntil stops when it encounters a corrupt key and does not
-      // include them in the result, so we expect the keys here to be valid.
-      assert(valid_key);
-      // Keep current_key_ in sync.
-      current_key_.UpdateInternalKey(ikey_.sequence, ikey_.type);
-      key_ = current_key_.GetKey();
-      ikey_.user_key = current_key_.GetUserKey();
-      valid_ = true;
-    } else {
-      // MergeHelper moves the iterator to the first record after the merged
-      // records, so even though we reached the end of the merge output, we do
-      // not want to advance the iterator.
-      NextFromInput();
-    }
-  } else {
     // Only advance the input iterator if there is no merge output and the
     // iterator is not already at the next record.
     if (!at_next_) {
       input_->Next();
     }
     NextFromInput();
-  }
 
   if (valid_) {
     // Record that we've ouputted a record for the current key.
@@ -151,37 +118,6 @@ void CompactionIterator::NextFromInput() {
       has_outputted_key_ = false;
       current_user_key_sequence_ = kMaxSequenceNumber;
       current_user_key_snapshot_ = 0;
-
-      // apply the compaction filter to the first occurrence of the user key
-      if (compaction_filter_ != nullptr && ikey_.type == kTypeValue &&
-          (visible_at_tip_ || ikey_.sequence > latest_snapshot_ ||
-           ignore_snapshots_)) {
-        // If the user has specified a compaction filter and the sequence
-        // number is greater than any external snapshot, then invoke the
-        // filter. If the return value of the compaction filter is true,
-        // replace the entry with a deletion marker.
-        bool value_changed = false;
-        bool to_delete = false;
-        compaction_filter_value_.clear();
-        {
-          StopWatchNano timer(env_, true);
-          to_delete = compaction_filter_->Filter(
-              compaction_->level(), ikey_.user_key, value_,
-              &compaction_filter_value_, &value_changed);
-          iter_stats_.total_filter_time +=
-              env_ != nullptr ? timer.ElapsedNanos() : 0;
-        }
-        if (to_delete) {
-          // convert the current key to a delete
-          ikey_.type = kTypeDeletion;
-          current_key_.UpdateInternalKey(ikey_.sequence, kTypeDeletion);
-          // no value associated with delete
-          value_.clear();
-          iter_stats_.num_record_drop_user++;
-        } else if (value_changed) {
-          value_ = compaction_filter_value_;
-        }
-      }
     } else {
       // Update the current key to reflect the new sequence number/type without
       // copying the user key.
@@ -360,42 +296,6 @@ void CompactionIterator::NextFromInput() {
       // write-conflict checking since it is earlier than any snapshot.
       ++iter_stats_.num_record_drop_obsolete;
       input_->Next();
-    } else if (ikey_.type == kTypeMerge) {
-      if (!merge_helper_->HasOperator()) {
-        LogToBuffer(log_buffer_, "Options::merge_operator is null.");
-        status_ = Status::InvalidArgument(
-            "merge_operator is not properly initialized.");
-        return;
-      }
-
-      // We know the merge type entry is not hidden, otherwise we would
-      // have hit (A)
-      // We encapsulate the merge related state machine in a different
-      // object to minimize change to the existing flow.
-      merge_helper_->MergeUntil(input_, prev_snapshot, bottommost_level_);
-      merge_out_iter_.SeekToFirst();
-
-      if (merge_out_iter_.Valid()) {
-        // NOTE: key, value, and ikey_ refer to old entries.
-        //       These will be correctly set below.
-        key_ = merge_out_iter_.key();
-        value_ = merge_out_iter_.value();
-        bool valid_key __attribute__((__unused__)) =
-            ParseInternalKey(key_, &ikey_);
-        // MergeUntil stops when it encounters a corrupt key and does not
-        // include them in the result, so we expect the keys here to valid.
-        assert(valid_key);
-        // Keep current_key_ in sync.
-        current_key_.UpdateInternalKey(ikey_.sequence, ikey_.type);
-        key_ = current_key_.GetKey();
-        ikey_.user_key = current_key_.GetUserKey();
-        valid_ = true;
-      } else {
-        // all merge operands were filtered out. reset the user key, since the
-        // batch consumed by the merge operator should not shadow any keys
-        // coming after the merges
-        has_current_user_key_ = false;
-      }
     } else {
       valid_ = true;
     }
@@ -411,9 +311,8 @@ void CompactionIterator::PrepareOutput() {
 
   // This is safe for TransactionDB write-conflict checking since transactions
   // only care about sequence number larger than any active snapshots.
-  if (bottommost_level_ && valid_ && ikey_.sequence < earliest_snapshot_ &&
-      ikey_.type != kTypeMerge/* &&
-      !cmp_->Equal(compaction_->GetLargestUserKey(), ikey_.user_key)*/) {  // Shichao, conflict
+  if (bottommost_level_ && valid_ && ikey_.sequence < earliest_snapshot_
+      /* && !cmp_->Equal(compaction_->GetLargestUserKey(), ikey_.user_key)*/) {  // Shichao, conflict
     assert(ikey_.type != kTypeDeletion && ikey_.type != kTypeSingleDeletion);
     ikey_.sequence = 0;
     current_key_.UpdateInternalKey(0, ikey_.type);

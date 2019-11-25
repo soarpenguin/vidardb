@@ -557,9 +557,6 @@ TEST_F(OptionsTest, ColumnFamilyOptionsSerialization) {
   ASSERT_OK(GetColumnFamilyOptionsFromString(
       ColumnFamilyOptions(), base_options_file_content, &new_opt));
   ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(base_opt, new_opt));
-  if (base_opt.compaction_filter) {
-    delete base_opt.compaction_filter;
-  }
 }
 
 #endif  // !ROCKSDB_LITE
@@ -1004,56 +1001,6 @@ void VerifyCFPointerTypedOptions(
   ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
                                                   new_cf_opt_map));
 
-  // change the name of merge operator back-and-forth
-  {
-    auto* merge_operator = dynamic_cast<test::ChanglingMergeOperator*>(
-        base_cf_opt->merge_operator.get());
-    if (merge_operator != nullptr) {
-      name_buffer = merge_operator->Name();
-      // change the name  and expect non-ok status
-      merge_operator->SetName("some-other-name");
-      ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(
-          *base_cf_opt, *new_cf_opt, new_cf_opt_map));
-      // change the name back and expect ok status
-      merge_operator->SetName(name_buffer);
-      ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
-                                                      new_cf_opt_map));
-    }
-  }
-
-  // change the name of the compaction filter factory back-and-forth
-  {
-    auto* compaction_filter_factory =
-        dynamic_cast<test::ChanglingCompactionFilterFactory*>(
-            base_cf_opt->compaction_filter_factory.get());
-    if (compaction_filter_factory != nullptr) {
-      name_buffer = compaction_filter_factory->Name();
-      // change the name and expect non-ok status
-      compaction_filter_factory->SetName("some-other-name");
-      ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(
-          *base_cf_opt, *new_cf_opt, new_cf_opt_map));
-      // change the name back and expect ok status
-      compaction_filter_factory->SetName(name_buffer);
-      ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
-                                                      new_cf_opt_map));
-    }
-  }
-
-  // test by setting compaction_filter to nullptr
-  {
-    auto* tmp_compaction_filter = base_cf_opt->compaction_filter;
-    if (tmp_compaction_filter != nullptr) {
-      base_cf_opt->compaction_filter = nullptr;
-      // set compaction_filter to nullptr and expect non-ok status
-      ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(
-          *base_cf_opt, *new_cf_opt, new_cf_opt_map));
-      // set the value back and expect ok status
-      base_cf_opt->compaction_filter = tmp_compaction_filter;
-      ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
-                                                      new_cf_opt_map));
-    }
-  }
-
   // test by setting table_factory to nullptr
   {
     auto tmp_table_factory = base_cf_opt->table_factory;
@@ -1140,12 +1087,6 @@ TEST_F(OptionsParserTest, DumpAndParse) {
   base_db_opt.max_open_files++;
   ASSERT_NOK(RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
       base_db_opt, cf_names, base_cf_opts, kOptionsFileName, env_.get()));
-
-  for (int c = 0; c < num_cf; ++c) {
-    if (base_cf_opts[c].compaction_filter) {
-      delete base_cf_opts[c].compaction_filter;
-    }
-  }
 }
 
 TEST_F(OptionsParserTest, DifferentDefault) {
@@ -1296,51 +1237,6 @@ TEST_F(OptionsSanityCheckTest, SanityCheck) {
       opts.table_factory.reset(test::RandomTableFactory(&rnd, tb));
       ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
       ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
-
-      // persist the change
-      ASSERT_OK(PersistCFOptions(opts));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
-    }
-  }
-
-  // merge_operator
-  {
-    for (int test = 0; test < 5; ++test) {
-      // change the merge operator
-      opts.merge_operator.reset(test::RandomMergeOperator(&rnd));
-      ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelNone));
-
-      // persist the change
-      ASSERT_OK(PersistCFOptions(opts));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
-    }
-  }
-
-  // compaction_filter
-  {
-    for (int test = 0; test < 5; ++test) {
-      // change the compaction filter
-      opts.compaction_filter = test::RandomCompactionFilter(&rnd);
-      ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
-
-      // persist the change
-      ASSERT_OK(PersistCFOptions(opts));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
-      delete opts.compaction_filter;
-      opts.compaction_filter = nullptr;
-    }
-  }
-
-  // compaction_filter_factory
-  {
-    for (int test = 0; test < 5; ++test) {
-      // change the compaction filter factory
-      opts.compaction_filter_factory.reset(
-          test::RandomCompactionFilterFactory(&rnd));
-      ASSERT_NOK(SanityCheckCFOptions(opts, kSanityLevelExactMatch));
-      ASSERT_OK(SanityCheckCFOptions(opts, kSanityLevelLooselyCompatible));
 
       // persist the change
       ASSERT_OK(PersistCFOptions(opts));

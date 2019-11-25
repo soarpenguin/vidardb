@@ -227,45 +227,6 @@ struct ColumnFamilyOptions {
   // comparator provided to previous open calls on the same DB.
   const Comparator* comparator;
 
-  // REQUIRES: The client must provide a merge operator if Merge operation
-  // needs to be accessed. Calling Merge on a DB without a merge operator
-  // would result in Status::NotSupported. The client must ensure that the
-  // merge operator supplied here has the same name and *exactly* the same
-  // semantics as the merge operator provided to previous open calls on
-  // the same DB. The only exception is reserved for upgrade, where a DB
-  // previously without a merge operator is introduced to Merge operation
-  // for the first time. It's necessary to specify a merge operator when
-  // openning the DB in this case.
-  // Default: nullptr
-  std::shared_ptr<MergeOperator> merge_operator;
-
-  // A single CompactionFilter instance to call into during compaction.
-  // Allows an application to modify/delete a key-value during background
-  // compaction.
-  //
-  // If the client requires a new compaction filter to be used for different
-  // compaction runs, it can specify compaction_filter_factory instead of this
-  // option.  The client should specify only one of the two.
-  // compaction_filter takes precedence over compaction_filter_factory if
-  // client specifies both.
-  //
-  // If multithreaded compaction is being used, the supplied CompactionFilter
-  // instance may be used from different threads concurrently and so should be
-  // thread-safe.
-  //
-  // Default: nullptr
-  const CompactionFilter* compaction_filter;
-
-  // This is a factory that provides compaction filter objects which allow
-  // an application to modify/delete a key-value during background compaction.
-  //
-  // A new filter will be created on each compaction run.  If multithreaded
-  // compaction is being used, each created CompactionFilter will only be used
-  // from a single thread and so does not need to be thread-safe.
-  //
-  // Default: nullptr
-  std::shared_ptr<CompactionFilterFactory> compaction_filter_factory;
-
   // -------------------
   // Parameters that affect performance
 

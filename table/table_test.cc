@@ -971,7 +971,6 @@ TEST_F(BlockBasedTableTest, BlockBasedTableProperties2) {
     // Default comparator
     ASSERT_EQ("leveldb.BytewiseComparator", props.comparator_name);
     // No merge operator
-    ASSERT_EQ("nullptr", props.merge_operator_name);
     // No property collectors
     ASSERT_EQ("[]", props.property_collectors_names);
     // Compression type == that set:
@@ -996,7 +995,6 @@ TEST_F(BlockBasedTableTest, BlockBasedTableProperties2) {
     auto& props = *c.GetTableReader()->GetTableProperties();
 
     ASSERT_EQ("rocksdb.ReverseBytewiseComparator", props.comparator_name);
-    ASSERT_EQ("UInt64AddOperator", props.merge_operator_name);
     ASSERT_EQ("[DummyPropertiesCollector1,DummyPropertiesCollector2]",
               props.property_collectors_names);
     c.ResetTableReader();
@@ -1399,9 +1397,9 @@ TEST_F(BlockBasedTableTest, BlockCacheDisabledTest) {
   }
 
   {
-    GetContext get_context(options.comparator, nullptr, nullptr, nullptr,
+    GetContext get_context(options.comparator, nullptr, nullptr,
                            GetContext::kNotFound, Slice(), nullptr, nullptr,
-                           nullptr, nullptr);
+                           nullptr);
     // a hack that just to trigger BlockBasedTable::GetFilter.
     reader->Get(ReadOptions(), "non-exist-key", &get_context);
     BlockCachePropertiesSnapshot props(options.statistics.get());
@@ -1561,9 +1559,9 @@ TEST_F(BlockBasedTableTest, FilterBlockInBlockCache) {
   ASSERT_OK(c3.Reopen(ioptions4));
   reader = dynamic_cast<BlockBasedTable*>(c3.GetTableReader());
   std::string value;
-  GetContext get_context(options.comparator, nullptr, nullptr, nullptr,
+  GetContext get_context(options.comparator, nullptr, nullptr,
                          GetContext::kNotFound, user_key, &value, nullptr,
-                         nullptr, nullptr);
+                         nullptr);
   ASSERT_OK(reader->Get(ReadOptions(), user_key, &get_context));
   ASSERT_EQ(value, "hello");
   BlockCachePropertiesSnapshot props(options.statistics.get());
@@ -1641,9 +1639,9 @@ TEST_F(BlockBasedTableTest, BlockReadCountTest) {
                GetPlainInternalComparator(options.comparator), &keys, &kvmap);
       auto reader = c.GetTableReader();
       std::string value;
-      GetContext get_context(options.comparator, nullptr, nullptr, nullptr,
+      GetContext get_context(options.comparator, nullptr, nullptr,
                              GetContext::kNotFound, user_key, &value, nullptr,
-                             nullptr, nullptr);
+                             nullptr);
       perf_context.Reset();
       ASSERT_OK(reader->Get(ReadOptions(), encoded_key, &get_context));
       if (index_and_filter_in_cache) {
@@ -1661,9 +1659,9 @@ TEST_F(BlockBasedTableTest, BlockReadCountTest) {
       internal_key = InternalKey(user_key, 0, kTypeValue);
       encoded_key = internal_key.Encode().ToString();
 
-      get_context = GetContext(options.comparator, nullptr, nullptr, nullptr,
+      get_context = GetContext(options.comparator, nullptr, nullptr,
                                GetContext::kNotFound, user_key, &value, nullptr,
-                               nullptr, nullptr);
+                               nullptr);
       perf_context.Reset();
       ASSERT_OK(reader->Get(ReadOptions(), encoded_key, &get_context));
       ASSERT_EQ(get_context.State(), GetContext::kNotFound);

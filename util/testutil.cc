@@ -200,18 +200,6 @@ TableFactory* RandomTableFactory(Random* rnd, int pre_defined) {
 #endif  // !ROCKSDB_LITE
 }
 
-MergeOperator* RandomMergeOperator(Random* rnd) {
-  return new ChanglingMergeOperator(RandomName(rnd, 10));
-}
-
-CompactionFilter* RandomCompactionFilter(Random* rnd) {
-  return new ChanglingCompactionFilter(RandomName(rnd, 10));
-}
-
-CompactionFilterFactory* RandomCompactionFilterFactory(Random* rnd) {
-  return new ChanglingCompactionFilterFactory(RandomName(rnd, 10));
-}
-
 void RandomInitDBOptions(DBOptions* db_opt, Random* rnd) {
   // boolean options
   db_opt->advise_random_on_open = rnd->Uniform(2);
@@ -318,12 +306,6 @@ void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd) {
 
   // pointer typed options
   cf_opt->table_factory.reset(RandomTableFactory(rnd));
-  cf_opt->merge_operator.reset(RandomMergeOperator(rnd));
-  if (cf_opt->compaction_filter) {
-    delete cf_opt->compaction_filter;
-  }
-  cf_opt->compaction_filter = RandomCompactionFilter(rnd);
-  cf_opt->compaction_filter_factory.reset(RandomCompactionFilterFactory(rnd));
 
   // custom typed options
   cf_opt->compression = RandomCompressionType(rnd);

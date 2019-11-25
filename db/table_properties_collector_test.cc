@@ -361,8 +361,6 @@ void TestInternalKeyPropertiesCollector(
       InternalKey("Y       ", 5, ValueType::kTypeDeletion),
       InternalKey("Z       ", 6, ValueType::kTypeDeletion),
       InternalKey("a       ", 7, ValueType::kTypeSingleDeletion),
-      InternalKey("b       ", 8, ValueType::kTypeMerge),
-      InternalKey("c       ", 9, ValueType::kTypeMerge),
   };
 
   std::unique_ptr<TableBuilder> builder;

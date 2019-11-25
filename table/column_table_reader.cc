@@ -917,7 +917,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
           if (!ParseInternalKey(it->key(), &parsed_key)) {
             return Status::Corruption("corrupted internal key in Table::Iter");
           }
-          if (parsed_key.sequence <= sequence_num && parsed_key.type != kTypeMerge) {
+          if (parsed_key.sequence <= sequence_num) {
             out_bs.push_back(true);
             val.assign(it->value().data(), it->value().size());
             user_key.assign(it->key().data(), it->key().size() - 8);

@@ -108,7 +108,6 @@ class DBIter: public Iterator {
         env_(env),
         logger_(ioptions.info_log),
         user_comparator_(cmp),
-        user_merge_operator_(ioptions.merge_operator),
         iter_(iter),
         sequence_(s),
         direction_(kForward),
@@ -205,7 +204,6 @@ class DBIter: public Iterator {
   inline void FindNextUserEntry(bool skipping);
   void FindNextUserEntryInternal(bool skipping);
   bool ParseKey(ParsedInternalKey* key);
-  void MergeValuesNewToOld();
 
   // Temporarily pin the blocks that we encounter until ReleaseTempPinnedData()
   // is called
@@ -235,7 +233,6 @@ class DBIter: public Iterator {
   Env* const env_;
   Logger* logger_;
   const Comparator* const user_comparator_;
-  const MergeOperator* const user_merge_operator_;
   InternalIterator* iter_;
   SequenceNumber const sequence_;
 
@@ -254,7 +251,6 @@ class DBIter: public Iterator {
   // is not deleted, will be true if ReadOptions::pin_data is true
   const bool pin_thru_lifetime_;
   // List of operands for merge operator.
-  MergeContext merge_context_;
   LocalStatistics local_stats_;
   PinnedIteratorsManager pinned_iters_mgr_;
 
@@ -370,15 +366,6 @@ void DBIter::FindNextUserEntryInternal(bool skipping) {
                   ikey.user_key,
                   !iter_->IsKeyPinned() || !pin_thru_lifetime_ /* copy */);
               return;
-            case kTypeMerge:
-              // By now, we are sure the current ikey is going to yield a value
-              saved_key_.SetKey(
-                  ikey.user_key,
-                  !iter_->IsKeyPinned() || !pin_thru_lifetime_ /* copy */);
-              current_entry_is_merged_ = true;
-              valid_ = true;
-              MergeValuesNewToOld();  // Go to a different state machine
-              return;
             default:
               assert(false);
               break;
@@ -403,81 +390,6 @@ void DBIter::FindNextUserEntryInternal(bool skipping) {
     }
   } while (iter_->Valid());
   valid_ = false;
-}
-
-// Merge values of the same user key starting from the current iter_ position
-// Scan from the newer entries to older entries.
-// PRE: iter_->key() points to the first merge type entry
-//      saved_key_ stores the user key
-// POST: saved_value_ has the merged value for the user key
-//       iter_ points to the next entry (or invalid)
-void DBIter::MergeValuesNewToOld() {
-  if (!user_merge_operator_) {
-    Log(InfoLogLevel::ERROR_LEVEL,
-        logger_, "Options::merge_operator is null.");
-    status_ = Status::InvalidArgument("user_merge_operator_ must be set.");
-    valid_ = false;
-    return;
-  }
-
-  merge_context_.Clear();
-  // Start the merge process by pushing the first operand
-  merge_context_.PushOperand(iter_->value());
-
-  ParsedInternalKey ikey;
-  for (iter_->Next(); iter_->Valid(); iter_->Next()) {
-    if (!ParseKey(&ikey)) {
-      // skip corrupted key
-      continue;
-    }
-
-    if (!user_comparator_->Equal(ikey.user_key, saved_key_.GetKey())) {
-      // hit the next user key, stop right here
-      break;
-    } else if (kTypeDeletion == ikey.type || kTypeSingleDeletion == ikey.type) {
-      // hit a delete with the same user key, stop right here
-      // iter_ is positioned after delete
-      iter_->Next();
-      break;
-    } else if (kTypeValue == ikey.type) {
-      // hit a put, merge the put value with operands and store the
-      // final result in saved_value_. We are done!
-      // ignore corruption if there is any.
-      const Slice val = iter_->value();
-      {
-        StopWatchNano timer(env_, statistics_ != nullptr);
-        PERF_TIMER_GUARD(merge_operator_time_nanos);
-        user_merge_operator_->FullMerge(ikey.user_key, &val,
-                                        merge_context_.GetOperands(),
-                                        &saved_value_, logger_);
-        RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME,
-                   timer.ElapsedNanos());
-      }
-      // iter_ is positioned after put
-      iter_->Next();
-      return;
-    } else if (kTypeMerge == ikey.type) {
-      // hit a merge, add the value as an operand and run associative merge.
-      // when complete, add result to operands and continue.
-      const Slice& val = iter_->value();
-      merge_context_.PushOperand(val);
-    } else {
-      assert(false);
-    }
-  }
-
-  {
-    StopWatchNano timer(env_, statistics_ != nullptr);
-    PERF_TIMER_GUARD(merge_operator_time_nanos);
-    // we either exhausted all internal keys under this user key, or hit
-    // a deletion marker.
-    // feed null as the existing value to the merge operator, such that
-    // client can differentiate this scenario and do things accordingly.
-    user_merge_operator_->FullMerge(saved_key_.GetKey(), nullptr,
-                                    merge_context_.GetOperands(), &saved_value_,
-                                    logger_);
-    RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME, timer.ElapsedNanos());
-  }
 }
 
 void DBIter::Prev() {
@@ -563,11 +475,9 @@ void DBIter::PrevInternal() {
 // saved_value_
 bool DBIter::FindValueForCurrentKey() {
   assert(iter_->Valid());
-  merge_context_.Clear();
   current_entry_is_merged_ = false;
   // last entry before merge (could be kTypeDeletion, kTypeSingleDeletion or
   // kTypeValue)
-  ValueType last_not_merge_type = kTypeDeletion;
   ValueType last_key_entry_type = kTypeDeletion;
 
   ParsedInternalKey ikey;
@@ -584,21 +494,12 @@ bool DBIter::FindValueForCurrentKey() {
     last_key_entry_type = ikey.type;
     switch (last_key_entry_type) {
       case kTypeValue:
-        merge_context_.Clear();
         ReleaseTempPinnedData();
         TempPinData();
         pinned_value_ = iter_->value();
-        last_not_merge_type = kTypeValue;
         break;
       case kTypeDeletion:
-      case kTypeSingleDeletion:
-        merge_context_.Clear();
-        last_not_merge_type = last_key_entry_type;
         PERF_COUNTER_ADD(internal_delete_skipped_count, 1);
-        break;
-      case kTypeMerge:
-        assert(user_merge_operator_ != nullptr);
-        merge_context_.PushOperandBack(iter_->value());
         break;
       default:
         assert(false);
@@ -616,29 +517,6 @@ bool DBIter::FindValueForCurrentKey() {
     case kTypeSingleDeletion:
       valid_ = false;
       return false;
-    case kTypeMerge:
-      current_entry_is_merged_ = true;
-      if (last_not_merge_type == kTypeDeletion) {
-        StopWatchNano timer(env_, statistics_ != nullptr);
-        PERF_TIMER_GUARD(merge_operator_time_nanos);
-        user_merge_operator_->FullMerge(saved_key_.GetKey(), nullptr,
-                                        merge_context_.GetOperands(),
-                                        &saved_value_, logger_);
-        RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME,
-                   timer.ElapsedNanos());
-      } else {
-        assert(last_not_merge_type == kTypeValue);
-        {
-          StopWatchNano timer(env_, statistics_ != nullptr);
-          PERF_TIMER_GUARD(merge_operator_time_nanos);
-          user_merge_operator_->FullMerge(saved_key_.GetKey(), &pinned_value_,
-                                          merge_context_.GetOperands(),
-                                          &saved_value_, logger_);
-          RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME,
-                     timer.ElapsedNanos());
-        }
-      }
-      break;
     case kTypeValue:
       // do nothing - we've already has value in saved_value_
       break;
@@ -676,50 +554,7 @@ bool DBIter::FindValueForCurrentKeyUsingSeek() {
     return false;
   }
 
-  // kTypeMerge. We need to collect all kTypeMerge values and save them
-  // in operands
-  current_entry_is_merged_ = true;
-  merge_context_.Clear();
-  while (iter_->Valid() &&
-         user_comparator_->Equal(ikey.user_key, saved_key_.GetKey()) &&
-         ikey.type == kTypeMerge) {
-    merge_context_.PushOperand(iter_->value());
-    iter_->Next();
-    FindParseableKey(&ikey, kForward);
-  }
-
-  if (!iter_->Valid() ||
-      !user_comparator_->Equal(ikey.user_key, saved_key_.GetKey()) ||
-      ikey.type == kTypeDeletion || ikey.type == kTypeSingleDeletion) {
-    {
-      StopWatchNano timer(env_, statistics_ != nullptr);
-      PERF_TIMER_GUARD(merge_operator_time_nanos);
-      user_merge_operator_->FullMerge(saved_key_.GetKey(), nullptr,
-                                      merge_context_.GetOperands(),
-                                      &saved_value_, logger_);
-      RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME, timer.ElapsedNanos());
-    }
-    // Make iter_ valid and point to saved_key_
-    if (!iter_->Valid() ||
-        !user_comparator_->Equal(ikey.user_key, saved_key_.GetKey())) {
-      iter_->Seek(last_key);
-      RecordTick(statistics_, NUMBER_OF_RESEEKS_IN_ITERATION);
-    }
-    valid_ = true;
-    return true;
-  }
-
-  const Slice& val = iter_->value();
-  {
-    StopWatchNano timer(env_, statistics_ != nullptr);
-    PERF_TIMER_GUARD(merge_operator_time_nanos);
-    user_merge_operator_->FullMerge(saved_key_.GetKey(), &val,
-                                    merge_context_.GetOperands(), &saved_value_,
-                                    logger_);
-    RecordTick(statistics_, MERGE_OPERATION_TOTAL_TIME, timer.ElapsedNanos());
-  }
-  valid_ = true;
-  return true;
+  assert(false);
 }
 
 // Used in Next to change directions

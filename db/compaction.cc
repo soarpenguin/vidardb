@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "db/column_family.h"
-#include "rocksdb/compaction_filter.h"
 #include "util/logging.h"
 #include "util/sync_point.h"
 #include "table/adaptive_table_factory.h"  // Shichao
@@ -231,9 +230,7 @@ bool Compaction::IsTrivialMove() const {
     return false;
   }
 
-  if (is_manual_compaction_ &&
-      (cfd_->ioptions()->compaction_filter != nullptr ||
-       cfd_->ioptions()->compaction_filter_factory != nullptr)) {
+  if (is_manual_compaction_) {
     // This is a manual compaction and we have a compaction filter that should
     // be executed, we cannot do a trivial move
     return false;
@@ -420,19 +417,6 @@ uint64_t Compaction::OutputFilePreallocationSize() const {
   // Over-estimate slightly so we don't end up just barely crossing
   // the threshold
   return preallocation_size + (preallocation_size / 10);
-}
-
-std::unique_ptr<CompactionFilter> Compaction::CreateCompactionFilter() const {
-  if (!cfd_->ioptions()->compaction_filter_factory) {
-    return nullptr;
-  }
-
-  CompactionFilter::Context context;
-  context.is_full_compaction = is_full_compaction_;
-  context.is_manual_compaction = is_manual_compaction_;
-  context.column_family_id = cfd_->GetID();
-  return cfd_->ioptions()->compaction_filter_factory->CreateCompactionFilter(
-      context);
 }
 
 bool Compaction::IsOutputLevelEmpty() const {

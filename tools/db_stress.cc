@@ -1285,11 +1285,7 @@ class StressTest {
       keys[i] += key.ToString();
       values[i] += value.ToString();
       value_slices[i] = values[i];
-      if (FLAGS_use_merge) {
-        batch.Merge(column_family, keys[i], value_slices[i]);
-      } else {
-        batch.Put(column_family, keys[i], value_slices[i]);
-      }
+      batch.Put(column_family, keys[i], value_slices[i]);
     }
 
     s = db_->Write(writeoptions, &batch);

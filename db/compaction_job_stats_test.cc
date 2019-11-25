@@ -29,7 +29,6 @@
 #include "db/write_batch_internal.h"
 #include "port/stack_trace.h"
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"

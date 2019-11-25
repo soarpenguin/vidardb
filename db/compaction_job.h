@@ -29,7 +29,6 @@
 #include "db/write_controller.h"
 #include "db/write_thread.h"
 #include "port/port.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/compaction_job_stats.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"

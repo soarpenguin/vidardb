@@ -32,7 +32,6 @@
 #include "db/write_batch_internal.h"
 #include "port/stack_trace.h"
 #include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
@@ -630,69 +629,6 @@ TEST_F(DBTest, IdentityAcrossRestarts) {
     ASSERT_NE(id1.compare(id3), 0);
   } while (ChangeCompactOptions());
 }
-
-namespace {
-class KeepFilter : public CompactionFilter {
- public:
-  virtual bool Filter(int level, const Slice& key, const Slice& value,
-                      std::string* new_value,
-                      bool* value_changed) const override {
-    return false;
-  }
-
-  virtual const char* Name() const override { return "KeepFilter"; }
-};
-
-class KeepFilterFactory : public CompactionFilterFactory {
- public:
-  explicit KeepFilterFactory(bool check_context = false)
-      : check_context_(check_context) {}
-
-  virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) override {
-    if (check_context_) {
-      EXPECT_EQ(expect_full_compaction_.load(), context.is_full_compaction);
-      EXPECT_EQ(expect_manual_compaction_.load(), context.is_manual_compaction);
-    }
-    return std::unique_ptr<CompactionFilter>(new KeepFilter());
-  }
-
-  virtual const char* Name() const override { return "KeepFilterFactory"; }
-  bool check_context_;
-  std::atomic_bool expect_full_compaction_;
-  std::atomic_bool expect_manual_compaction_;
-};
-
-class DelayFilter : public CompactionFilter {
- public:
-  explicit DelayFilter(DBTestBase* d) : db_test(d) {}
-  virtual bool Filter(int level, const Slice& key, const Slice& value,
-                      std::string* new_value,
-                      bool* value_changed) const override {
-    db_test->env_->addon_time_.fetch_add(1000);
-    return true;
-  }
-
-  virtual const char* Name() const override { return "DelayFilter"; }
-
- private:
-  DBTestBase* db_test;
-};
-
-class DelayFilterFactory : public CompactionFilterFactory {
- public:
-  explicit DelayFilterFactory(DBTestBase* d) : db_test(d) {}
-  virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) override {
-    return std::unique_ptr<CompactionFilter>(new DelayFilter(db_test));
-  }
-
-  virtual const char* Name() const override { return "DelayFilterFactory"; }
-
- private:
-  DBTestBase* db_test;
-};
-}  // namespace
 
 #ifndef ROCKSDB_LITE
 
@@ -4065,57 +4001,6 @@ TEST_F(DBTest, CloseSpeedup) {
 
   Destroy(options);
 }
-
-class DelayedMergeOperator : public MergeOperator {
- private:
-  DBTest* db_test_;
-
- public:
-  explicit DelayedMergeOperator(DBTest* d) : db_test_(d) {}
-  virtual bool FullMerge(const Slice& key, const Slice* existing_value,
-                         const std::deque<std::string>& operand_list,
-                         std::string* new_value,
-                         Logger* logger) const override {
-    db_test_->env_->addon_time_.fetch_add(1000);
-    *new_value = "";
-    return true;
-  }
-
-  virtual const char* Name() const override { return "DelayedMergeOperator"; }
-};
-
-#ifndef ROCKSDB_LITE
-TEST_P(DBTestWithParam, FilterCompactionTimeTest) {
-  Options options = CurrentOptions();
-  options.compaction_filter_factory =
-      std::make_shared<DelayFilterFactory>(this);
-  options.disable_auto_compactions = true;
-  options.create_if_missing = true;
-  options.statistics = rocksdb::CreateDBStatistics();
-  options.max_subcompactions = max_subcompactions_;
-  DestroyAndReopen(options);
-
-  // put some data
-  for (int table = 0; table < 4; ++table) {
-    for (int i = 0; i < 10 + table; ++i) {
-      Put(ToString(table * 100 + i), "val");
-    }
-    Flush();
-  }
-
-  CompactRangeOptions cro;
-  cro.exclusive_manual_compaction = exclusive_manual_compaction_;
-  ASSERT_OK(db_->CompactRange(cro, nullptr, nullptr));
-  ASSERT_EQ(0U, CountLiveFiles());
-
-  Reopen(options);
-
-  Iterator* itr = db_->NewIterator(ReadOptions());
-  itr->SeekToFirst();
-  ASSERT_NE(TestGetTickerCount(options, FILTER_OPERATION_TOTAL_TIME), 0);
-  delete itr;
-}
-#endif  // ROCKSDB_LITE
 
 TEST_F(DBTest, TestLogCleanup) {
   Options options = CurrentOptions();

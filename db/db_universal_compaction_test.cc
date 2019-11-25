@@ -54,66 +54,6 @@ void VerifyCompactionResult(
 #endif
 }
 
-class KeepFilter : public CompactionFilter {
- public:
-  virtual bool Filter(int level, const Slice& key, const Slice& value,
-                      std::string* new_value, bool* value_changed) const
-      override {
-    return false;
-  }
-
-  virtual const char* Name() const override { return "KeepFilter"; }
-};
-
-class KeepFilterFactory : public CompactionFilterFactory {
- public:
-  explicit KeepFilterFactory(bool check_context = false)
-      : check_context_(check_context) {}
-
-  virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) override {
-    if (check_context_) {
-      EXPECT_EQ(expect_full_compaction_.load(), context.is_full_compaction);
-      EXPECT_EQ(expect_manual_compaction_.load(), context.is_manual_compaction);
-    }
-    return std::unique_ptr<CompactionFilter>(new KeepFilter());
-  }
-
-  virtual const char* Name() const override { return "KeepFilterFactory"; }
-  bool check_context_;
-  std::atomic_bool expect_full_compaction_;
-  std::atomic_bool expect_manual_compaction_;
-};
-
-class DelayFilter : public CompactionFilter {
- public:
-  explicit DelayFilter(DBTestBase* d) : db_test(d) {}
-  virtual bool Filter(int level, const Slice& key, const Slice& value,
-                      std::string* new_value,
-                      bool* value_changed) const override {
-    db_test->env_->addon_time_.fetch_add(1000);
-    return true;
-  }
-
-  virtual const char* Name() const override { return "DelayFilter"; }
-
- private:
-  DBTestBase* db_test;
-};
-
-class DelayFilterFactory : public CompactionFilterFactory {
- public:
-  explicit DelayFilterFactory(DBTestBase* d) : db_test(d) {}
-  virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) override {
-    return std::unique_ptr<CompactionFilter>(new DelayFilter(db_test));
-  }
-
-  virtual const char* Name() const override { return "DelayFilterFactory"; }
-
- private:
-  DBTestBase* db_test;
-};
 }  // namespace
 
 // Make sure we don't trigger a problem if the trigger conditon is given
@@ -133,9 +73,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionSingleSortedRun) {
   options.arena_block_size = 4 << 10;
   options.target_file_size_base = 32 << 10;  // 32KB
   // trigger compaction if there are >= 4 files
-  KeepFilterFactory* filter = new KeepFilterFactory(true);
-  filter->expect_manual_compaction_.store(false);
-  options.compaction_filter_factory.reset(filter);
 
   DestroyAndReopen(options);
   ASSERT_EQ(1, db_->GetOptions().level0_file_num_compaction_trigger);
@@ -143,7 +80,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionSingleSortedRun) {
   Random rnd(301);
   int key_idx = 0;
 
-  filter->expect_full_compaction_.store(true);
 
   for (int num = 0; num < 16; num++) {
     // Write 100KB file. And immediately it should be compacted to one file.
@@ -229,9 +165,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionTrigger) {
   options.target_file_size_base = 32 << 10;  // 32KB
   // trigger compaction if there are >= 4 files
   options.level0_file_num_compaction_trigger = 4;
-  KeepFilterFactory* filter = new KeepFilterFactory(true);
-  filter->expect_manual_compaction_.store(false);
-  options.compaction_filter_factory.reset(filter);
 
   options = CurrentOptions(options);
   DestroyAndReopen(options);
@@ -250,7 +183,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionTrigger) {
   Random rnd(301);
   int key_idx = 0;
 
-  filter->expect_full_compaction_.store(true);
   // Stage 1:
   //   Generate a set of files at level 0, but don't trigger level-0
   //   compaction.
@@ -275,7 +207,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionTrigger) {
   //   First, clean up memtable before inserting new data. This will generate
   //   a level-0 file, with size around 0.4 (according to previously written
   //   data amount).
-  filter->expect_full_compaction_.store(false);
   ASSERT_OK(Flush(1));
   for (int num = 0; num < options.level0_file_num_compaction_trigger - 3;
        num++) {
@@ -317,7 +248,6 @@ TEST_P(DBTestUniversalCompaction, UniversalCompactionTrigger) {
   // Stage 5:
   //   Now we have 4 files at level 0, with size 4, 2.4, 2, 1. Let's generate
   //   a new file of size 1.
-  filter->expect_full_compaction_.store(true);
   GenerateNewFile(1, &rnd, &key_idx);
   dbfull()->TEST_WaitForCompact();
   // All files at level 0 will be compacted into a single one.

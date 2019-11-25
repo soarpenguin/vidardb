@@ -27,12 +27,6 @@ struct ImmutableCFOptions {
 
   const Comparator* comparator;
 
-  MergeOperator* merge_operator;
-
-  const CompactionFilter* compaction_filter;
-
-  CompactionFilterFactory* compaction_filter_factory;
-
   Logger* info_log;
 
   Statistics* statistics;
