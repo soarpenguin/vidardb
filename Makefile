@@ -318,7 +318,6 @@ TESTS = \
 	thread_list_test \
 	compact_files_test \
 	perf_context_test \
-	write_callback_test \
 	heap_test \
 	compaction_job_stats_test \
 	iostats_context_test \
@@ -1007,9 +1006,6 @@ auto_roll_logger_test: db/auto_roll_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 memtable_list_test: db/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(AM_LINK)
-
-write_callback_test: db/write_callback_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 heap_test: util/heap_test.o $(GTEST)

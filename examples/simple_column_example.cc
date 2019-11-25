@@ -9,7 +9,7 @@ using namespace std;
 using namespace rocksdb;
 
 unsigned int M = 2;
-string kDBPath = "/home/jsc/Desktop/VidarDB" + to_string(M);
+string kDBPath = "/tmp/rocksdb_simple_example" + to_string(M);
 
 int main() {
   system(string("rm -rf " + kDBPath).c_str());

@@ -162,7 +162,6 @@ TEST_BENCH_SOURCES =                                                    \
   db/wal_manager_test.cc                                                \
   db/write_batch_test.cc                                                \
   db/write_controller_test.cc                                           \
-  db/write_callback_test.cc                                             \
   table/block_test.cc                                                   \
   table/merger_test.cc                                                  \
   table/table_reader_bench.cc                                           \

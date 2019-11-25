@@ -280,11 +280,6 @@ size_t WriteThread::EnterAsBatchGroupLeader(
       break;
     }
 
-    if (w->callback != nullptr && !w->callback->AllowWriteBatching()) {
-      // dont batch writes that don't want to be batched
-      break;
-    }
-
     auto batch_size = WriteBatchInternal::ByteSize(w->batch);
     if (size + batch_size > max_size) {
       // Do not make batch too big
@@ -311,9 +306,6 @@ void WriteThread::LaunchParallelFollowers(ParallelGroup* pg,
 
   while (w != pg->last_writer) {
     // Writers that won't write don't get sequence allotment
-    if (!w->CallbackFailed()) {
-      sequence += WriteBatchInternal::Count(w->batch);
-    }
     w = w->link_newer;
 
     w->sequence = sequence;

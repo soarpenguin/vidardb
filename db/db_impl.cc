@@ -55,7 +55,6 @@
 #include "db/transaction_log_impl.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
-#include "db/write_callback.h"
 #include "db/writebuffer.h"
 #include "port/likely.h"
 #include "port/port.h"
@@ -4340,7 +4339,6 @@ Status DBImpl::WriteImpl(const WriteOptions& write_options,
   w.disableWAL = write_options.disableWAL;
   w.disable_memtable = disable_memtable;
   w.in_batch_group = false;
-  w.callback = callback;
   w.log_ref = log_ref;
 
   if (!write_options.disableWAL) {
@@ -4540,19 +4538,16 @@ Status DBImpl::WriteImpl(const WriteOptions& write_options,
     int total_count = 0;
     uint64_t total_byte_size = 0;
     for (auto writer : write_group) {
-      if (writer->CheckCallback(this)) {
-        if (writer->ShouldWriteToMemtable()) {
-          total_count += WriteBatchInternal::Count(writer->batch);
-          parallel = parallel && !writer->batch->HasMerge();
-        }
+      if (writer->ShouldWriteToMemtable()) {
+        total_count += WriteBatchInternal::Count(writer->batch);
+        parallel = parallel && !writer->batch->HasMerge();
+      }
 
-        if (writer->ShouldWriteToWAL()) {
-          total_byte_size = WriteBatchInternal::AppendedByteSize(
-              total_byte_size, WriteBatchInternal::ByteSize(writer->batch));
-        }
+      if (writer->ShouldWriteToWAL()) {
+        total_byte_size = WriteBatchInternal::AppendedByteSize(
+            total_byte_size, WriteBatchInternal::ByteSize(writer->batch));
       }
     }
-
     const SequenceNumber current_sequence = last_sequence + 1;
     last_sequence += total_count;
 
@@ -4713,15 +4708,14 @@ Status DBImpl::WriteImpl(const WriteOptions& write_options,
       //
       // Is setting bg_error_ enough here?  This will at least stop
       // compaction and fail any further writes.
-      if (!status.ok() && bg_error_.ok() && !w.CallbackFailed()) {
+      if (!status.ok() && bg_error_.ok()) {
         bg_error_ = status;
       }
     }
   }
   PERF_TIMER_START(write_pre_and_post_process_time);
 
-  if (db_options_.paranoid_checks && !status.ok() && !w.CallbackFailed() &&
-      !status.IsBusy()) {
+  if (db_options_.paranoid_checks && !status.ok() && !status.IsBusy()) {
     mutex_.Lock();
     if (bg_error_.ok()) {
       bg_error_ = status;  // stop compaction & fail any further writes

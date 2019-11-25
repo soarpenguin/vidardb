@@ -14,7 +14,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "db/write_callback.h"
 #include "rocksdb/status.h"
 #include "rocksdb/types.h"
 #include "rocksdb/write_batch.h"
@@ -83,13 +82,11 @@ class WriteThread {
     uint64_t log_used;  // log number that this batch was inserted into
     uint64_t log_ref;   // log number that memtable insert should reference
     bool in_batch_group;
-    WriteCallback* callback;
     bool made_waitable;          // records lazy construction of mutex and cv
     std::atomic<uint8_t> state;  // write under StateMutex() or pre-link
     ParallelGroup* parallel_group;
     SequenceNumber sequence;  // the sequence number to use
     Status status;            // status of memtable inserter
-    Status callback_status;   // status returned by callback->Callback()
     std::aligned_storage<sizeof(std::mutex)>::type state_mutex_bytes;
     std::aligned_storage<sizeof(std::condition_variable)>::type state_cv_bytes;
     Writer* link_older;  // read/write only before linking, or as leader
@@ -103,7 +100,6 @@ class WriteThread {
           log_used(0),
           log_ref(0),
           in_batch_group(false),
-          callback(nullptr),
           made_waitable(false),
           state(STATE_INIT),
           parallel_group(nullptr),
@@ -115,13 +111,6 @@ class WriteThread {
         StateMutex().~mutex();
         StateCV().~condition_variable();
       }
-    }
-
-    bool CheckCallback(DB* db) {
-      if (callback != nullptr) {
-        callback_status = callback->Callback(db);
-      }
-      return callback_status.ok();
     }
 
     void CreateMutex() {
@@ -137,33 +126,14 @@ class WriteThread {
 
     // returns the aggregate status of this Writer
     Status FinalStatus() {
-      if (!status.ok()) {
-        // a non-ok memtable write status takes presidence
-        assert(callback == nullptr || callback_status.ok());
-        return status;
-      } else if (!callback_status.ok()) {
-        // if the callback failed then that is the status we want
-        // because a memtable insert should not have been attempted
-        assert(callback != nullptr);
-        assert(status.ok());
-        return callback_status;
-      } else {
-        // if there is no callback then we only care about
-        // the memtable insert status
-        assert(callback == nullptr || callback_status.ok());
-        return status;
-      }
-    }
-
-    bool CallbackFailed() {
-      return (callback != nullptr) && !callback_status.ok();
+      return status;
     }
 
     bool ShouldWriteToMemtable() {
-      return !CallbackFailed() && !disable_memtable;
+      return !disable_memtable;
     }
 
-    bool ShouldWriteToWAL() { return !CallbackFailed() && !disableWAL; }
+    bool ShouldWriteToWAL() { return !disableWAL; }
 
     // No other mutexes may be acquired while holding StateMutex(), it is
     // always last in the order
