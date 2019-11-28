@@ -527,7 +527,6 @@ struct TestArgs {
   bool reverse_compare;
   int restart_interval;
   CompressionType compression;
-  uint32_t format_version;
   bool use_mmap;
 };
 
@@ -578,7 +577,6 @@ static std::vector<TestArgs> GenerateArgList() {
           one_arg.reverse_compare = reverse_compare;
           one_arg.restart_interval = restart_interval;
           one_arg.compression = compression_type.first;
-          one_arg.format_version = compression_type.second ? 2 : 1;
           one_arg.use_mmap = false;
           test_args.push_back(one_arg);
         }
@@ -619,7 +617,6 @@ class HarnessTest : public testing::Test {
         table_options_.block_size = 256;
         table_options_.block_restart_interval = args.restart_interval;
         table_options_.index_block_restart_interval = args.restart_interval;
-        table_options_.format_version = args.format_version;
         options_.table_factory.reset(
             new BlockBasedTableFactory(table_options_));
         constructor_ = new TableConstructor(options_.comparator);
@@ -1133,13 +1130,8 @@ TEST_F(BlockBasedTableTest, TotalOrderSeekOnHashIndex) {
     Options options;
     // Make each key/value an individual block
     table_options.block_size = 64;
-    switch (i) {
-    default:
-      // Binary search index
-      table_options.index_type = BlockBasedTableOptions::kBinarySearch;
-      options.table_factory.reset(new BlockBasedTableFactory(table_options));
-      break;
-    }
+
+    options.table_factory.reset(new BlockBasedTableFactory(table_options));
 
     TableConstructor c(BytewiseComparator(), true);
     c.Add("aaaa1", std::string('a', 56));
@@ -1867,7 +1859,7 @@ TEST_F(HarnessTest, Randomized) {
 #ifndef ROCKSDB_LITE
 TEST_F(HarnessTest, RandomizedLongDB) {
   Random rnd(test::RandomSeed());
-  TestArgs args = {DB_TEST, false, 16, kNoCompression, 0, false};
+  TestArgs args = {DB_TEST, false, 16, kNoCompression, false};
   Init(args);
   int num_entries = 100000;
   for (int e = 0; e < num_entries; e++) {
@@ -1971,28 +1963,9 @@ TEST_F(HarnessTest, SimpleSpecialKey) {
 
 TEST_F(HarnessTest, FooterTests) {
   {
-    // upconvert legacy block based
-    std::string encoded;
-    Footer footer(kLegacyBlockBasedTableMagicNumber, 0);
-    BlockHandle meta_index(10, 5), index(20, 15);
-    footer.set_metaindex_handle(meta_index);
-    footer.set_index_handle(index);
-    footer.EncodeTo(&encoded);
-    Footer decoded_footer;
-    Slice encoded_slice(encoded);
-    decoded_footer.DecodeFrom(&encoded_slice);
-    ASSERT_EQ(decoded_footer.table_magic_number(), kBlockBasedTableMagicNumber);
-    ASSERT_EQ(decoded_footer.checksum(), kCRC32c);
-    ASSERT_EQ(decoded_footer.metaindex_handle().offset(), meta_index.offset());
-    ASSERT_EQ(decoded_footer.metaindex_handle().size(), meta_index.size());
-    ASSERT_EQ(decoded_footer.index_handle().offset(), index.offset());
-    ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
-    ASSERT_EQ(decoded_footer.version(), 0U);
-  }
-  {
     // version == 2
     std::string encoded;
-    Footer footer(kBlockBasedTableMagicNumber, 2);
+    Footer footer(kBlockBasedTableMagicNumber);
     BlockHandle meta_index(10, 5), index(20, 15);
     footer.set_metaindex_handle(meta_index);
     footer.set_index_handle(index);
@@ -2001,12 +1974,10 @@ TEST_F(HarnessTest, FooterTests) {
     Slice encoded_slice(encoded);
     decoded_footer.DecodeFrom(&encoded_slice);
     ASSERT_EQ(decoded_footer.table_magic_number(), kBlockBasedTableMagicNumber);
-    ASSERT_EQ(decoded_footer.checksum(), kCRC32c);
     ASSERT_EQ(decoded_footer.metaindex_handle().offset(), meta_index.offset());
     ASSERT_EQ(decoded_footer.metaindex_handle().size(), meta_index.size());
     ASSERT_EQ(decoded_footer.index_handle().offset(), index.offset());
     ASSERT_EQ(decoded_footer.index_handle().size(), index.size());
-    ASSERT_EQ(decoded_footer.version(), 2U);
   }
 }
 

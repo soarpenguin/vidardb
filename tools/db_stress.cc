@@ -2001,7 +2001,6 @@ class StressTest {
     BlockBasedTableOptions block_based_options;
     block_based_options.block_cache = cache_;
     block_based_options.block_size = FLAGS_block_size;
-    block_based_options.format_version = 2;
     options_.table_factory.reset(
         NewBlockBasedTableFactory(block_based_options));
     options_.db_write_buffer_size = FLAGS_db_write_buffer_size;

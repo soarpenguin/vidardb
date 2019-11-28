@@ -289,14 +289,6 @@ bool ParseOptionHelper(char* opt_address, const OptionType& opt_type,
     case OptionType::kVectorCompressionType:
       return ParseVectorCompressionType(
           value, reinterpret_cast<std::vector<CompressionType>*>(opt_address));
-    case OptionType::kChecksumType:
-      return ParseEnum<ChecksumType>(
-          checksum_type_string_map, value,
-          reinterpret_cast<ChecksumType*>(opt_address));
-    case OptionType::kBlockBasedTableIndexType:
-      return ParseEnum<BlockBasedTableOptions::IndexType>(
-          block_base_table_index_type_string_map, value,
-          reinterpret_cast<BlockBasedTableOptions::IndexType*>(opt_address));
     case OptionType::kWALRecoveryMode:
       return ParseEnum<WALRecoveryMode>(
           wal_recovery_mode_string_map, value,
@@ -391,16 +383,6 @@ bool SerializeSingleOptionHelper(const char* opt_address,
       *value = ptr->get() ? ptr->get()->Name() : kNullptrString;
       break;
     }
-    case OptionType::kChecksumType:
-      return SerializeEnum<ChecksumType>(
-          checksum_type_string_map,
-          *reinterpret_cast<const ChecksumType*>(opt_address), value);
-    case OptionType::kBlockBasedTableIndexType:
-      return SerializeEnum<BlockBasedTableOptions::IndexType>(
-          block_base_table_index_type_string_map,
-          *reinterpret_cast<const BlockBasedTableOptions::IndexType*>(
-              opt_address),
-          value);
     case OptionType::kFlushBlockPolicyFactory: {
       const auto* ptr =
           reinterpret_cast<const std::shared_ptr<FlushBlockPolicyFactory>*>(

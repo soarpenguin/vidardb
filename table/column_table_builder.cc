@@ -35,7 +35,6 @@
 
 namespace rocksdb {
 
-typedef ColumnTableOptions::IndexType IndexType;
 typedef ColumnTableBuilder::IndexBuilder IndexBuilder;
 
 // The interface for building index.
@@ -139,21 +138,9 @@ class ShortenedIndexBuilder : public IndexBuilder {
 namespace {
 
 // Create a index builder based on its type.
-IndexBuilder* CreateIndexBuilder(IndexType type, const Comparator* comparator,
+IndexBuilder* CreateIndexBuilder(const Comparator* comparator,
                                  int index_block_restart_interval) {
-  switch (type) {
-    case ColumnTableOptions::kBinarySearch: {
-      return new ShortenedIndexBuilder(comparator,
-                                       index_block_restart_interval);
-    }
-    default: {
-      assert(!"Do not recognize the index type ");
-      return nullptr;
-    }
-  }
-  // impossible.
-  assert(false);
-  return nullptr;
+  return new ShortenedIndexBuilder(comparator, index_block_restart_interval);
 }
 
 bool GoodCompressionRatio(size_t compressed_size, size_t raw_size) {
@@ -164,7 +151,7 @@ bool GoodCompressionRatio(size_t compressed_size, size_t raw_size) {
 // format_version is the block format as defined in include/rocksdb/table.h
 Slice CompressBlock(const Slice& raw,
                     const CompressionOptions& compression_options,
-                    CompressionType* type, uint32_t format_version,
+                    CompressionType* type,
                     const Slice& compression_dict,
                     std::string* compressed_output) {
   if (*type == kNoCompression) {
@@ -184,7 +171,7 @@ Slice CompressBlock(const Slice& raw,
     case kZlibCompression:
       if (Zlib_Compress(
               compression_options,
-              GetCompressFormatForVersion(kZlibCompression, format_version),
+              GetCompressFormatForVersion(kZlibCompression),
               raw.data(), raw.size(), compressed_output, compression_dict) &&
           GoodCompressionRatio(compressed_output->size(), raw.size())) {
         return *compressed_output;
@@ -193,7 +180,7 @@ Slice CompressBlock(const Slice& raw,
     case kBZip2Compression:
       if (BZip2_Compress(
               compression_options,
-              GetCompressFormatForVersion(kBZip2Compression, format_version),
+              GetCompressFormatForVersion(kBZip2Compression),
               raw.data(), raw.size(), compressed_output) &&
           GoodCompressionRatio(compressed_output->size(), raw.size())) {
         return *compressed_output;
@@ -202,7 +189,7 @@ Slice CompressBlock(const Slice& raw,
     case kLZ4Compression:
       if (LZ4_Compress(
               compression_options,
-              GetCompressFormatForVersion(kLZ4Compression, format_version),
+              GetCompressFormatForVersion(kLZ4Compression),
               raw.data(), raw.size(), compressed_output, compression_dict) &&
           GoodCompressionRatio(compressed_output->size(), raw.size())) {
         return *compressed_output;
@@ -211,7 +198,7 @@ Slice CompressBlock(const Slice& raw,
     case kLZ4HCCompression:
       if (LZ4HC_Compress(
               compression_options,
-              GetCompressFormatForVersion(kLZ4HCCompression, format_version),
+              GetCompressFormatForVersion(kLZ4HCCompression),
               raw.data(), raw.size(), compressed_output, compression_dict) &&
           GoodCompressionRatio(compressed_output->size(), raw.size())) {
         return *compressed_output;
@@ -249,46 +236,6 @@ Slice CompressBlock(const Slice& raw,
 // allocated
 // it must be not extern in one place.
 const uint64_t kColumnTableMagicNumber = 0x88e241b785f4cfffull;
-
-// A collector that collects properties of interest to column table.
-// For now this class looks heavy-weight since we only write one additional
-// property.
-// But in the foreseeable future, we will add more and more properties that are
-// specific to column table.
-class ColumnTableBuilder::ColumnTablePropertiesCollector
-    : public IntTblPropCollector {
- public:
-  explicit ColumnTablePropertiesCollector(
-	  ColumnTableOptions::IndexType index_type)
-      : index_type_(index_type) {}
-
-  virtual Status InternalAdd(const Slice& key, const Slice& value,
-                             uint64_t file_size) override {
-    // Intentionally left blank. Have no interest in collecting stats for
-    // individual key/value pairs.
-    return Status::OK();
-  }
-
-  virtual Status Finish(UserCollectedProperties* properties) override {
-    std::string val;
-    PutFixed32(&val, static_cast<uint32_t>(index_type_));
-    properties->insert({ColumnTablePropertyNames::kIndexType, val});
-    return Status::OK();
-  }
-
-  // The name of the properties collector can be used for debugging purpose.
-  virtual const char* Name() const override {
-    return "ColumnTablePropertiesCollector";
-  }
-
-  virtual UserCollectedProperties GetReadableProperties() const override {
-    // Intentionally left blank.
-    return UserCollectedProperties();
-  }
-
- private:
-  ColumnTableOptions::IndexType index_type_;
-};
 
 struct ColumnTableBuilder::Rep {
   const ImmutableCFOptions ioptions;
@@ -339,10 +286,9 @@ struct ColumnTableBuilder::Rep {
         table_options(table_opt),
         internal_comparator(icomparator),
         file(f),
-        data_block(table_options.block_restart_interval,
-                   table_options.use_delta_encoding, true),
+        data_block(table_options.block_restart_interval, true),
         index_builder(
-            CreateIndexBuilder(table_options.index_type, &internal_comparator,
+            CreateIndexBuilder(&internal_comparator,
                                table_options.index_block_restart_interval)),
         compression_type(_compression_type),
         compression_opts(_compression_opts),
@@ -360,8 +306,6 @@ struct ColumnTableBuilder::Rep {
             collector_factories->CreateIntTblPropCollector(column_family_id));
       }
 	}
-    table_properties_collectors.emplace_back(
-        new ColumnTablePropertiesCollector(table_options.index_type));
   }
 
   ~Rep() {
@@ -387,18 +331,7 @@ ColumnTableBuilder::ColumnTableBuilder(
     const std::string& column_family_name,
     const EnvOptions& env_options,
     bool main_column) {
-  ColumnTableOptions sanitized_table_options(table_options);
-  if (sanitized_table_options.format_version == 0 &&
-      sanitized_table_options.checksum != kCRC32c) {
-    Log(InfoLogLevel::WARN_LEVEL, ioptions.info_log,
-        "Silently converting format_version to 1 because checksum is "
-        "non-default");
-    // silently convert format_version to 1 to keep consistent with current
-    // behavior
-    sanitized_table_options.format_version = 1;
-  }
-
-  rep_ = new Rep(ioptions, sanitized_table_options, internal_comparator,
+  rep_ = new Rep(ioptions, table_options, internal_comparator,
                  int_tbl_prop_collector_factories, column_family_id, file,
                  compression_type, compression_opts, compression_dict,
                  column_family_name, env_options, main_column);
@@ -529,8 +462,8 @@ void ColumnTableBuilder::WriteBlock(const Slice& raw_block_contents,
       compression_dict = *r->compression_dict;
     }
     block_contents = CompressBlock(raw_block_contents, r->compression_opts,
-                                   &type, r->table_options.format_version,
-                                   compression_dict, &r->compressed_output);
+                                   &type, compression_dict,
+                                   &r->compressed_output);
   } else {
     RecordTick(r->ioptions.statistics, NUMBER_BLOCK_NOT_COMPRESSED);
     type = kNoCompression;
@@ -552,18 +485,10 @@ void ColumnTableBuilder::WriteRawBlock(const Slice& block_contents,
     char trailer[kBlockTrailerSize];
     trailer[0] = type;
     char* trailer_without_type = trailer + 1;
-    switch (r->table_options.checksum) {
-      case kNoChecksum:
-        // we don't support no checksum yet
-        assert(false);
-        // intentional fallthrough in release binary
-      case kCRC32c: {
-        auto crc = crc32c::Value(block_contents.data(), block_contents.size());
-        crc = crc32c::Extend(crc, trailer, 1);  // Extend to cover block type
-        EncodeFixed32(trailer_without_type, crc32c::Mask(crc));
-        break;
-      }
-    }
+
+    auto crc = crc32c::Value(block_contents.data(), block_contents.size());
+    crc = crc32c::Extend(crc, trailer, 1);  // Extend to cover block type
+    EncodeFixed32(trailer_without_type, crc32c::Mask(crc));
 
     r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
     if (r->status.ok()) {
@@ -700,13 +625,9 @@ Status ColumnTableBuilder::Finish() {
   // Write footer
   if (ok()) {
     // No need to write out new footer if we're using default checksum.
-    assert(r->table_options.checksum == kCRC32c ||
-           r->table_options.format_version != 0);
-    Footer footer(kColumnTableMagicNumber,
-                  r->table_options.format_version);
+    Footer footer(kColumnTableMagicNumber);
     footer.set_metaindex_handle(metaindex_block_handle);
     footer.set_index_handle(index_block_handle);
-    footer.set_checksum(r->table_options.checksum);
     std::string footer_encoding;
     footer.EncodeTo(&footer_encoding);
     r->status = r->file->Append(footer_encoding);

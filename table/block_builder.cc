@@ -42,10 +42,8 @@
 namespace rocksdb {
 
 BlockBuilder::BlockBuilder(int block_restart_interval,
-                           bool use_delta_encoding,
                            bool column)  // Shichao
     : block_restart_interval_(block_restart_interval),
-      use_delta_encoding_(use_delta_encoding),
       restarts_(),
       counter_(0),
       finished_(false),
@@ -112,7 +110,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
     // Restart compression
     restarts_.push_back(static_cast<uint32_t>(buffer_.size()));
 //    counter_ = 0;  // Shichao
-  } else if (use_delta_encoding_) {
+  } else {
     // See how much sharing to do with previous string
     const size_t min_length = std::min(last_key_piece.size(), key.size());
     while ((shared < min_length) && (last_key_piece[shared] == key[shared])) {

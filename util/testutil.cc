@@ -178,8 +178,6 @@ void RandomCompressionTypeVector(const size_t count,
 
 BlockBasedTableOptions RandomBlockBasedTableOptions(Random* rnd) {
   BlockBasedTableOptions opt;
-  opt.index_type = BlockBasedTableOptions::kBinarySearch;
-  opt.checksum = static_cast<ChecksumType>(rnd->Uniform(3));
   opt.block_size = rnd->Uniform(10000000);
   opt.block_size_deviation = rnd->Uniform(100);
   opt.block_restart_interval = rnd->Uniform(100);

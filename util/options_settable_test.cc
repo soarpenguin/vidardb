@@ -130,7 +130,6 @@ TEST_F(OptionsSettableTest, BlockBasedTableOptionsAllFieldsSettable) {
   bbto = new (bbto_ptr) BlockBasedTableOptions();
   FillWithSpecialChar(bbto_ptr, sizeof(BlockBasedTableOptions), kBbtoBlacklist);
   // This option is not setable:
-  bbto->use_delta_encoding = true;
 
   char* new_bbto_ptr = new char[sizeof(BlockBasedTableOptions)];
   BlockBasedTableOptions* new_bbto =

@@ -2346,7 +2346,6 @@ class Benchmark {
     }
 
       BlockBasedTableOptions block_based_options;
-      block_based_options.index_type = BlockBasedTableOptions::kBinarySearch;
 
       if (cache_ == nullptr) {
         block_based_options.no_block_cache = true;
@@ -2356,7 +2355,6 @@ class Benchmark {
       block_based_options.block_restart_interval = FLAGS_block_restart_interval;
       block_based_options.index_block_restart_interval =
           FLAGS_index_block_restart_interval;
-      block_based_options.format_version = 2;
       options.table_factory.reset(
           NewBlockBasedTableFactory(block_based_options));
 

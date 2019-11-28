@@ -25,7 +25,6 @@ class Slice;
 class Status;
 
 struct TableReaderOptions {
-  // @param skip_filters Disables loading/accessing the filter block
   TableReaderOptions(const ImmutableCFOptions& _ioptions,
                      const EnvOptions& _env_options,
                      const InternalKeyComparator& _internal_comparator,

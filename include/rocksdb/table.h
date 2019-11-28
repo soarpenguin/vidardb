@@ -41,11 +41,6 @@ struct Options;
 
 using std::unique_ptr;
 
-enum ChecksumType : char {
-  kNoChecksum = 0x0,  // not yet supported. Will fail
-  kCRC32c = 0x1,
-};
-
 // For advanced user only
 struct BlockBasedTableOptions {
   // @flush_block_policy_factory creates the instances of flush block policy.
@@ -55,22 +50,8 @@ struct BlockBasedTableOptions {
   // `FlushBlockBySizePolicy`).
   std::shared_ptr<FlushBlockPolicyFactory> flush_block_policy_factory;
 
-  // The index type that will be used for this table.
-  enum IndexType : char {
-    // A space efficient index block that is optimized for
-    // binary-search-based index.
-    kBinarySearch
-  };
-
-  IndexType index_type = kBinarySearch;
-
-  // Use the specified checksum type. Newly created table files will be
-  // protected with this checksum type. Old table files will still be readable,
-  // even though they have different checksum type.
-  ChecksumType checksum = kCRC32c;
-
   // Disable block cache. If this is set to true,
-  // then no block cache should be used, and the block_cache should
+  // then block cache should be used, and the block_cache should
   // point to a nullptr object.
   bool no_block_cache = false;
 
@@ -78,10 +59,10 @@ struct BlockBasedTableOptions {
   // If NULL, rocksdb will automatically create and use an 8MB internal cache.
   std::shared_ptr<Cache> block_cache = nullptr;
 
-  // Approximate size of user data packed per block.  Note that the
-  // block size specified here corresponds to uncompressed data.  The
+  // Approximate size of user data packed per block. Note that the
+  // block size specified here corresponds to uncompressed data. The
   // actual size of the unit read from disk may be smaller if
-  // compression is enabled.  This parameter can be changed dynamically.
+  // compression is enabled. This parameter can be changed dynamically.
   size_t block_size = 4 * 1024;
 
   // This is used to close a block before it reaches the configured
@@ -93,40 +74,12 @@ struct BlockBasedTableOptions {
 
   // Number of keys between restart points for delta encoding of keys.
   // This parameter can be changed dynamically.  Most clients should
-  // leave this parameter alone.  The minimum value allowed is 1.  Any smaller
+  // leave this parameter alone. The minimum value allowed is 1.  Any smaller
   // value will be silently overwritten with 1.
   int block_restart_interval = 16;
 
   // Same as block_restart_interval but used for the index block.
   int index_block_restart_interval = 1;
-
-  // Use delta encoding to compress keys in blocks.
-  // ReadOptions::pin_data requires this option to be disabled.
-  //
-  // Default: true
-  bool use_delta_encoding = true;
-
-  // We currently have three versions:
-  // 0 -- This version is currently written out by all RocksDB's versions by
-  // default.  Can be read by really old RocksDB's. Doesn't support changing
-  // checksum (default is CRC32).
-  // 1 -- Can be read by RocksDB's versions since 3.0. Supports non-default
-  // checksum, like xxHash. It is written by RocksDB when
-  // BlockBasedTableOptions::checksum is something other than kCRC32c. (version
-  // 0 is silently upconverted)
-  // 2 -- Can be read by RocksDB's versions since 3.10. Changes the way we
-  // encode compressed blocks with LZ4, BZip2 and Zlib compression. If you
-  // don't plan to run RocksDB before version 3.10, you should probably use
-  // this.
-  // This option only affects newly written tables. When reading existing tables,
-  // the information about version is read from the footer.
-  uint32_t format_version = 2;
-};
-
-// Table Properties that are specific to block-based table properties.
-struct BlockBasedTablePropertyNames {
-  // value of this property is a fixed int32 number.
-  static const std::string kIndexType;
 };
 
 // Create default block based table factory.
@@ -143,22 +96,8 @@ struct ColumnTableOptions {
   // `FlushBlockBySizePolicy`).
   std::shared_ptr<FlushBlockPolicyFactory> flush_block_policy_factory;
 
-  // The index type that will be used for this table.
-  enum IndexType : char {
-    // A space efficient index block that is optimized for
-    // binary-search-based index.
-    kBinarySearch,
-  };
-
-  IndexType index_type = kBinarySearch;
-
-  // Use the specified checksum type. Newly created table files will be
-  // protected with this checksum type. Old table files will still be readable,
-  // even though they have different checksum type.
-  ChecksumType checksum = kCRC32c;
-
   // Disable block cache. If this is set to true,
-  // then no block cache should be used, and the block_cache should
+  // then block cache should be used, and the block_cache should
   // point to a nullptr object.
   bool no_block_cache = false;
 
@@ -166,10 +105,10 @@ struct ColumnTableOptions {
   // If NULL, rocksdb will automatically create and use an 8MB internal cache.
   std::shared_ptr<Cache> block_cache = nullptr;
 
-  // Approximate size of user data packed per block.  Note that the
-  // block size specified here corresponds to uncompressed data.  The
+  // Approximate size of user data packed per block. Note that the
+  // block size specified here corresponds to uncompressed data. The
   // actual size of the unit read from disk may be smaller if
-  // compression is enabled.  This parameter can be changed dynamically.
+  // compression is enabled. This parameter can be changed dynamically.
   size_t block_size = 4 * 1024;
 
   // This is used to close a block before it reaches the configured
@@ -188,38 +127,10 @@ struct ColumnTableOptions {
   // Same as block_restart_interval but used for the index block.
   int index_block_restart_interval = 1;
 
-  // Use delta encoding to compress keys in blocks.
-  // ReadOptions::pin_data requires this option to be disabled.
-  //
-  // Default: true
-  bool use_delta_encoding = true;
-
-  // We currently have three versions:
-  // 0 -- This version is currently written out by all RocksDB's versions by
-  // default.  Can be read by really old RocksDB's. Doesn't support changing
-  // checksum (default is CRC32).
-  // 1 -- Can be read by RocksDB's versions since 3.0. Supports non-default
-  // checksum, like xxHash. It is written by RocksDB when
-  // BlockBasedTableOptions::checksum is something other than kCRC32c. (version
-  // 0 is silently upconverted)
-  // 2 -- Can be read by RocksDB's versions since 3.10. Changes the way we
-  // encode compressed blocks with LZ4, BZip2 and Zlib compression. If you
-  // don't plan to run RocksDB before version 3.10, you should probably use
-  // this.
-  // This option only affects newly written tables. When reading existing tables,
-  // the information about version is read from the footer.
-  uint32_t format_version = 2;
-
   char delim = '|';
   uint32_t column_num = 0;
 
   uint32_t denominator = 2;  // at least 2
-};
-
-// Table Properties that are specific to column table properties.
-struct ColumnTablePropertyNames {
-  // value of this property is a fixed int32 number.
-  static const std::string kIndexType;
 };
 
 // Create default column table factory.
@@ -307,7 +218,7 @@ class TableFactory {
   //
   // In certain case, it is desirable to alter the underlying options when the
   // TableFactory is not used by any open DB by casting the returned pointer
-  // to the right class.   For instance, if BlockBasedTableFactory is used,
+  // to the right class. For instance, if BlockBasedTableFactory is used,
   // then the pointer can be casted to BlockBasedTableOptions.
   //
   // Note that changing the underlying TableFactory options while the

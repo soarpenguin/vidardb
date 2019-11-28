@@ -84,9 +84,7 @@ enum class OptionType {
   kTableFactory,
   kComparator,
   kMemTableRepFactory,
-  kBlockBasedTableIndexType,
   kFlushBlockPolicyFactory,
-  kChecksumType,
   kEncodingType,
   kWALRecoveryMode,
   kAccessHint,
@@ -465,13 +463,6 @@ static std::unordered_map<std::string, OptionTypeInfo>
          {offsetof(struct BlockBasedTableOptions, flush_block_policy_factory),
           OptionType::kFlushBlockPolicyFactory,
           OptionVerificationType::kByName}},
-        {"index_type",
-         {offsetof(struct BlockBasedTableOptions, index_type),
-          OptionType::kBlockBasedTableIndexType,
-          OptionVerificationType::kNormal}},
-        {"checksum",
-         {offsetof(struct BlockBasedTableOptions, checksum),
-          OptionType::kChecksumType, OptionVerificationType::kNormal}},
         {"no_block_cache",
          {offsetof(struct BlockBasedTableOptions, no_block_cache),
           OptionType::kBoolean, OptionVerificationType::kNormal}},
@@ -486,10 +477,7 @@ static std::unordered_map<std::string, OptionTypeInfo>
           OptionType::kInt, OptionVerificationType::kNormal}},
         {"index_block_restart_interval",
          {offsetof(struct BlockBasedTableOptions, index_block_restart_interval),
-          OptionType::kInt, OptionVerificationType::kNormal}},
-        {"format_version",
-         {offsetof(struct BlockBasedTableOptions, format_version),
-          OptionType::kUInt32T, OptionVerificationType::kNormal}}};
+          OptionType::kInt, OptionVerificationType::kNormal}}};
 
 static std::unordered_map<std::string, CompressionType>
     compression_type_string_map = {
@@ -502,13 +490,6 @@ static std::unordered_map<std::string, CompressionType>
         {"kXpressCompression", kXpressCompression},
         {"kZSTDNotFinalCompression", kZSTDNotFinalCompression},
         {"kDisableCompressionOption", kDisableCompressionOption}};
-
-static std::unordered_map<std::string, BlockBasedTableOptions::IndexType>
-    block_base_table_index_type_string_map = {
-        {"kBinarySearch", BlockBasedTableOptions::IndexType::kBinarySearch}};
-
-static std::unordered_map<std::string, ChecksumType> checksum_type_string_map =
-    {{"kNoChecksum", kNoChecksum}, {"kCRC32c", kCRC32c}};
 
 static std::unordered_map<std::string, CompactionStyle>
     compaction_style_string_map = {

@@ -44,7 +44,7 @@ class BlockBasedTableFactory : public TableFactory {
                         unique_ptr<RandomAccessFileReader>&& file,
                         uint64_t file_size,
                         unique_ptr<TableReader>* table_reader,
-                        bool prefetch_index_and_filter) const;
+                        bool prefetch_enabled) const;
 
   TableBuilder* NewTableBuilder(
       const TableBuilderOptions& table_builder_options,
@@ -63,10 +63,5 @@ class BlockBasedTableFactory : public TableFactory {
  private:
   BlockBasedTableOptions table_options_;
 };
-
-extern const std::string kHashIndexPrefixesBlock;
-extern const std::string kHashIndexPrefixesMetadataBlock;
-extern const std::string kPropTrue;
-extern const std::string kPropFalse;
 
 }  // namespace rocksdb

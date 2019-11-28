@@ -76,11 +76,6 @@ TableBuilder* ColumnTableFactory::NewTableBuilder(
 Status ColumnTableFactory::SanitizeOptions(
     const DBOptions& db_opts,
     const ColumnFamilyOptions& cf_opts) const {
-  if (!BlockBasedTableSupportedVersion(table_options_.format_version)) {
-    return Status::InvalidArgument(
-        "Unsupported BlockBasedTable format_version. Please check "
-        "include/rocksdb/table.h for more info");
-  }
   return Status::OK();
 }
 
@@ -93,12 +88,6 @@ std::string ColumnTableFactory::GetPrintableTableOptions() const {
   snprintf(buffer, kBufferSize, "  flush_block_policy_factory: %s (%p)\n",
            table_options_.flush_block_policy_factory->Name(),
            static_cast<void*>(table_options_.flush_block_policy_factory.get()));
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  index_type: %d\n",
-           table_options_.index_type);
-  ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  checksum: %d\n",
-           table_options_.checksum);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  no_block_cache: %d\n",
            table_options_.no_block_cache);
@@ -123,9 +112,6 @@ std::string ColumnTableFactory::GetPrintableTableOptions() const {
   snprintf(buffer, kBufferSize, "  index_block_restart_interval: %d\n",
            table_options_.index_block_restart_interval);
   ret.append(buffer);
-  snprintf(buffer, kBufferSize, "  format_version: %d\n",
-           table_options_.format_version);
-  ret.append(buffer);
   return ret;
 }
 
@@ -137,8 +123,5 @@ TableFactory* NewColumnTableFactory(
     const ColumnTableOptions& _table_options) {
   return new ColumnTableFactory(_table_options);
 }
-
-const std::string ColumnTablePropertyNames::kIndexType =
-    "rocksdb.column.table.index.type";
 
 }  // namespace rocksdb

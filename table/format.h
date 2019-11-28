@@ -67,8 +67,7 @@ class BlockHandle {
   static const BlockHandle kNullBlockHandle;
 };
 
-inline uint32_t GetCompressFormatForVersion(CompressionType compression_type,
-                                            uint32_t version) {
+inline uint32_t GetCompressFormatForVersion(CompressionType compression_type) {
   // snappy is not versioned
   assert(compression_type != kSnappyCompression &&
          compression_type != kXpressCompression &&
@@ -76,11 +75,7 @@ inline uint32_t GetCompressFormatForVersion(CompressionType compression_type,
   // As of version 2, we encode compressed block with
   // compress_format_version == 2. Before that, the version is 1.
   // DO NOT CHANGE THIS FUNCTION, it affects disk format
-  return version >= 2 ? 2 : 1;
-}
-
-inline bool BlockBasedTableSupportedVersion(uint32_t version) {
-  return version <= 2;
+  return 2;
 }
 
 // Footer encapsulates the fixed information stored at the tail
@@ -92,18 +87,11 @@ class Footer {
   // initialized via @ReadFooterFromFile().
   // Use this when you plan to load Footer with DecodeFrom(). Never use this
   // when you plan to EncodeTo.
-  Footer() : Footer(kInvalidTableMagicNumber, 0) {}
+  Footer() : Footer(kInvalidTableMagicNumber) {}
 
   // Use this constructor when you plan to write out the footer using
   // EncodeTo(). Never use this constructor with DecodeFrom().
-  Footer(uint64_t table_magic_number, uint32_t version);
-
-  // The version of the footer in this file
-  uint32_t version() const { return version_; }
-
-  // The checksum type used in this file
-  ChecksumType checksum() const { return checksum_; }
-  void set_checksum(const ChecksumType c) { checksum_ = c; }
+  Footer(uint64_t table_magic_number);
 
   // The block handle for the metaindex block of the table
   const BlockHandle& metaindex_handle() const { return metaindex_handle_; }
@@ -130,15 +118,9 @@ class Footer {
   // the version number should be incremented and kMaxEncodedLength should be
   // increased accordingly.
   enum {
-    // Footer version 0 (legacy) will always occupy exactly this many bytes.
+    // Footer will always occupy exactly this many bytes.
     // It consists of two block handles, padding, and a magic number.
-    kVersion0EncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8,
-    // Footer of versions 1 and higher will always occupy exactly this many
-    // bytes. It consists of the checksum type, two block handles, padding,
-    // a version number (bigger than 1), and a magic number
-    kNewVersionsEncodedLength = 1 + 2 * BlockHandle::kMaxEncodedLength + 4 + 8,
-    kMinEncodedLength = kVersion0EncodedLength,
-    kMaxEncodedLength = kNewVersionsEncodedLength,
+      kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8,
   };
 
   static const uint64_t kInvalidTableMagicNumber = 0;
@@ -159,8 +141,6 @@ class Footer {
     return (table_magic_number_ != kInvalidTableMagicNumber);
   }
 
-  uint32_t version_;
-  ChecksumType checksum_;
   BlockHandle metaindex_handle_;
   BlockHandle index_handle_;
   uint64_t table_magic_number_ = 0;
@@ -224,7 +204,6 @@ extern Status ReadBlockContents(
 // util/compression.h
 extern Status UncompressBlockContents(const char* data, size_t n,
                                       BlockContents* contents,
-                                      uint32_t compress_format_version,
                                       const Slice& compression_dict);
 
 // Implementation details follow.  Clients should ignore,

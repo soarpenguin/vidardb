@@ -51,8 +51,7 @@ Status AdaptiveTableFactory::NewTableReader(
   if (!s.ok()) {
     return s;
   }
-  if (footer.table_magic_number() == kBlockBasedTableMagicNumber ||
-      footer.table_magic_number() == kLegacyBlockBasedTableMagicNumber) {
+  if (footer.table_magic_number() == kBlockBasedTableMagicNumber) {
     return block_based_table_factory_->NewTableReader(
         table_reader_options, std::move(file), file_size, table);
   /***************************** Shichao *****************************/

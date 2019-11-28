@@ -258,7 +258,6 @@ struct ColumnTable::Rep {
   // is easier because the Slice member depends on the continued existence of
   // another member ("allocation").
   std::unique_ptr<const BlockContents> compression_dict_block;
-  ColumnTableOptions::IndexType index_type;
 
   // only used in level 0 files:
   // when pin_l0_index_blocks_in_cache is true, we do use the
@@ -334,11 +333,6 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
   if (!s.ok()) {
     return s;
   }
-  if (!BlockBasedTableSupportedVersion(footer.version())) {
-    return Status::Corruption(
-        "Unknown Footer version. Maybe this file was created with newer "
-        "version of RocksDB?");
-  }
 
   // We've successfully read the footer and the index block: we're
   // ready to serve requests.
@@ -346,7 +340,6 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
                                   internal_comparator);
   rep->file = std::move(file);
   rep->footer = footer;
-  rep->index_type = table_options.index_type;
   SetupCacheKeyPrefix(rep, file_size);
   unique_ptr<ColumnTable> new_table(new ColumnTable(rep));
 
@@ -1222,36 +1215,14 @@ Status ColumnTable::Prefetch(const Slice* const begin,
 //  4. internal_comparator
 //  5. index_type
 Status ColumnTable::CreateIndexReader(IndexReader** index_reader) {
-  // Some old version of block-based tables don't have index type present in
-  // table properties. If that's the case we can safely use the kBinarySearch.
-  auto index_type_on_file = ColumnTableOptions::kBinarySearch;
-  if (rep_->table_properties) {
-    auto& props = rep_->table_properties->user_collected_properties;
-    auto pos = props.find(ColumnTablePropertyNames::kIndexType);
-    if (pos != props.end()) {
-      index_type_on_file = static_cast<ColumnTableOptions::IndexType>(
-          DecodeFixed32(pos->second.c_str()));
-    }
-  }
-
   auto file = rep_->file.get();
   auto env = rep_->ioptions.env;
   auto comparator = &rep_->internal_comparator;
   const Footer& footer = rep_->footer;
   Statistics* stats = rep_->ioptions.statistics;
 
-  switch (index_type_on_file) {
-    case ColumnTableOptions::kBinarySearch: {
-      return BinarySearchIndexReader::Create(
-          file, footer, footer.index_handle(), env, comparator, index_reader,
-          stats);
-    }
-    default: {
-      std::string error_message =
-          "Unrecognized index type: " + ToString(rep_->index_type);
-      return Status::InvalidArgument(error_message.c_str());
-    }
-  }
+  return BinarySearchIndexReader::Create(file, footer, footer.index_handle(),
+                                         env, comparator, index_reader, stats);
 }
 
 uint64_t ColumnTable::ApproximateOffsetOf(const Slice& key) {

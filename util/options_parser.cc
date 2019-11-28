@@ -549,14 +549,6 @@ bool AreEqualOptions(
           reinterpret_cast<const std::vector<CompressionType>*>(offset2);
       return (*vec1 == *vec2);
     }
-    case OptionType::kChecksumType:
-      return (*reinterpret_cast<const ChecksumType*>(offset1) ==
-              *reinterpret_cast<const ChecksumType*>(offset2));
-    case OptionType::kBlockBasedTableIndexType:
-      return (
-          *reinterpret_cast<const BlockBasedTableOptions::IndexType*>(
-              offset1) ==
-          *reinterpret_cast<const BlockBasedTableOptions::IndexType*>(offset2));
     case OptionType::kWALRecoveryMode:
       return (*reinterpret_cast<const WALRecoveryMode*>(offset1) ==
               *reinterpret_cast<const WALRecoveryMode*>(offset2));

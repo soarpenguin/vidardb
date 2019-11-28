@@ -24,17 +24,8 @@
 
 namespace rocksdb {
 
-extern const uint64_t kLegacyBlockBasedTableMagicNumber;
 extern const uint64_t kBlockBasedTableMagicNumber;
 
-#ifndef ROCKSDB_LITE
-extern const uint64_t kLegacyPlainTableMagicNumber;
-extern const uint64_t kPlainTableMagicNumber;
-#else
-// ROCKSDB_LITE doesn't have plain table
-const uint64_t kLegacyPlainTableMagicNumber = 0;
-const uint64_t kPlainTableMagicNumber = 0;
-#endif
 const uint32_t DefaultStackBufferSize = 5000;
 
 void BlockHandle::EncodeTo(std::string* dst) const {
@@ -67,27 +58,6 @@ std::string BlockHandle::ToString(bool hex) const {
 
 const BlockHandle BlockHandle::kNullBlockHandle(0, 0);
 
-namespace {
-inline bool IsLegacyFooterFormat(uint64_t magic_number) {
-  return magic_number == kLegacyBlockBasedTableMagicNumber;
-}
-inline uint64_t UpconvertLegacyFooterFormat(uint64_t magic_number) {
-  if (magic_number == kLegacyBlockBasedTableMagicNumber) {
-    return kBlockBasedTableMagicNumber;
-  }
-  if (magic_number == kLegacyPlainTableMagicNumber) {
-    return kPlainTableMagicNumber;
-  }
-  assert(false);
-  return 0;
-}
-}  // namespace
-
-// legacy footer format:
-//    metaindex handle (varint64 offset, varint64 size)
-//    index handle     (varint64 offset, varint64 size)
-//    <padding> to make the total size 2 * BlockHandle::kMaxEncodedLength
-//    table_magic_number (8 bytes)
 // new footer format:
 //    checksum (char, 1 byte)
 //    metaindex handle (varint64 offset, varint64 size)
@@ -97,41 +67,22 @@ inline uint64_t UpconvertLegacyFooterFormat(uint64_t magic_number) {
 //    table_magic_number (8 bytes)
 void Footer::EncodeTo(std::string* dst) const {
   assert(HasInitializedTableMagicNumber());
-  if (IsLegacyFooterFormat(table_magic_number())) {
-    // has to be default checksum with legacy footer
-    assert(checksum_ == kCRC32c);
-    const size_t original_size = dst->size();
-    metaindex_handle_.EncodeTo(dst);
-    index_handle_.EncodeTo(dst);
-    dst->resize(original_size + 2 * BlockHandle::kMaxEncodedLength);  // Padding
-    PutFixed32(dst, static_cast<uint32_t>(table_magic_number() & 0xffffffffu));
-    PutFixed32(dst, static_cast<uint32_t>(table_magic_number() >> 32));
-    assert(dst->size() == original_size + kVersion0EncodedLength);
-  } else {
-    const size_t original_size = dst->size();
-    dst->push_back(static_cast<char>(checksum_));
-    metaindex_handle_.EncodeTo(dst);
-    index_handle_.EncodeTo(dst);
-    dst->resize(original_size + kNewVersionsEncodedLength - 12);  // Padding
-    PutFixed32(dst, version());
-    PutFixed32(dst, static_cast<uint32_t>(table_magic_number() & 0xffffffffu));
-    PutFixed32(dst, static_cast<uint32_t>(table_magic_number() >> 32));
-    assert(dst->size() == original_size + kNewVersionsEncodedLength);
-  }
+  const size_t original_size = dst->size();
+  metaindex_handle_.EncodeTo(dst);
+  index_handle_.EncodeTo(dst);
+  dst->resize(original_size + kEncodedLength - 8);  // Padding
+  PutFixed32(dst, static_cast<uint32_t>(table_magic_number() & 0xffffffffu));
+  PutFixed32(dst, static_cast<uint32_t>(table_magic_number() >> 32));
+  assert(dst->size() == original_size + kEncodedLength);
 }
 
-Footer::Footer(uint64_t _table_magic_number, uint32_t _version)
-    : version_(_version),
-      checksum_(kCRC32c),
-      table_magic_number_(_table_magic_number) {
-  // This should be guaranteed by constructor callers
-  assert(!IsLegacyFooterFormat(_table_magic_number) || version_ == 0);
-}
+Footer::Footer(uint64_t _table_magic_number)
+    : table_magic_number_(_table_magic_number) {}
 
 Status Footer::DecodeFrom(Slice* input) {
   assert(!HasInitializedTableMagicNumber());
   assert(input != nullptr);
-  assert(input->size() >= kMinEncodedLength);
+  assert(input->size() >= kEncodedLength);
 
   const char *magic_ptr =
       input->data() + input->size() - kMagicNumberLengthByte;
@@ -140,34 +91,15 @@ Status Footer::DecodeFrom(Slice* input) {
   uint64_t magic = ((static_cast<uint64_t>(magic_hi) << 32) |
                     (static_cast<uint64_t>(magic_lo)));
 
-  // We check for legacy formats here and silently upconvert them
-  bool legacy = IsLegacyFooterFormat(magic);
-  if (legacy) {
-    magic = UpconvertLegacyFooterFormat(magic);
-  }
   set_table_magic_number(magic);
 
-  if (legacy) {
-    // The size is already asserted to be at least kMinEncodedLength
-    // at the beginning of the function
-    input->remove_prefix(input->size() - kVersion0EncodedLength);
-    version_ = 0 /* legacy */;
-    checksum_ = kCRC32c;
+  // Footer version 1 and higher will always occupy exactly this many bytes.
+  // It consists of the checksum type, two block handles, padding,
+  // a version number, and a magic number
+  if (input->size() < kEncodedLength) {
+    return Status::Corruption("input is too short to be an sstable");
   } else {
-    version_ = DecodeFixed32(magic_ptr - 4);
-    // Footer version 1 and higher will always occupy exactly this many bytes.
-    // It consists of the checksum type, two block handles, padding,
-    // a version number, and a magic number
-    if (input->size() < kNewVersionsEncodedLength) {
-      return Status::Corruption("input is too short to be an sstable");
-    } else {
-      input->remove_prefix(input->size() - kNewVersionsEncodedLength);
-    }
-    uint32_t chksum;
-    if (!GetVarint32(input, &chksum)) {
-      return Status::Corruption("bad checksum type");
-    }
-    checksum_ = static_cast<ChecksumType>(chksum);
+    input->remove_prefix(input->size() - kEncodedLength);
   }
 
   Status result = metaindex_handle_.DecodeFrom(input);
@@ -186,42 +118,32 @@ std::string Footer::ToString() const {
   std::string result, handle_;
   result.reserve(1024);
 
-  bool legacy = IsLegacyFooterFormat(table_magic_number_);
-  if (legacy) {
-    result.append("metaindex handle: " + metaindex_handle_.ToString() + "\n  ");
-    result.append("index handle: " + index_handle_.ToString() + "\n  ");
-    result.append("table_magic_number: " +
-                  rocksdb::ToString(table_magic_number_) + "\n  ");
-  } else {
-    result.append("checksum: " + rocksdb::ToString(checksum_) + "\n  ");
-    result.append("metaindex handle: " + metaindex_handle_.ToString() + "\n  ");
-    result.append("index handle: " + index_handle_.ToString() + "\n  ");
-    result.append("footer version: " + rocksdb::ToString(version_) + "\n  ");
-    result.append("table_magic_number: " +
-                  rocksdb::ToString(table_magic_number_) + "\n  ");
-  }
+  result.append("metaindex handle: " + metaindex_handle_.ToString() + "\n  ");
+  result.append("index handle: " + index_handle_.ToString() + "\n  ");
+  result.append("table_magic_number: " +
+                rocksdb::ToString(table_magic_number_) + "\n  ");
   return result;
 }
 
 Status ReadFooterFromFile(RandomAccessFileReader* file, uint64_t file_size,
                           Footer* footer, uint64_t enforce_table_magic_number) {
-  if (file_size < Footer::kMinEncodedLength) {
+  if (file_size < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
   }
 
-  char footer_space[Footer::kMaxEncodedLength];
+  char footer_space[Footer::kEncodedLength];
   Slice footer_input;
   size_t read_offset =
-      (file_size > Footer::kMaxEncodedLength)
-          ? static_cast<size_t>(file_size - Footer::kMaxEncodedLength)
+      (file_size > Footer::kEncodedLength)
+          ? static_cast<size_t>(file_size - Footer::kEncodedLength)
           : 0;
-  Status s = file->Read(read_offset, Footer::kMaxEncodedLength, &footer_input,
+  Status s = file->Read(read_offset, Footer::kEncodedLength, &footer_input,
                         footer_space);
   if (!s.ok()) return s;
 
   // Check that we actually read the whole footer from the file. It may be
   // that size isn't correct.
-  if (footer_input.size() < Footer::kMinEncodedLength) {
+  if (footer_input.size() < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
   }
 
@@ -269,14 +191,10 @@ Status ReadBlock(RandomAccessFileReader* file, const Footer& footer,
     PERF_TIMER_GUARD(block_checksum_time);
     uint32_t value = DecodeFixed32(data + n + 1);
     uint32_t actual = 0;
-    switch (footer.checksum()) {
-      case kCRC32c:
-        value = crc32c::Unmask(value);
-        actual = crc32c::Value(data, n + 1);
-        break;
-      default:
-        s = Status::Corruption("unknown checksum type");
-    }
+
+    value = crc32c::Unmask(value);
+    actual = crc32c::Value(data, n + 1);
+
     if (s.ok() && actual != value) {
       s = Status::Corruption("block checksum mismatch");
     }
@@ -329,7 +247,7 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
   if (decompression_requested && compression_type != kNoCompression) {
     // compressed page, uncompress, update cache
     status = UncompressBlockContents(slice.data(), n, contents,
-                                     footer.version(), compression_dict);
+                                     compression_dict);
   } else if (slice.data() != used_buf) {
     // the slice content is not the buffer provided
     *contents = BlockContents(Slice(slice.data(), n), false, compression_type);
@@ -353,7 +271,7 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
 // free this buffer.
 // format_version is the block format as defined in include/rocksdb/table.h
 Status UncompressBlockContents(const char* data, size_t n,
-                               BlockContents* contents, uint32_t format_version,
+                               BlockContents* contents,
                                const Slice& compression_dict) {
   std::unique_ptr<char[]> ubuf;
   int decompress_size = 0;
@@ -376,7 +294,7 @@ Status UncompressBlockContents(const char* data, size_t n,
     case kZlibCompression:
       ubuf.reset(Zlib_Uncompress(
           data, n, &decompress_size,
-          GetCompressFormatForVersion(kZlibCompression, format_version),
+          GetCompressFormatForVersion(kZlibCompression),
           compression_dict));
       if (!ubuf) {
         static char zlib_corrupt_msg[] =
@@ -389,7 +307,7 @@ Status UncompressBlockContents(const char* data, size_t n,
     case kBZip2Compression:
       ubuf.reset(BZip2_Uncompress(
           data, n, &decompress_size,
-          GetCompressFormatForVersion(kBZip2Compression, format_version)));
+          GetCompressFormatForVersion(kBZip2Compression)));
       if (!ubuf) {
         static char bzip2_corrupt_msg[] =
           "Bzip2 not supported or corrupted Bzip2 compressed block contents";
@@ -401,7 +319,7 @@ Status UncompressBlockContents(const char* data, size_t n,
     case kLZ4Compression:
       ubuf.reset(LZ4_Uncompress(
           data, n, &decompress_size,
-          GetCompressFormatForVersion(kLZ4Compression, format_version),
+          GetCompressFormatForVersion(kLZ4Compression),
           compression_dict));
       if (!ubuf) {
         static char lz4_corrupt_msg[] =
@@ -414,7 +332,7 @@ Status UncompressBlockContents(const char* data, size_t n,
     case kLZ4HCCompression:
       ubuf.reset(LZ4_Uncompress(
           data, n, &decompress_size,
-          GetCompressFormatForVersion(kLZ4HCCompression, format_version),
+          GetCompressFormatForVersion(kLZ4HCCompression),
           compression_dict));
       if (!ubuf) {
         static char lz4hc_corrupt_msg[] =

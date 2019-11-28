@@ -2479,34 +2479,6 @@ TEST_P(DBTestRandomized, Randomized) {
   if (db_snap != nullptr) db_->ReleaseSnapshot(db_snap);
 }
 
-TEST_F(DBTest, ChecksumTest) {
-  BlockBasedTableOptions table_options;
-  Options options = CurrentOptions();
-
-  table_options.checksum = kCRC32c;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  Reopen(options);
-  ASSERT_OK(Put("a", "b"));
-  ASSERT_OK(Put("c", "d"));
-  ASSERT_OK(Flush());  // table with crc checksum
-
-  table_options.checksum = kCRC32c;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  Reopen(options);
-  ASSERT_EQ("b", Get("a"));
-  ASSERT_EQ("d", Get("c"));
-  ASSERT_EQ("f", Get("e"));
-  ASSERT_EQ("h", Get("g"));
-
-  table_options.checksum = kCRC32c;
-  options.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  Reopen(options);
-  ASSERT_EQ("b", Get("a"));
-  ASSERT_EQ("d", Get("c"));
-  ASSERT_EQ("f", Get("e"));
-  ASSERT_EQ("h", Get("g"));
-}
-
 #ifndef ROCKSDB_LITE
 TEST_P(DBTestWithParam, FIFOCompactionTest) {
   for (int iter = 0; iter < 2; ++iter) {
@@ -2575,7 +2547,6 @@ TEST_F(DBTest, TableOptionsSanitizeTest) {
   // Test for check of prefix_extractor when hash index is used for
   // block-based table
   BlockBasedTableOptions to;
-  to.index_type = BlockBasedTableOptions::kBinarySearch;
   options = CurrentOptions();
   options.create_if_missing = true;
   options.table_factory.reset(NewBlockBasedTableFactory(to));
@@ -3894,7 +3865,6 @@ TEST_F(DBTest, EncodeDecompressedBlockSizeTest) {
     for (int first_table_version = 1; first_table_version <= 2;
          ++first_table_version) {
       BlockBasedTableOptions table_options;
-      table_options.format_version = first_table_version;
       Options options = CurrentOptions();
       options.table_factory.reset(NewBlockBasedTableFactory(table_options));
       options.create_if_missing = true;
@@ -3909,7 +3879,6 @@ TEST_F(DBTest, EncodeDecompressedBlockSizeTest) {
         ASSERT_OK(Put(Key(i), RandomString(&rnd, 128) + std::string(128, 'a')));
       }
 
-      table_options.format_version = first_table_version == 1 ? 2 : 1;
       options.table_factory.reset(NewBlockBasedTableFactory(table_options));
       Reopen(options);
       for (int i = 0; i < kNumKeysWritten; ++i) {

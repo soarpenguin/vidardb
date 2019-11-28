@@ -27,7 +27,6 @@ class WritableFile;
 struct BlockBasedTableOptions;
 
 extern const uint64_t kBlockBasedTableMagicNumber;
-extern const uint64_t kLegacyBlockBasedTableMagicNumber;
 
 class BlockBasedTableBuilder : public TableBuilder {
  public:
@@ -98,8 +97,6 @@ class BlockBasedTableBuilder : public TableBuilder {
   void WriteRawBlock(const Slice& data, CompressionType, BlockHandle* handle);
 
   struct Rep;
-  class BlockBasedTablePropertiesCollectorFactory;
-  class BlockBasedTablePropertiesCollector;
   Rep* rep_;
 
   // Advanced operation: flush any buffered key/value pairs to file.

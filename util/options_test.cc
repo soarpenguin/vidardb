@@ -411,8 +411,6 @@ TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
             "filter_policy=bloomfilter:4:true;whole_key_filtering=1;"
             "skip_table_builder_flush=1",
             &new_opt));
-  ASSERT_EQ(new_opt.index_type, BlockBasedTableOptions::kBinarySearch);
-  ASSERT_EQ(new_opt.checksum, ChecksumType::kCRC32c);
   ASSERT_TRUE(new_opt.no_block_cache);
   ASSERT_TRUE(new_opt.block_cache != nullptr);
   ASSERT_EQ(new_opt.block_cache->GetCapacity(), 1024UL*1024UL);

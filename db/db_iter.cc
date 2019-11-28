@@ -348,7 +348,6 @@ void DBIter::FindNextUserEntryInternal(bool skipping) {
         } else {
           switch (ikey.type) {
             case kTypeDeletion:
-            case kTypeSingleDeletion:
               // Arrange to skip all upcoming entries for this key since
               // they are hidden by this deletion.
               saved_key_.SetKey(
@@ -469,8 +468,7 @@ void DBIter::PrevInternal() {
 }
 
 // This function checks, if the entry with biggest sequence_number <= sequence_
-// is non kTypeDeletion or kTypeSingleDeletion. If it's not, we save value in
-// saved_value_
+// is non kTypeDeletion. If it's not, we save value in saved_value_
 bool DBIter::FindValueForCurrentKey() {
   assert(iter_->Valid());
   current_entry_is_merged_ = false;
@@ -512,7 +510,6 @@ bool DBIter::FindValueForCurrentKey() {
 
   switch (last_key_entry_type) {
     case kTypeDeletion:
-    case kTypeSingleDeletion:
       valid_ = false;
       return false;
     case kTypeValue:

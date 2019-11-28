@@ -21,8 +21,8 @@ struct TableProperties;
 class GetContext;
 class InternalIterator;
 
-// A Table is a sorted map from strings to strings.  Tables are
-// immutable and persistent.  A Table may be safely accessed from
+// A Table is a sorted map from strings to strings. Tables are
+// immutable and persistent. A Table may be safely accessed from
 // multiple threads without external synchronization.
 class TableReader {
  public:
@@ -60,7 +60,6 @@ class TableReader {
 
   // Calls get_context->SaveValue() repeatedly, starting with
   // the entry found after a call to Seek(key), until it returns false.
-  // May not make such a call if filter policy says that key is not present.
   //
   // get_context->MarkKeyMayExist needs to be called when it is configured to be
   // memory only and the key is not found in the block cache.
