@@ -29,9 +29,6 @@ class Block;
 class BlockIter;
 class BlockHandle;
 class Cache;
-class FilterBlockReader;
-class BlockBasedFilterBlockReader;
-class FullFilterBlockReader;
 class Footer;
 class InternalKeyComparator;
 class Iterator;
@@ -42,18 +39,17 @@ class WritableFile;
 struct BlockBasedTableOptions;
 struct EnvOptions;
 struct ReadOptions;
+struct ImmutableCFOptions;
 class GetContext;
 class InternalIterator;
 
 using std::unique_ptr;
 
 // A Table is a sorted map from strings to strings.  Tables are
-// immutable and persistent.  A Table may be safely accessed from
+// immutable and persistent. A Table may be safely accessed from
 // multiple threads without external synchronization.
 class BlockBasedTable : public TableReader {
  public:
-  static const std::string kFilterBlockPrefix;
-  static const std::string kFullFilterBlockPrefix;
   // The longest prefix of the cache key used to identify blocks.
   // For Posix files the unique ID is three varints.
   static const size_t kMaxCacheKeyPrefixSize = kMaxVarint64Length * 3 + 1;
@@ -63,23 +59,19 @@ class BlockBasedTable : public TableReader {
   // retrieving data from the table.
   //
   // If successful, returns ok and sets "*table_reader" to the newly opened
-  // table.  The client should delete "*table_reader" when no longer needed.
+  // table. The client should delete "*table_reader" when no longer needed.
   // If there was an error while initializing the table, sets "*table_reader"
   // to nullptr and returns a non-ok status.
   //
   // @param file must remain live while this Table is in use.
-  // @param prefetch_index_and_filter can be used to disable prefetching of
-  //    index and filter blocks at startup
-  // @param skip_filters Disables loading/accessing the filter block. Overrides
-  //    prefetch_index_and_filter, so filter will be skipped if both are set.
+  // @param prefetch_index sets prefetching of index blocks at startup
   static Status Open(const ImmutableCFOptions& ioptions,
                      const EnvOptions& env_options,
                      const BlockBasedTableOptions& table_options,
                      const InternalKeyComparator& internal_key_comparator,
                      unique_ptr<RandomAccessFileReader>&& file,
                      uint64_t file_size, unique_ptr<TableReader>* table_reader,
-                     bool prefetch_index_and_filter = true,
-                     int level = -1);
+                     bool prefetch_index = true, int level = -1);
 
   // Returns a new iterator over the table contents.
   // The result of NewIterator() is initially invalid (caller must
@@ -213,8 +205,6 @@ class BlockBasedTable : public TableReader {
   // Generate a cache key prefix from the file
   static void GenerateCachePrefix(Cache* cc,
     RandomAccessFile* file, char* buffer, size_t* size);
-  static void GenerateCachePrefix(Cache* cc,
-    WritableFile* file, char* buffer, size_t* size);
 
   // Helper functions for DumpTable()
   Status DumpIndexBlock(WritableFile* out_file);

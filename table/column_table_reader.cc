@@ -240,8 +240,6 @@ struct ColumnTable::Rep {
   unique_ptr<RandomAccessFileReader> file;
   char cache_key_prefix[kMaxCacheKeyPrefixSize];
   size_t cache_key_prefix_size = 0;
-  char persistent_cache_key_prefix[kMaxCacheKeyPrefixSize];
-  size_t persistent_cache_key_prefix_size = 0;
   uint64_t dummy_index_reader_offset =
       0;  // ID that is unique for the block cache.
 

@@ -39,8 +39,6 @@
 namespace rocksdb {
 
 extern const uint64_t kBlockBasedTableMagicNumber;
-extern const std::string kHashIndexPrefixesBlock;
-extern const std::string kHashIndexPrefixesMetadataBlock;
 using std::unique_ptr;
 
 typedef BlockBasedTable::IndexReader IndexReader;
@@ -250,20 +248,14 @@ struct BlockBasedTable::Rep {
   unique_ptr<RandomAccessFileReader> file;
   char cache_key_prefix[kMaxCacheKeyPrefixSize];
   size_t cache_key_prefix_size = 0;
-  char persistent_cache_key_prefix[kMaxCacheKeyPrefixSize];
-  size_t persistent_cache_key_prefix_size = 0;
-  char compressed_cache_key_prefix[kMaxCacheKeyPrefixSize];
   uint64_t dummy_index_reader_offset =
       0;  // ID that is unique for the block cache.
 
   // Footer contains the fixed table information
   Footer footer;
-  // index_reader and filter will be populated and used only when
-  // options.block_cache is nullptr; otherwise we will get the index block via
-  // the block cache.
+  // index_reader will be populated and used only when options.block_cache is
+  // nullptr; otherwise we will get the index block via the block cache.
   unique_ptr<IndexReader> index_reader;
-
-  BlockHandle filter_handle;
 
   std::shared_ptr<const TableProperties> table_properties;
   // Block containing the data for the compression dictionary. We take ownership
@@ -271,14 +263,6 @@ struct BlockBasedTable::Rep {
   // is easier because the Slice member depends on the continued existence of
   // another member ("allocation").
   std::unique_ptr<const BlockContents> compression_dict_block;
-
-  // only used in level 0 files:
-  // when pin_l0_filter_and_index_blocks_in_cache is true, we do use the
-  // LRU cache, but we always keep the filter & idndex block's handle checked
-  // out here (=we don't call Release()), plus the parsed out objects
-  // the LRU cache will never push flush them out, hence they're pinned
-  CachableEntry<FilterBlockReader> filter_entry;
-  CachableEntry<IndexReader> index_entry;
 };
 
 BlockBasedTable::~BlockBasedTable() {
@@ -313,21 +297,6 @@ void BlockBasedTable::GenerateCachePrefix(Cache* cc,
   }
 }
 
-void BlockBasedTable::GenerateCachePrefix(Cache* cc,
-    WritableFile* file, char* buffer, size_t* size) {
-
-  // generate an id from the file
-  *size = file->GetUniqueId(buffer, kMaxCacheKeyPrefixSize);
-
-  // If the prefix wasn't generated or was too long,
-  // create one from the cache.
-  if (*size == 0) {
-    char* end = EncodeVarint64(buffer, cc->NewId());
-    *size = static_cast<size_t>(end - buffer);
-  }
-}
-
-
 Slice BlockBasedTable::GetCacheKey(const char* cache_key_prefix,
                                    size_t cache_key_prefix_size,
                                    const BlockHandle& handle, char* cache_key) {
@@ -347,8 +316,7 @@ Status BlockBasedTable::Open(const ImmutableCFOptions& ioptions,
                              unique_ptr<RandomAccessFileReader>&& file,
                              uint64_t file_size,
                              unique_ptr<TableReader>* table_reader,
-                             const bool prefetch_index_and_filter,
-                             const int level) {
+                             const bool prefetch_index, const int level) {
   table_reader->reset();
 
   Footer footer;
@@ -429,7 +397,7 @@ Status BlockBasedTable::Open(const ImmutableCFOptions& ioptions,
     }
   }
 
-  if (prefetch_index_and_filter) {
+  if (prefetch_index) {
     // pre-fetching of blocks is turned on
 
     // If we don't use block cache for index/filter blocks access, we'll
@@ -574,11 +542,6 @@ InternalIterator* BlockBasedTable::NewIndexIterator(
   if (rep_->index_reader) {
     return rep_->index_reader->NewIterator(
         input_iter, read_options.total_order_seek);
-  }
-  // we have a pinned index block
-  if (rep_->index_entry.IsSet()) {
-    return rep_->index_entry.value->NewIterator(input_iter,
-                                                read_options.total_order_seek);
   }
 
   PERF_TIMER_GUARD(read_index_block_nanos);
@@ -907,10 +870,7 @@ InternalIterator* BlockBasedTable::NewIterator(const ReadOptions& read_options,
 Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
                             GetContext* get_context) {
   Status s;
-  CachableEntry<FilterBlockReader> filter_entry;
 
-  // First check the full filter
-  // If full filter not useful, Then go into each block
     BlockIter iiter;
     NewIndexIterator(read_options, &iiter);
 
@@ -951,12 +911,6 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
       s = iiter.status();
     }
 
-  // if rep_->filter_entry is not set, we should call Release(); otherwise
-  // don't call, in this case we have a local copy in rep_->filter_entry,
-  // it's pinned to the cache and will be released in the destructor
-  if (!rep_->filter_entry.IsSet()) {
-    filter_entry.Release(rep_->table_options.block_cache.get());
-  }
   return s;
 }
 
@@ -1157,8 +1111,6 @@ Status BlockBasedTable::DumpTable(WritableFile* out_file) {
 }
 
 void BlockBasedTable::Close() {
-  rep_->filter_entry.Release(rep_->table_options.block_cache.get());
-  rep_->index_entry.Release(rep_->table_options.block_cache.get());
   // cleanup index and filter blocks to avoid accessing dangling pointer
   if (!rep_->table_options.no_block_cache) {
     char cache_key[kMaxCacheKeyPrefixSize + kMaxVarint64Length];
