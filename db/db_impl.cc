@@ -4218,60 +4218,6 @@ Iterator* DBImpl::NewIterator(const ReadOptions& read_options,
   return nullptr;
 }
 
-Status DBImpl::NewIterators(
-    const ReadOptions& read_options,
-    const std::vector<ColumnFamilyHandle*>& column_families,
-    std::vector<Iterator*>* iterators) {
-  if (read_options.read_tier == kPersistedTier) {
-    return Status::NotSupported(
-        "ReadTier::kPersistedData is not yet supported in iterators.");
-  }
-  iterators->clear();
-  iterators->reserve(column_families.size());
-  if (read_options.tailing) {
-#ifdef ROCKSDB_LITE
-    return Status::InvalidArgument(
-        "Tailing interator not supported in RocksDB lite");
-#else
-    for (auto cfh : column_families) {
-      auto cfd = reinterpret_cast<ColumnFamilyHandleImpl*>(cfh)->cfd();
-      SuperVersion* sv = cfd->GetReferencedSuperVersion(&mutex_);
-      auto iter = new ForwardIterator(this, read_options, cfd, sv);
-      iterators->push_back(NewDBIterator(
-          env_, *cfd->ioptions(), cfd->user_comparator(), iter,
-          kMaxSequenceNumber,
-          sv->mutable_cf_options.max_sequential_skip_in_iterations,
-          sv->version_number, nullptr, read_options.pin_data));
-    }
-#endif
-  } else {
-    SequenceNumber latest_snapshot = versions_->LastSequence();
-
-    for (size_t i = 0; i < column_families.size(); ++i) {
-      auto* cfd = reinterpret_cast<ColumnFamilyHandleImpl*>(
-          column_families[i])->cfd();
-      SuperVersion* sv = cfd->GetReferencedSuperVersion(&mutex_);
-
-      auto snapshot =
-          read_options.snapshot != nullptr
-              ? reinterpret_cast<const SnapshotImpl*>(
-                  read_options.snapshot)->number_
-              : latest_snapshot;
-
-      ArenaWrappedDBIter* db_iter = NewArenaWrappedDbIterator(
-          env_, *cfd->ioptions(), cfd->user_comparator(), snapshot,
-          sv->mutable_cf_options.max_sequential_skip_in_iterations,
-          sv->version_number, nullptr, read_options.pin_data);
-      InternalIterator* internal_iter =
-          NewInternalIterator(read_options, cfd, sv, db_iter->GetArena());
-      db_iter->SetIterUnderDBIter(internal_iter);
-      iterators->push_back(db_iter);
-    }
-  }
-
-  return Status::OK();
-}
-
 const Snapshot* DBImpl::GetSnapshot() { return GetSnapshotImpl(false); }
 
 #ifndef ROCKSDB_LITE

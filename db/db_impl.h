@@ -100,10 +100,7 @@ class DBImpl : public DB {
   using DB::NewIterator;
   virtual Iterator* NewIterator(const ReadOptions& options,
                                 ColumnFamilyHandle* column_family) override;
-  virtual Status NewIterators(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_families,
-      std::vector<Iterator*>* iterators) override;
+
   virtual const Snapshot* GetSnapshot() override;
   virtual void ReleaseSnapshot(const Snapshot* snapshot) override;
   using DB::GetProperty;

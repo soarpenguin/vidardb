@@ -8,7 +8,7 @@
 #include "rocksdb/db.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/options.h"
-
+using namespace std;
 using namespace rocksdb;
 
 std::string kDBPath = "/tmp/rocksdb_simple_example";
@@ -48,6 +48,13 @@ int main() {
 
   db->Get(ReadOptions(), "key2", &value);
   assert(value == "value");
+
+  Iterator* iter = db->NewIterator(ReadOptions());
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+      cout<<"key:"<<iter->key().ToString()
+          <<" value:"<<iter->value().ToString()<<endl;;
+  }
+  delete iter;
 
   delete db;
 

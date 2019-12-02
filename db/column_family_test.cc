@@ -666,9 +666,6 @@ TEST_F(ColumnFamilyTest, FlushTest) {
     ReadOptions ro;
     std::vector<Iterator*> iterators;
     // Hold super version.
-    if (j == 0) {
-      ASSERT_OK(db_->NewIterators(ro, handles_, &iterators));
-    }
 
     for (int i = 0; i < 3; ++i) {
       uint64_t max_total_in_memory_state =
@@ -1773,7 +1770,6 @@ TEST_F(ColumnFamilyTest, NewIteratorsTest) {
     std::vector<Iterator*> iterators;
     ReadOptions options;
     options.tailing = (iter == 1);
-    ASSERT_OK(db_->NewIterators(options, handles_, &iterators));
 
     for (auto it : iterators) {
       it->SeekToFirst();
@@ -1828,7 +1824,6 @@ TEST_F(ColumnFamilyTest, ReadOnlyDBTest) {
   // test newiterators
   {
     std::vector<Iterator*> iterators;
-    ASSERT_OK(db_->NewIterators(ReadOptions(), handles_, &iterators));
     for (auto it : iterators) {
       it->SeekToFirst();
     }

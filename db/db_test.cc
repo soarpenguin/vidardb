@@ -2122,12 +2122,7 @@ class ModelDB : public DB {
       return new ModelIter(snapshot_state, false);
     }
   }
-  virtual Status NewIterators(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_family,
-      std::vector<Iterator*>* iterators) override {
-    return Status::NotSupported("Not supported yet");
-  }
+
   virtual const Snapshot* GetSnapshot() override {
     ModelSnapshot* snapshot = new ModelSnapshot;
     snapshot->map_ = map_;

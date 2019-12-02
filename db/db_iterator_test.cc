@@ -52,7 +52,6 @@ TEST_F(DBIteratorTest, PersistedTierOnIterator) {
   delete iter;
 
   std::vector<Iterator*> iters;
-  ASSERT_TRUE(db_->NewIterators(ropt, {handles_[1]}, &iters).IsNotSupported());
   Close();
 }
 

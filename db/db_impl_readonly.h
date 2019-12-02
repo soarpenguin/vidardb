@@ -24,16 +24,9 @@ class DBImplReadOnly : public DBImpl {
                      ColumnFamilyHandle* column_family, const Slice& key,
                      std::string* value) override;
 
-  // TODO: Implement ReadOnly MultiGet?
-
   using DBImpl::NewIterator;
   virtual Iterator* NewIterator(const ReadOptions&,
                                 ColumnFamilyHandle* column_family) override;
-
-  virtual Status NewIterators(
-      const ReadOptions& options,
-      const std::vector<ColumnFamilyHandle*>& column_families,
-      std::vector<Iterator*>* iterators) override;
 
   using DBImpl::Put;
   virtual Status Put(const WriteOptions& options,

@@ -62,37 +62,6 @@ Iterator* DBImplReadOnly::NewIterator(const ReadOptions& read_options,
   return db_iter;
 }
 
-Status DBImplReadOnly::NewIterators(
-    const ReadOptions& read_options,
-    const std::vector<ColumnFamilyHandle*>& column_families,
-    std::vector<Iterator*>* iterators) {
-  if (iterators == nullptr) {
-    return Status::InvalidArgument("iterators not allowed to be nullptr");
-  }
-  iterators->clear();
-  iterators->reserve(column_families.size());
-  SequenceNumber latest_snapshot = versions_->LastSequence();
-
-  for (auto cfh : column_families) {
-    auto* cfd = reinterpret_cast<ColumnFamilyHandleImpl*>(cfh)->cfd();
-    auto* sv = cfd->GetSuperVersion()->Ref();
-    auto* db_iter = NewArenaWrappedDbIterator(
-        env_, *cfd->ioptions(), cfd->user_comparator(),
-        (read_options.snapshot != nullptr
-             ? reinterpret_cast<const SnapshotImpl*>(read_options.snapshot)
-                   ->number_
-             : latest_snapshot),
-        sv->mutable_cf_options.max_sequential_skip_in_iterations,
-        sv->version_number);
-    auto* internal_iter = NewInternalIterator(
-        read_options, cfd, sv, db_iter->GetArena());
-    db_iter->SetIterUnderDBIter(internal_iter);
-    iterators->push_back(db_iter);
-  }
-
-  return Status::OK();
-}
-
 Status DB::OpenForReadOnly(const Options& options, const std::string& dbname,
                            DB** dbptr, bool error_if_log_file_exist) {
   *dbptr = nullptr;
