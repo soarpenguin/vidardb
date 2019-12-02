@@ -35,8 +35,6 @@
 
 namespace rocksdb {
 
-typedef ColumnTableBuilder::IndexBuilder IndexBuilder;
-
 // The interface for building index.
 // Instruction for adding a new concrete IndexBuilder:
 //  1. Create a subclass instantiated from IndexBuilder.
@@ -47,7 +45,7 @@ typedef ColumnTableBuilder::IndexBuilder IndexBuilder;
 // catch unwanted attention from readers. Given that we won't add/change
 // indexes frequently, it makes sense to just embrace a more straightforward
 // design that just works.
-class ColumnTableBuilder::IndexBuilder {
+class IndexBuilder {
  public:
   // Index builder will construct a set of blocks which contain:
   //  1. One primary index block.
@@ -148,11 +146,9 @@ bool GoodCompressionRatio(size_t compressed_size, size_t raw_size) {
   return compressed_size < raw_size - (raw_size / 8u);
 }
 
-// format_version is the block format as defined in include/rocksdb/table.h
 Slice CompressBlock(const Slice& raw,
                     const CompressionOptions& compression_options,
-                    CompressionType* type,
-                    const Slice& compression_dict,
+                    CompressionType* type, const Slice& compression_dict,
                     std::string* compressed_output) {
   if (*type == kNoCompression) {
     return raw;

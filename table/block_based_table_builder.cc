@@ -16,7 +16,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include "db/dbformat.h"
@@ -57,8 +56,6 @@ class IndexBuilder {
  public:
   // Index builder will construct a set of blocks which contain:
   //  1. One primary index block.
-  //  2. (Optional) a set of metablocks that contains the metadata of the
-  //     primary index.
   struct IndexBlocks {
     Slice index_block_contents;
   };
@@ -156,7 +153,6 @@ bool GoodCompressionRatio(size_t compressed_size, size_t raw_size) {
   return compressed_size < raw_size - (raw_size / 8u);
 }
 
-// format_version is the block format as defined in include/rocksdb/table.h
 Slice CompressBlock(const Slice& raw,
                     const CompressionOptions& compression_options,
                     CompressionType* type, const Slice& compression_dict,

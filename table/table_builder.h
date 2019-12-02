@@ -112,6 +112,7 @@ class TableBuilder {
   // Finish() call, returns the size of the final generated file.
   virtual uint64_t FileSize() const = 0;
 
+  // Specific for columnar format
   virtual uint64_t FileSizeTotal() const { return FileSize(); }  // Shichao
 
   // If the user defined table properties collector suggest the file to

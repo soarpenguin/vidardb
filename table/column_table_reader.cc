@@ -320,8 +320,7 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
                          unique_ptr<RandomAccessFileReader>&& file,
                          uint64_t file_size,
                          unique_ptr<TableReader>* table_reader,
-                         const bool prefetch_index,
-                         const int level,
+                         const bool prefetch_index, const int level,
                          const std::vector<uint32_t>& cols) {
   table_reader->reset();
 

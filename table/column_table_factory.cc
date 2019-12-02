@@ -14,8 +14,8 @@
 namespace rocksdb {
 
 ColumnTableFactory::ColumnTableFactory(
-    const ColumnTableOptions& _table_options)
-    : table_options_(_table_options) {
+    const ColumnTableOptions& table_options)
+    : table_options_(table_options) {
   if (table_options_.flush_block_policy_factory == nullptr) {
     table_options_.flush_block_policy_factory.reset(
         new FlushBlockBySizePolicyFactory());
@@ -42,18 +42,17 @@ Status ColumnTableFactory::NewTableReader(
     unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
     unique_ptr<TableReader>* table_reader) const {
   return NewTableReader(table_reader_options, std::move(file), file_size,
-                        table_reader,
-                        /*prefetch_index=*/true);
+                        table_reader, true);
 }
 
 Status ColumnTableFactory::NewTableReader(
     const TableReaderOptions& table_reader_options,
     unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
-    unique_ptr<TableReader>* table_reader, bool prefetch_index) const {
+    unique_ptr<TableReader>* table_reader, bool prefetch_enabled) const {
   return ColumnTable::Open(
       table_reader_options.ioptions, table_reader_options.env_options,
       table_options_, table_reader_options.internal_comparator, std::move(file),
-      file_size, table_reader, prefetch_index, table_reader_options.level,
+      file_size, table_reader, prefetch_enabled, table_reader_options.level,
       table_reader_options.cols);
 }
 
@@ -74,8 +73,7 @@ TableBuilder* ColumnTableFactory::NewTableBuilder(
 }
 
 Status ColumnTableFactory::SanitizeOptions(
-    const DBOptions& db_opts,
-    const ColumnFamilyOptions& cf_opts) const {
+    const DBOptions& db_opts, const ColumnFamilyOptions& cf_opts) const {
   return Status::OK();
 }
 
@@ -120,8 +118,8 @@ const ColumnTableOptions& ColumnTableFactory::table_options() const {
 }
 
 TableFactory* NewColumnTableFactory(
-    const ColumnTableOptions& _table_options) {
-  return new ColumnTableFactory(_table_options);
+    const ColumnTableOptions& table_options) {
+  return new ColumnTableFactory(table_options);
 }
 
 }  // namespace rocksdb

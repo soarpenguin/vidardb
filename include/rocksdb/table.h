@@ -73,8 +73,8 @@ struct BlockBasedTableOptions {
   int block_size_deviation = 10;
 
   // Number of keys between restart points for delta encoding of keys.
-  // This parameter can be changed dynamically.  Most clients should
-  // leave this parameter alone. The minimum value allowed is 1.  Any smaller
+  // This parameter can be changed dynamically. Most clients should
+  // leave this parameter alone. The minimum value allowed is 1. Any smaller
   // value will be silently overwritten with 1.
   int block_restart_interval = 16;
 
@@ -91,13 +91,13 @@ extern TableFactory* NewBlockBasedTableFactory(
 struct ColumnTableOptions {
   // @flush_block_policy_factory creates the instances of flush block policy.
   // which provides a configurable way to determine when to flush a block in
-  // the block based tables.  If not set, table builder will use the default
+  // the block based tables. If not set, table builder will use the default
   // block flush policy, which cut blocks by block size (please refer to
   // `FlushBlockBySizePolicy`).
   std::shared_ptr<FlushBlockPolicyFactory> flush_block_policy_factory;
 
   // Disable block cache. If this is set to true,
-  // then block cache should be used, and the block_cache should
+  // then no block cache should be used, and the block_cache should
   // point to a nullptr object.
   bool no_block_cache = false;
 
@@ -119,17 +119,21 @@ struct ColumnTableOptions {
   int block_size_deviation = 10;
 
   // Number of keys between restart points for delta encoding of keys.
-  // This parameter can be changed dynamically.  Most clients should
-  // leave this parameter alone.  The minimum value allowed is 1.  Any smaller
+  // This parameter can be changed dynamically. Most clients should
+  // leave this parameter alone. The minimum value allowed is 1. Any smaller
   // value will be silently overwritten with 1.
   int block_restart_interval = 16;
 
   // Same as block_restart_interval but used for the index block.
   int index_block_restart_interval = 1;
 
+  // default delimiter for attributes excluding key
   char delim = '|';
-  uint32_t column_num = 0;
 
+  // total column number excluding key
+  uint32_t column_num = 1;
+
+  // used for file size estimation
   uint32_t denominator = 2;  // at least 2
 };
 

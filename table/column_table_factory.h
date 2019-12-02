@@ -32,7 +32,7 @@ class ColumnTableFactory : public TableFactory {
                         unique_ptr<RandomAccessFileReader>&& file,
                         uint64_t file_size,
                         unique_ptr<TableReader>* table_reader,
-                        bool prefetch_index) const;
+                        bool prefetch_enabled) const;
 
   TableBuilder* NewTableBuilder(
       const TableBuilderOptions& table_builder_options,

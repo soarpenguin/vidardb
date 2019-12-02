@@ -24,8 +24,8 @@
 namespace rocksdb {
 
 BlockBasedTableFactory::BlockBasedTableFactory(
-    const BlockBasedTableOptions& _table_options)
-    : table_options_(_table_options) {
+    const BlockBasedTableOptions& table_options)
+    : table_options_(table_options) {
   if (table_options_.flush_block_policy_factory == nullptr) {
     table_options_.flush_block_policy_factory.reset(
         new FlushBlockBySizePolicyFactory());

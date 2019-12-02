@@ -22,7 +22,7 @@ extern const uint64_t kColumnTableMagicNumber;
 class ColumnTableBuilder : public TableBuilder {
  public:
   // Create a builder that will store the contents of the table it is
-  // building in *file.  Does not close the file.  It is up to the
+  // building in *file. Does not close the file. It is up to the
   // caller to close the file after calling Finish().
   // @param compression_dict Data for presetting the compression library's
   //    dictionary, or nullptr.
@@ -43,7 +43,7 @@ class ColumnTableBuilder : public TableBuilder {
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~ColumnTableBuilder();
 
-  // Add key,value to the table being constructed.
+  // Add key, value to the table being constructed.
   // REQUIRES: key is after any previously added key according to comparator.
   // REQUIRES: Finish(), Abandon() have not been called
   void Add(const Slice& key, const Slice& value) override;
@@ -51,12 +51,12 @@ class ColumnTableBuilder : public TableBuilder {
   // Return non-ok iff some error has been detected.
   Status status() const override;
 
-  // Finish building the table.  Stops using the file passed to the
+  // Finish building the table. Stops using the file passed to the
   // constructor after this function returns.
   // REQUIRES: Finish(), Abandon() have not been called
   Status Finish() override;
 
-  // Indicate that the contents of this builder should be abandoned.  Stops
+  // Indicate that the contents of this builder should be abandoned. Stops
   // using the file passed to the constructor after this function returns.
   // If the caller is not going to call Finish(), it must call Abandon()
   // before destroying this builder.
@@ -66,10 +66,11 @@ class ColumnTableBuilder : public TableBuilder {
   // Number of calls to Add() so far.
   uint64_t NumEntries() const override;
 
-  // Size of the file generated so far.  If invoked after a successful
+  // Size of the file generated so far. If invoked after a successful
   // Finish() call, returns the size of the final generated file.
   uint64_t FileSize() const override;
 
+  // Specific for columnar format
   uint64_t FileSizeTotal() const override;
 
   bool NeedCompact() const override;
@@ -79,9 +80,10 @@ class ColumnTableBuilder : public TableBuilder {
 
   const char* Name() const { return "ColumnTable"; }  // Shichao
 
-  class IndexBuilder;  // Shichao
-
  private:
+  struct Rep;
+  Rep* rep_;
+
   bool ok() const { return status().ok(); }
 
   // Call block's Finish() method and then write the finalize block contents to
@@ -93,14 +95,9 @@ class ColumnTableBuilder : public TableBuilder {
                   bool is_data_block);
   void WriteRawBlock(const Slice& data, CompressionType, BlockHandle* handle);
 
-  struct Rep;
-  class ColumnTablePropertiesCollectorFactory;
-  class ColumnTablePropertiesCollector;
-  Rep* rep_;
-
   // Advanced operation: flush any buffered key/value pairs to file.
   // Can be used to ensure that two adjacent entries never live in
-  // the same data block.  Most clients should not need to use this method.
+  // the same data block. Most clients should not need to use this method.
   // REQUIRES: Finish(), Abandon() have not been called
   void Flush();
 

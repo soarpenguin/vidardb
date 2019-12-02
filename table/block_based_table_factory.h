@@ -22,7 +22,7 @@ namespace rocksdb {
 struct EnvOptions;
 
 using std::unique_ptr;
-class BlockBasedTableBuilder;
+//class BlockBasedTableBuilder;
 
 class BlockBasedTableFactory : public TableFactory {
  public:
