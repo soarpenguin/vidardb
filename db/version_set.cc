@@ -996,10 +996,10 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
     f = fp.GetNextFile();
   }
 
-    if (key_exists != nullptr) {
-      *key_exists = false;
-    }
-    *status = Status::NotFound(); // Use an empty error message for speed
+  if (key_exists != nullptr) {
+    *key_exists = false;
+  }
+  *status = Status::NotFound(); // Use an empty error message for speed
 }
 
 /******************************** Shichao ********************************/

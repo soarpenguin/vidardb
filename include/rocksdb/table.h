@@ -51,7 +51,7 @@ struct BlockBasedTableOptions {
   std::shared_ptr<FlushBlockPolicyFactory> flush_block_policy_factory;
 
   // Disable block cache. If this is set to true,
-  // then block cache should be used, and the block_cache should
+  // then no block cache should be used, and the block_cache should
   // point to a nullptr object.
   bool no_block_cache = false;
 

@@ -80,7 +80,6 @@ class BlockBasedTable : public TableReader {
   InternalIterator* NewIterator(const ReadOptions&,
                                 Arena* arena = nullptr) override;
 
-  // @param skip_filters Disables loading/accessing the filter block
   Status Get(const ReadOptions& readOptions, const Slice& key,
              GetContext* get_context) override;
 
@@ -97,10 +96,6 @@ class BlockBasedTable : public TableReader {
   // be close to the file length.
   uint64_t ApproximateOffsetOf(const Slice& key) override;
 
-  // Returns true if the block for the specified key is in cache.
-  // REQUIRES: key is in this table && block cache enabled
-  bool TEST_KeyInCache(const ReadOptions& options, const Slice& key);
-
   // Set up the table for Compaction. Might change some parameters with
   // posix_fadvise
   void SetupForCompaction() override;
@@ -116,54 +111,41 @@ class BlockBasedTable : public TableReader {
 
   ~BlockBasedTable();
 
+  // Returns true if the block for the specified key is in cache.
+  // REQUIRES: key is in this table && block cache enabled
+  bool TEST_KeyInCache(const ReadOptions& options, const Slice& key);
+
   bool TEST_index_reader_preloaded() const;
+
   // Implementation of IndexReader will be exposed to internal cc file only.
   class IndexReader;
 
-  static Slice GetCacheKey(const char* cache_key_prefix,
-                           size_t cache_key_prefix_size,
-                           const BlockHandle& handle, char* cache_key);
-
  private:
-  template <class TValue>
-  struct CachableEntry;
-
   struct Rep;
   Rep* rep_;
   bool compaction_optimized_;
 
   class BlockBasedIterator;  // Shichao
   class BlockEntryIteratorState;
-  // input_iter: if it is not null, update this one and return it as Iterator
-  static InternalIterator* NewDataBlockIterator(
-      Rep* rep, const ReadOptions& ro, const Slice& index_value,
-      BlockIter* input_iter = nullptr);
 
-  // Get the iterator from the index reader.
-  // If input_iter is not set, return new Iterator
-  // If input_iter is set, update it and return it as Iterator
-  //
-  // Note: ErrorIterator with Status::Incomplete shall be returned if all the
-  // following conditions are met:
-  //  1. We enabled table_options.cache_index_and_filter_blocks.
-  //  2. index is not present in block cache.
-  //  3. We disallowed any io to be performed, that is, read_options ==
-  //     kBlockCacheTier
-  InternalIterator* NewIndexIterator(
-      const ReadOptions& read_options, BlockIter* input_iter = nullptr,
-      CachableEntry<IndexReader>* index_entry = nullptr);
+  template <class TValue>
+  struct CachableEntry;
 
-  // Read block cache from block caches (if set): block_cache and
-  // block_cache_compressed.
-  // On success, Status::OK with be returned and @block will be populated with
-  // pointer to the block as well as its block handle.
-  // @param compression_dict Data for presetting the compression library's
-  //    dictionary.
-  static Status GetDataBlockFromCache(
-      const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
-      BlockBasedTable::CachableEntry<Block>* block);
+  // Read the meta block from sst.
+  static Status ReadMetaBlock(Rep* rep, std::unique_ptr<Block>* meta_block,
+                              std::unique_ptr<InternalIterator>* iter);
 
-  // Put a raw block (maybe compressed) to the corresponding block caches.
+  // Generate a cache key prefix from the file
+  static void GenerateCachePrefix(Cache* cc, RandomAccessFile* file,
+                                  char* buffer, size_t* size);
+
+  static void SetupCacheKeyPrefix(Rep* rep, uint64_t file_size);
+
+  static Slice GetCacheKey(const char* cache_key_prefix,
+                           size_t cache_key_prefix_size,
+                           const BlockHandle& handle, char* cache_key);
+
+  // Put a raw block to the corresponding block caches.
   // This method will perform decompression against raw_block if needed and then
   // populate the block caches.
   // On success, Status::OK will be returned; also @block will be populated with
@@ -174,16 +156,20 @@ class BlockBasedTable : public TableReader {
   // @param compression_dict Data for presetting the compression library's
   //    dictionary.
   static Status PutDataBlockToCache(
-      const Slice& block_cache_key, Cache* block_cache,
-      Statistics* statistics, CachableEntry<Block>* block, Block* raw_block);
+      const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
+      CachableEntry<Block>* block, Block* raw_block);
 
-  // Calls (*handle_result)(arg, ...) repeatedly, starting with the entry found
-  // after a call to Seek(key), until handle_result returns false.
-  // May not make such a call if filter policy says that key is not present.
-  friend class TableCache;
-  friend class BlockBasedTableBuilder;
+  // Read block cache from block caches (if set): block_cache
+  // On success, Status::OK with be returned and @block will be populated with
+  // pointer to the block as well as its block handle.
+  static Status GetDataBlockFromCache(
+      const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
+      BlockBasedTable::CachableEntry<Block>* block);
 
-  void ReadMeta(const Footer& footer);
+  // input_iter: if it is not null, update this one and return it as Iterator
+  static InternalIterator* NewDataBlockIterator(
+      Rep* rep, const ReadOptions& ro, const Slice& index_value,
+      BlockIter* input_iter = nullptr);
 
   // Create a index reader based on the index type stored in the table.
   // Optionally, user can pass a preloaded meta_index_iter for the index that
@@ -193,22 +179,25 @@ class BlockBasedTable : public TableReader {
       IndexReader** index_reader,
       InternalIterator* preloaded_meta_index_iter = nullptr);
 
-  // Read the meta block from sst.
-  static Status ReadMetaBlock(Rep* rep, std::unique_ptr<Block>* meta_block,
-                              std::unique_ptr<InternalIterator>* iter);
-
-  static void SetupCacheKeyPrefix(Rep* rep, uint64_t file_size);
-
-  explicit BlockBasedTable(Rep* rep)
-      : rep_(rep), compaction_optimized_(false) {}
-
-  // Generate a cache key prefix from the file
-  static void GenerateCachePrefix(Cache* cc,
-    RandomAccessFile* file, char* buffer, size_t* size);
+  // Get the iterator from the index reader.
+  // If input_iter is not set, return new Iterator
+  // If input_iter is set, update it and return it as Iterator
+  //
+  // Note: ErrorIterator with Status::Incomplete shall be returned if all the
+  // following conditions are met:
+  //  1. index is not present in block cache.
+  //  2. We disallowed any io to be performed, that is, read_options ==
+  //     kBlockCacheTier
+  InternalIterator* NewIndexIterator(
+      const ReadOptions& read_options, BlockIter* input_iter = nullptr,
+      CachableEntry<IndexReader>* index_entry = nullptr);
 
   // Helper functions for DumpTable()
   Status DumpIndexBlock(WritableFile* out_file);
   Status DumpDataBlocks(WritableFile* out_file);
+
+  explicit BlockBasedTable(Rep* rep)
+      : rep_(rep), compaction_optimized_(false) {}
 
   // No copying allowed
   explicit BlockBasedTable(const TableReader&) = delete;

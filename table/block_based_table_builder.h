@@ -85,6 +85,9 @@ class BlockBasedTableBuilder : public TableBuilder {
   const char* Name() const { return "BlockBasedTable"; }  // Shichao
 
  private:
+  struct Rep;
+  Rep* rep_;
+
   bool ok() const { return status().ok(); }
 
   // Call block's Finish() method and then write the finalize block contents to
@@ -95,9 +98,6 @@ class BlockBasedTableBuilder : public TableBuilder {
   void WriteBlock(const Slice& block_contents, BlockHandle* handle,
                   bool is_data_block);
   void WriteRawBlock(const Slice& data, CompressionType, BlockHandle* handle);
-
-  struct Rep;
-  Rep* rep_;
 
   // Advanced operation: flush any buffered key/value pairs to file.
   // Can be used to ensure that two adjacent entries never live in

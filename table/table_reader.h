@@ -38,26 +38,6 @@ class TableReader {
   virtual InternalIterator* NewIterator(const ReadOptions&,
                                         Arena* arena = nullptr) = 0;
 
-  // Given a key, return an approximate byte offset in the file where
-  // the data for that key begins (or would begin if the key were
-  // present in the file).  The returned value is in terms of file
-  // bytes, and so includes effects like compression of the underlying data.
-  // E.g., the approximate offset of the last key in the table will
-  // be close to the file length.
-  virtual uint64_t ApproximateOffsetOf(const Slice& key) = 0;
-
-  // Set up the table for Compaction. Might change some parameters with
-  // posix_fadvise
-  virtual void SetupForCompaction() = 0;
-
-  virtual std::shared_ptr<const TableProperties> GetTableProperties() const = 0;
-
-  // Prepare work that can be done before the real Get()
-  virtual void Prepare(const Slice& target) {}
-
-  // Report an approximation of how much memory has been used.
-  virtual size_t ApproximateMemoryUsage() const = 0;
-
   // Calls get_context->SaveValue() repeatedly, starting with
   // the entry found after a call to Seek(key), until it returns false.
   //
@@ -80,6 +60,26 @@ class TableReader {
     // The child class should implement functionality when applicable
     return Status::OK();
   }
+
+  // Given a key, return an approximate byte offset in the file where
+  // the data for that key begins (or would begin if the key were
+  // present in the file).  The returned value is in terms of file
+  // bytes, and so includes effects like compression of the underlying data.
+  // E.g., the approximate offset of the last key in the table will
+  // be close to the file length.
+  virtual uint64_t ApproximateOffsetOf(const Slice& key) = 0;
+
+  // Set up the table for Compaction. Might change some parameters with
+  // posix_fadvise
+  virtual void SetupForCompaction() = 0;
+
+  virtual std::shared_ptr<const TableProperties> GetTableProperties() const = 0;
+
+  // Prepare work that can be done before the real Get()
+  virtual void Prepare(const Slice& target) {}
+
+  // Report an approximation of how much memory has been used.
+  virtual size_t ApproximateMemoryUsage() const = 0;
 
   // convert db file to a human readable form
   virtual Status DumpTable(WritableFile* out_file) {
