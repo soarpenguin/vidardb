@@ -56,21 +56,19 @@ struct LevelMetaData {
 struct SstFileMetaData {
   SstFileMetaData() {}
   SstFileMetaData(const std::string& _file_name,
-                  const std::string& _path, uint64_t _size, Slice _type,  // Shichao
+                  const std::string& _path, uint64_t _size,
                   SequenceNumber _smallest_seqno,
                   SequenceNumber _largest_seqno,
                   const std::string& _smallestkey,
                   const std::string& _largestkey,
                   bool _being_compacted) :
-    size(_size), type(_type), name(_file_name),  // Shichao
+    size(_size), name(_file_name),  // Shichao
     db_path(_path), smallest_seqno(_smallest_seqno), largest_seqno(_largest_seqno),
     smallestkey(_smallestkey), largestkey(_largestkey),
     being_compacted(_being_compacted) {}
 
   // File size in bytes.
   uint64_t size;
-  // Shichao, row or column or other?
-  Slice type;
   // The name of the file.
   std::string name;
   // The full path where the file locates.

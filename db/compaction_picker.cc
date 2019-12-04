@@ -1774,7 +1774,7 @@ Compaction* FIFOCompactionPicker::PickCompaction(
   const std::vector<FileMetaData*>& level_files = vstorage->LevelFiles(kLevel0);
   uint64_t total_size = 0;
   for (const auto& file : level_files) {
-    total_size += file->fd.file_size;
+    total_size += file->fd.file_size_total;  // Shichao
   }
 
   if (total_size <= ioptions_.compaction_options_fifo.max_table_files_size ||

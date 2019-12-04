@@ -44,7 +44,7 @@ TableBuilder* NewTableBuilder(
     uint32_t column_family_id, const std::string& column_family_name,
     WritableFileWriter* file, const CompressionType compression_type,
     const CompressionOptions& compression_opts, const EnvOptions& env_options,  // Shichao
-    const std::string* compression_dict, const bool skip_filters) {
+    const std::string* compression_dict) {
   assert((column_family_id ==
           TablePropertiesCollectorFactory::Context::kUnknownColumnFamily) ==
          column_family_name.empty());
@@ -141,7 +141,6 @@ Status BuildTable(
     if (s.ok() && !empty) {
       uint64_t file_size = builder->FileSize();
       meta->fd.file_size = file_size;
-      meta->fd.file_type = builder->Name();                 // Shichao
       meta->fd.file_size_total = builder->FileSizeTotal();  // Shichao
       meta->marked_for_compaction = builder->NeedCompact();
       assert(meta->fd.GetFileSize() > 0);

@@ -50,8 +50,7 @@ TableBuilder* NewTableBuilder(
     WritableFileWriter* file, const CompressionType compression_type,
     const CompressionOptions& compression_opts,
     const EnvOptions& env_options = EnvOptions(),  // Shichao
-    const std::string* compression_dict = nullptr,
-    const bool skip_filters = false );
+    const std::string* compression_dict = nullptr);
 
 // Build a Table file from the contents of *iter.  The generated file
 // will be named according to number specified in meta. On success, the rest of

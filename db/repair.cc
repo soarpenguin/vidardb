@@ -191,7 +191,7 @@ class Repairer {
               logs_.push_back(number);
             } else if (type == kTableFile) {
               table_fds_.emplace_back(number, static_cast<uint32_t>(path_id),
-                                      0, "");  // Shichao
+                                      0, 0);
             } else {
               // Ignore other files
             }
@@ -285,7 +285,7 @@ class Repairer {
     // Do not record a version edit for this conversion to a Table
     // since ExtractMetaData() will also generate edits.
     FileMetaData meta;
-    meta.fd = FileDescriptor(next_file_number_++, 0, 0);
+    meta.fd = FileDescriptor(next_file_number_++, 0, 0, 0);  // Shichao
     {
       ReadOptions ro;
       ro.total_order_seek = true;
@@ -343,7 +343,7 @@ class Repairer {
     uint64_t file_size;
     Status status = env_->GetFileSize(fname, &file_size);
     t->meta.fd = FileDescriptor(t->meta.fd.GetNumber(), t->meta.fd.GetPathId(),
-                                file_size, t->meta.fd.GetFileType());  // Shichao
+                                file_size, file_size);  // Shichao
     if (status.ok()) {
       InternalIterator* iter = table_cache_->NewIterator(
           ReadOptions(), env_options_, icmp_, t->meta.fd);
@@ -412,7 +412,7 @@ class Repairer {
                      t.meta.fd.GetFileSize(), t.meta.smallest, t.meta.largest,
                      t.min_sequence, t.max_sequence,
                      t.meta.marked_for_compaction,
-                     t.meta.fd.GetFileType(), t.meta.fd.GetFileSizeTotal());  // Shichao
+                     t.meta.fd.GetFileSizeTotal());  // Shichao
     }
 
     //fprintf(stderr, "NewDescriptor:\n%s\n", edit_.DebugString().c_str());

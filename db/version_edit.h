@@ -35,25 +35,21 @@ struct FileDescriptor {
   TableReader* table_reader;
   uint64_t packed_number_and_path_id;
   uint64_t file_size;  // File size in bytes
-  std::string file_type;     // Shichao
-  uint64_t file_size_total;  // Shichao
+  uint64_t file_size_total;  // Shichao, for compaction calculation purpose
 
-  FileDescriptor() : FileDescriptor(0, 0, 0, "", 0) {}
+  FileDescriptor() : FileDescriptor(0, 0, 0, 0) {}
 
   FileDescriptor(uint64_t number, uint32_t path_id, uint64_t _file_size,
-      const std::string& _file_type = std::string(),  // Shichao
-      uint64_t _file_size_total = 0)                  // Shichao
+                 uint64_t _file_size_total)  // Shichao
       : table_reader(nullptr),
         packed_number_and_path_id(PackFileNumberAndPathId(number, path_id)),
         file_size(_file_size),
-        file_type(_file_type),                // Shichao
         file_size_total(_file_size_total) {}  // Shichao
 
   FileDescriptor& operator=(const FileDescriptor& fd) {
     table_reader = fd.table_reader;
     packed_number_and_path_id = fd.packed_number_and_path_id;
     file_size = fd.file_size;
-    file_type = fd.file_type;              // Shichao
     file_size_total = fd.file_size_total;  // Shichao
     return *this;
   }
@@ -66,12 +62,7 @@ struct FileDescriptor {
         packed_number_and_path_id / (kFileNumberMask + 1));
   }
   uint64_t GetFileSize() const { return file_size; }
-  /**************************** Shichao ***************************/
-  std::string GetFileType() const { return file_type; }
-  uint64_t GetFileSizeTotal() const {
-    return file_type == "ColumnTable"? file_size_total: file_size;
-  }
-  /**************************** Shichao ***************************/
+  uint64_t GetFileSizeTotal() const { return file_size_total; }  // Shichao
 };
 
 struct FileMetaData {
@@ -197,12 +188,10 @@ class VersionEdit {
                uint64_t file_size, const InternalKey& smallest,
                const InternalKey& largest, const SequenceNumber& smallest_seqno,
                const SequenceNumber& largest_seqno, bool marked_for_compaction,
-               const std::string& file_type = std::string(),  // Shichao
-               uint64_t file_size_total = 0) {                // Shichao
+               uint64_t file_size_total) {                // Shichao
     assert(smallest_seqno <= largest_seqno);
     FileMetaData f;
-    f.fd = FileDescriptor(file, file_path_id, file_size,
-        file_type, file_size_total);  // Shichao
+    f.fd = FileDescriptor(file, file_path_id, file_size, file_size_total);  // Shichao
     f.smallest = smallest;
     f.largest = largest;
     f.smallest_seqno = smallest_seqno;

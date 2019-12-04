@@ -45,7 +45,7 @@ class InternalIterator;
 
 using std::unique_ptr;
 
-// A Table is a sorted map from strings to strings.  Tables are
+// A Table is a sorted map from strings to strings. Tables are
 // immutable and persistent. A Table may be safely accessed from
 // multiple threads without external synchronization.
 class BlockBasedTable : public TableReader {
@@ -64,7 +64,7 @@ class BlockBasedTable : public TableReader {
   // to nullptr and returns a non-ok status.
   //
   // @param file must remain live while this Table is in use.
-  // @param prefetch_index sets prefetching of index blocks at startup
+  // @param prefetch_index sets prefetching of index blocks at startup.
   static Status Open(const ImmutableCFOptions& ioptions,
                      const EnvOptions& env_options,
                      const BlockBasedTableOptions& table_options,
@@ -76,11 +76,10 @@ class BlockBasedTable : public TableReader {
   // Returns a new iterator over the table contents.
   // The result of NewIterator() is initially invalid (caller must
   // call one of the Seek methods on the iterator before using it).
-  // @param skip_filters Disables loading/accessing the filter block
-  InternalIterator* NewIterator(const ReadOptions&,
+  InternalIterator* NewIterator(const ReadOptions& read_options,
                                 Arena* arena = nullptr) override;
 
-  Status Get(const ReadOptions& readOptions, const Slice& key,
+  Status Get(const ReadOptions& read_options, const Slice& key,
              GetContext* get_context) override;
 
   // Pre-fetch the disk blocks that correspond to the key range specified by
@@ -90,7 +89,7 @@ class BlockBasedTable : public TableReader {
 
   // Given a key, return an approximate byte offset in the file where
   // the data for that key begins (or would begin if the key were
-  // present in the file).  The returned value is in terms of file
+  // present in the file). The returned value is in terms of file
   // bytes, and so includes effects like compression of the underlying data.
   // E.g., the approximate offset of the last key in the table will
   // be close to the file length.
@@ -125,8 +124,8 @@ class BlockBasedTable : public TableReader {
   Rep* rep_;
   bool compaction_optimized_;
 
-  class BlockBasedIterator;  // Shichao
   class BlockEntryIteratorState;
+  class BlockBasedIterator;  // Shichao
 
   template <class TValue>
   struct CachableEntry;
@@ -146,15 +145,12 @@ class BlockBasedTable : public TableReader {
                            const BlockHandle& handle, char* cache_key);
 
   // Put a raw block to the corresponding block caches.
-  // This method will perform decompression against raw_block if needed and then
-  // populate the block caches.
+  // This method will populate the block caches.
   // On success, Status::OK will be returned; also @block will be populated with
   // uncompressed block and its cache handle.
   //
   // REQUIRES: raw_block is heap-allocated. PutDataBlockToCache() will be
   // responsible for releasing its memory if error occurs.
-  // @param compression_dict Data for presetting the compression library's
-  //    dictionary.
   static Status PutDataBlockToCache(
       const Slice& block_cache_key, Cache* block_cache, Statistics* statistics,
       CachableEntry<Block>* block, Block* raw_block);
@@ -168,16 +164,11 @@ class BlockBasedTable : public TableReader {
 
   // input_iter: if it is not null, update this one and return it as Iterator
   static InternalIterator* NewDataBlockIterator(
-      Rep* rep, const ReadOptions& ro, const Slice& index_value,
+      Rep* rep, const ReadOptions& read_options, const Slice& index_value,
       BlockIter* input_iter = nullptr);
 
   // Create a index reader based on the index type stored in the table.
-  // Optionally, user can pass a preloaded meta_index_iter for the index that
-  // need to access extra meta blocks for index construction. This parameter
-  // helps avoid re-reading meta index block if caller already created one.
-  Status CreateIndexReader(
-      IndexReader** index_reader,
-      InternalIterator* preloaded_meta_index_iter = nullptr);
+  Status CreateIndexReader(IndexReader** index_reader);
 
   // Get the iterator from the index reader.
   // If input_iter is not set, return new Iterator

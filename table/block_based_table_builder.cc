@@ -341,12 +341,11 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     // Add item to index block.
     // We do not emit the index entry for a block until we have seen the
-    // first key for the next data block.  This allows us to use shorter
-    // keys in the index block.  For example, consider a block boundary
+    // first key for the next data block. This allows us to use shorter
+    // keys in the index block. For example, consider a block boundary
     // between the keys "the quick brown fox" and "the who".  We can use
     // "the r" as the key for the index block entry since it is >= all
-    // entries in the first block and < all entries in subsequent
-    // blocks.
+    // entries in the first block and < all entries in subsequent blocks.
     if (ok()) {
       r->index_builder->AddIndexEntry(&r->last_key, &key, r->pending_handle);
     }
@@ -357,7 +356,6 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
   r->props.num_entries++;
   r->props.raw_key_size += key.size();
   r->props.raw_value_size += value.size();
-
   r->index_builder->OnKeyAdded(key);
   NotifyCollectTableCollectorsOnAdd(key, value, r->offset,
                                     r->table_properties_collectors,
@@ -466,11 +464,10 @@ Status BlockBasedTableBuilder::Finish() {
   }
 
   // Write meta blocks and metaindex block with the following order.
-  //    1. [meta block: filter]
-  //    2. [other meta blocks]
-  //    3. [meta block: properties]
-  //    4. [metaindex block]
-  // write meta blocks
+  //    1. [properties]
+  //    2. [compression_dict]
+  //    3. [meta_index_builder]
+  //    4. [index_blocks]
   MetaIndexBuilder meta_index_builder;
 
   if (ok()) {
@@ -502,17 +499,14 @@ Status BlockBasedTableBuilder::Finish() {
       // Add basic properties
       property_block_builder.AddTableProperty(r->props);
 
-      // Add use collected properties
+      // Add user collected properties
       NotifyCollectTableCollectorsOnFinish(r->table_properties_collectors,
                                            r->ioptions.info_log,
                                            &property_block_builder);
 
       BlockHandle properties_block_handle;
-      WriteRawBlock(
-          property_block_builder.Finish(),
-          kNoCompression,
-          &properties_block_handle
-      );
+      WriteRawBlock(property_block_builder.Finish(), kNoCompression,
+                    &properties_block_handle);
       meta_index_builder.Add(kPropertiesBlock, properties_block_handle);
 
       // Write compression dictionary block
@@ -530,20 +524,12 @@ Status BlockBasedTableBuilder::Finish() {
     // flush the meta index block
     WriteRawBlock(meta_index_builder.Finish(), kNoCompression,
                   &metaindex_block_handle);
-    WriteBlock(index_blocks.index_block_contents, &index_block_handle,
-               false /* is_data_block */);
+    WriteBlock(index_blocks.index_block_contents, &index_block_handle, false);
   }
 
   // Write footer
   if (ok()) {
     // No need to write out new footer if we're using default checksum.
-    // We're writing legacy magic number because we want old versions of RocksDB
-    // be able to read files generated with new release (just in case if
-    // somebody wants to roll back after an upgrade)
-    // TODO(icanadi) at some point in the future, when we're absolutely sure
-    // nobody will roll back to RocksDB 2.x versions, retire the legacy magic
-    // number and always write new table files with new magic number
-    // this is guaranteed by BlockBasedTableBuilder's constructor
     Footer footer(kBlockBasedTableMagicNumber);
     footer.set_metaindex_handle(metaindex_block_handle);
     footer.set_index_handle(index_block_handle);

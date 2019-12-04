@@ -818,7 +818,7 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
     // during subcompactions (i.e. if output size, estimated by input size, is
     // going to be 1.2MB and max_output_file_size = 1MB, prefer to have 0.6MB
     // and 0.6MB instead of 1MB and 0.2MB)
-    if (sub_compact->builder->FileSize() >=
+    if (sub_compact->builder->FileSizeTotal() >=                     // Shichao
         sub_compact->compaction->max_output_file_size()) {
       status = FinishCompactionOutputFile(input->status(), sub_compact);
       if (sub_compact->outputs.size() == 1) {
@@ -924,9 +924,9 @@ Status CompactionJob::FinishCompactionOutputFile(
   } else {
     sub_compact->builder->Abandon();
   }
-  const uint64_t current_bytes = sub_compact->builder->FileSize();
-  meta->fd.file_size = current_bytes;
-  meta->fd.file_size_total = sub_compact->builder->FileSizeTotal();  // Shichao
+  const uint64_t current_bytes = sub_compact->builder->FileSizeTotal();  // Shichao
+  meta->fd.file_size = sub_compact->builder->FileSize();  // Shichao
+  meta->fd.file_size_total = current_bytes;  // Shichao
   sub_compact->current_output()->finished = true;
   sub_compact->total_bytes += current_bytes;
 
@@ -1085,7 +1085,8 @@ Status CompactionJob::OpenCompactionOutputFile(
 
   SubcompactionState::Output out;
   out.meta.fd =
-      FileDescriptor(file_number, sub_compact->compaction->output_path_id(), 0);
+      FileDescriptor(file_number, sub_compact->compaction->output_path_id(), 0,
+                     0);  // Shichao
   out.finished = false;
 
   sub_compact->outputs.push_back(out);
@@ -1106,16 +1107,12 @@ Status CompactionJob::OpenCompactionOutputFile(
   // If the Column family flag is to only optimize filters for hits,
   // we can skip creating filters if this is the bottommost_level where
   // data is going to be found
-  bool skip_filters =
-      cfd->ioptions()->optimize_filters_for_hits && bottommost_level_;
   sub_compact->builder.reset(NewTableBuilder(
       *cfd->ioptions(), cfd->internal_comparator(),
       cfd->int_tbl_prop_collector_factories(), cfd->GetID(), cfd->GetName(),
       sub_compact->outfile.get(), sub_compact->compaction->output_compression(),
       cfd->ioptions()->compression_opts, env_options_,  // Shichao
-      &sub_compact->compression_dict, skip_filters));
-
-  sub_compact->outputs.back().meta.fd.file_type = sub_compact->builder->Name();  // Shichao
+      &sub_compact->compression_dict));
 
   LogFlush(db_options_.info_log);
   return s;
@@ -1187,7 +1184,7 @@ void CompactionJob::UpdateCompactionStats() {
     compaction_stats_.num_output_files += static_cast<int>(num_output_files);
 
     for (const auto& out : sub_compact.outputs) {
-      compaction_stats_.bytes_written += out.meta.fd.file_size;
+      compaction_stats_.bytes_written += out.meta.fd.file_size_total;  // Shichao
     }
     if (sub_compact.num_input_records > sub_compact.num_output_records) {
       compaction_stats_.num_dropped_records +=

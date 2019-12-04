@@ -27,12 +27,14 @@ struct ExternalSstFileInfo {
                       const std::string& _smallest_key,
                       const std::string& _largest_key,
                       SequenceNumber _sequence_number, uint64_t _file_size,
+                      uint64_t _file_size_total,  // Shichao
                       int32_t _num_entries, int32_t _version)
       : file_path(_file_path),
         smallest_key(_smallest_key),
         largest_key(_largest_key),
         sequence_number(_sequence_number),
         file_size(_file_size),
+        file_size_total(_file_size_total),  // Shichao
         num_entries(_num_entries),
         version(_version) {}
 
@@ -41,6 +43,7 @@ struct ExternalSstFileInfo {
   std::string largest_key;         // largest user key in file
   SequenceNumber sequence_number;  // sequence number of all keys in file
   uint64_t file_size;              // file size in bytes
+  uint64_t file_size_total;        // Shichao
   uint64_t num_entries;            // number of entries in file
   int32_t version;                 // file version
 };

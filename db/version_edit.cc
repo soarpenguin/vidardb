@@ -131,7 +131,6 @@ bool VersionEdit::EncodeTo(std::string* dst) const {
       PutVarint32(dst, f.fd.GetPathId());
     }
     PutVarint64(dst, f.fd.GetFileSize());
-    PutLengthPrefixedSlice(dst, f.fd.GetFileType());  // Shichao
     PutVarint64(dst, f.fd.GetFileSizeTotal());        // Shichao
     PutLengthPrefixedSlice(dst, f.smallest.Encode());
     PutLengthPrefixedSlice(dst, f.largest.Encode());
@@ -228,11 +227,9 @@ const char* VersionEdit::DecodeNewFile4From(Slice* input) {
   uint64_t number;
   uint32_t path_id = 0;
   uint64_t file_size;
-  Slice file_type;           // Shichao
   uint64_t file_size_total;  // Shichao
   if (GetLevel(input, &level, &msg) && GetVarint64(input, &number) &&
       GetVarint64(input, &file_size) &&
-      GetLengthPrefixedSlice(input, &file_type) &&  // Shichao
       GetVarint64(input, &file_size_total) &&       // Shichao
       GetInternalKey(input, &f.smallest) &&
       GetInternalKey(input, &f.largest) &&
@@ -278,8 +275,7 @@ const char* VersionEdit::DecodeNewFile4From(Slice* input) {
   } else {
     return "new-file4 entry";
   }
-  f.fd = FileDescriptor(number, path_id, file_size,
-      file_type.ToString(), file_size_total);  // Shichao
+  f.fd = FileDescriptor(number, path_id, file_size, file_size_total);  // Shichao
   new_files_.push_back(std::make_pair(level, f));
   return nullptr;
 }
@@ -379,12 +375,10 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         uint64_t file_size_total;  // Shichao
         if (GetLevel(&input, &level, &msg) && GetVarint64(&input, &number) &&
             GetVarint64(&input, &file_size) &&
-            GetLengthPrefixedSlice(&input, &file_type) &&  // Shichao
             GetVarint64(&input, &file_size_total) &&       // Shichao
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest)) {
-          f.fd = FileDescriptor(number, 0, file_size,
-              file_type.ToString(), file_size_total);  // Shichao
+          f.fd = FileDescriptor(number, 0, file_size, file_size_total);  // Shichao
           new_files_.push_back(std::make_pair(level, f));
         } else {
           if (!msg) {
@@ -396,18 +390,15 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
       case kNewFile2: {
         uint64_t number;
         uint64_t file_size;
-        Slice file_type;           // Shichao
         uint64_t file_size_total;  // Shichao
         if (GetLevel(&input, &level, &msg) && GetVarint64(&input, &number) &&
             GetVarint64(&input, &file_size) &&
-            GetLengthPrefixedSlice(&input, &file_type) &&  // Shichao
             GetVarint64(&input, &file_size_total) &&       // Shichao
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest) &&
             GetVarint64(&input, &f.smallest_seqno) &&
             GetVarint64(&input, &f.largest_seqno)) {
-          f.fd = FileDescriptor(number, 0, file_size,
-              file_type.ToString(), file_size_total);  // Shichao
+          f.fd = FileDescriptor(number, 0, file_size, file_size_total);  // Shichao
           new_files_.push_back(std::make_pair(level, f));
         } else {
           if (!msg) {
@@ -421,18 +412,15 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         uint64_t number;
         uint32_t path_id;
         uint64_t file_size;
-        Slice file_type;           // Shichao
         uint64_t file_size_total;  // Shichao
         if (GetLevel(&input, &level, &msg) && GetVarint64(&input, &number) &&
             GetVarint32(&input, &path_id) && GetVarint64(&input, &file_size) &&
-            GetLengthPrefixedSlice(&input, &file_type) &&  // Shichao
             GetVarint64(&input, &file_size_total) &&       // Shichao
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest) &&
             GetVarint64(&input, &f.smallest_seqno) &&
             GetVarint64(&input, &f.largest_seqno)) {
-          f.fd = FileDescriptor(number, path_id, file_size,
-              file_type.ToString(), file_size_total);  // Shichao
+          f.fd = FileDescriptor(number, path_id, file_size, file_size_total);  // Shichao
           new_files_.push_back(std::make_pair(level, f));
         } else {
           if (!msg) {
@@ -528,8 +516,6 @@ std::string VersionEdit::DebugString(bool hex_key) const {
     AppendNumberTo(&r, f.fd.GetFileSize());
     r.append(" ");
     /****************** Shichao *******************/
-    r.append(f.fd.GetFileType());
-    r.append(" ");
     AppendNumberTo(&r, f.fd.GetFileSizeTotal());
     r.append(" ");
     /****************** Shichao *******************/
@@ -600,7 +586,6 @@ std::string VersionEdit::DebugJSON(int edit_num, bool hex_key) const {
       const FileMetaData& f = new_files_[i].second;
       jw << "FileNumber" << f.fd.GetNumber();
       jw << "FileSize" << f.fd.GetFileSize();
-      jw << "FileType" << f.fd.GetFileType();            // Shichao
       jw << "FileSizeTotal" << f.fd.GetFileSizeTotal();  // Shichao
       jw << "SmallestIKey" << f.smallest.DebugString(hex_key);
       jw << "LargestIKey" << f.largest.DebugString(hex_key);

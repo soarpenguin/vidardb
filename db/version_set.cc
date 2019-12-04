@@ -484,7 +484,7 @@ class LevelFileNumIterator : public InternalIterator {
       : icmp_(icmp),
         flevel_(flevel),
         index_(static_cast<uint32_t>(flevel->num_files)),
-        current_value_(0, 0, 0) {  // Marks as invalid
+        current_value_(0, 0, 0, 0) {  // Marks as invalid  // Shichao
   }
   virtual bool Valid() const override { return index_ < flevel_->num_files; }
   virtual void Seek(const Slice& target) override {
@@ -773,7 +773,6 @@ void Version::GetColumnFamilyMetaData(ColumnFamilyMetaData* cf_meta) {
           MakeTableFileName("", file->fd.GetNumber()),
           file_path,
           file->fd.GetFileSize(),
-          file->fd.GetFileType(),  // Shichao
           file->smallest_seqno,
           file->largest_seqno,
           file->smallest.user_key().ToString(),
@@ -1500,7 +1499,7 @@ void SortFileByOverlappingRatio(
 
     while (next_level_it != next_level_files.end() &&
            icmp.Compare((*next_level_it)->smallest, file->largest) < 0) {
-      overlapping_bytes += (*next_level_it)->fd.file_size;
+      overlapping_bytes += (*next_level_it)->fd.file_size_total;  // Shichao
 
       if (icmp.Compare((*next_level_it)->largest, file->largest) > 0) {
         // next level file cross large boundary of current file.
@@ -1509,9 +1508,9 @@ void SortFileByOverlappingRatio(
       next_level_it++;
     }
 
-    assert(file->fd.file_size != 0);
+    assert(file->fd.file_size_total != 0);  // Shichao
     file_to_order[file->fd.GetNumber()] =
-        overlapping_bytes * 1024u / file->fd.file_size;
+        overlapping_bytes * 1024u / file->fd.file_size_total;  // Shichao
   }
 
   std::sort(temp->begin(), temp->end(),
@@ -2080,7 +2079,7 @@ uint64_t VersionStorageInfo::EstimateLiveDataSize() const {
       if (found_end || internal_comparator_->Compare(
             file->largest, (*lb).second->smallest) < 0) {
           ranges.emplace_hint(lb, &file->largest, file);
-          size += file->fd.file_size;
+          size += file->fd.file_size_total;  // Shichao
       }
     }
   }
@@ -3191,8 +3190,7 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
           edit.AddFile(level, f->fd.GetNumber(), f->fd.GetPathId(),
                        f->fd.GetFileSize(), f->smallest, f->largest,
                        f->smallest_seqno, f->largest_seqno,
-                       f->marked_for_compaction,
-                       f->fd.GetFileType(), f->fd.GetFileSizeTotal());  // Shichao
+                       f->marked_for_compaction, f->fd.GetFileSizeTotal());  // Shichao
         }
       }
       edit.SetLogNumber(cfd->GetLogNumber());

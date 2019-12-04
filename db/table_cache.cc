@@ -360,7 +360,6 @@ size_t TableCache::GetMemoryUsageByTableReader(
     const EnvOptions& env_options,
     const InternalKeyComparator& internal_comparator,
     const FileDescriptor& fd) {
-  Status s;
   auto table_reader = fd.table_reader;
   // table already been pre-loaded?
   if (table_reader) {
@@ -368,7 +367,7 @@ size_t TableCache::GetMemoryUsageByTableReader(
   }
 
   Cache::Handle* table_handle = nullptr;
-  s = FindTable(env_options, internal_comparator, fd, &table_handle, true);
+  Status s = FindTable(env_options, internal_comparator, fd, &table_handle, true);
   if (!s.ok()) {
     return 0;
   }

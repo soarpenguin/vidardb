@@ -296,19 +296,10 @@ struct ColumnTableBuilder::Rep {
         column_family_name(_column_family_name),
         env_options(_env_options),
         main_column(_main_column) {
-	if (main_column && int_tbl_prop_collector_factories) {
+    if (main_column && int_tbl_prop_collector_factories) {
       for (auto& collector_factories : *int_tbl_prop_collector_factories) {
         table_properties_collectors.emplace_back(
             collector_factories->CreateIntTblPropCollector(column_family_id));
-      }
-	}
-  }
-
-  ~Rep() {
-    for (const auto& it : builders) {
-      if (it && !it->rep_->closed) {
-        it->rep_->file->Sync(ioptions.use_fsync);
-        it->rep_->file->Close();
       }
     }
   }
@@ -338,6 +329,25 @@ ColumnTableBuilder::~ColumnTableBuilder() {
   delete rep_;
 }
 
+void ColumnTableBuilder::CreateSubcolumnBuilders(Rep* r) {
+  r->builders.resize(r->table_options.column_num);
+  std::string fname = r->file->writable_file()->GetFileName();
+  Env::IOPriority pri = r->file->writable_file()->GetIOPriority();
+  for (auto i = 0u; i < r->table_options.column_num; i++) {
+    unique_ptr<WritableFile> file;
+    std::string col_fname(TableSubFileName(fname, i+1));
+    r->status = NewWritableFile(r->ioptions.env, col_fname, &file,
+                                r->env_options);
+    assert(r->status.ok());
+    file->SetIOPriority(pri);
+    r->builders[i].reset(new ColumnTableBuilder(r->ioptions, r->table_options,
+        r->internal_comparator, nullptr, r->column_family_id,
+        new WritableFileWriter(std::move(file), r->env_options),
+        r->compression_type, r->compression_opts, r->compression_dict,
+        r->column_family_name, r->env_options, false));
+  }
+}
+
 void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
   Rep* r = rep_;
   assert(!r->closed);
@@ -346,31 +356,20 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
     assert(r->internal_comparator.Compare(key, Slice(r->last_key)) > 0);
   }
 
-  std::vector<std::string> vals(StringSplit(value.ToString(), r->table_options.delim));
+  std::vector<std::string> vals(StringSplit(value.ToString(),
+                                            r->table_options.delim));
   if (!vals.empty() && vals.size() != r->table_options.column_num) {
     r->status = Status::InvalidArgument("table_options.column_num");
     return;
   }
+
+  // We create subcolumn builders here
   if (r->builders.empty()) {
-    r->builders.resize(r->table_options.column_num);
-    std::string fname = r->file->writable_file()->GetFileName();
-    Env::IOPriority pri = r->file->writable_file()->GetIOPriority();
-    for (auto i = 0u; i < r->table_options.column_num; i++) {
-      unique_ptr<WritableFile> file;
-      std::string col_fname(TableSubFileName(fname, i+1));
-      r->status = NewWritableFile(r->ioptions.env, col_fname, &file, r->env_options);
-      assert(r->status.ok());
-      file->SetIOPriority(pri);
-      r->builders[i].reset(new ColumnTableBuilder(r->ioptions, r->table_options,
-          r->internal_comparator, nullptr, r->column_family_id,
-          new WritableFileWriter(std::move(file), r->env_options),
-          r->compression_type, r->compression_opts, r->compression_dict,
-          r->column_family_name, r->env_options, false));
-    }
+    CreateSubcolumnBuilders(r);
   }
 
   std::string val;
-  PutVarint64(&val, r->props.num_entries++);
+  PutVarint64(&val, r->props.num_entries);
   auto should_flush = r->flush_block_policy->Update(key, val);
   if (should_flush) {
     assert(!r->data_block.empty());
@@ -378,12 +377,11 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
 
     // Add item to index block.
     // We do not emit the index entry for a block until we have seen the
-    // first key for the next data block.  This allows us to use shorter
-    // keys in the index block.  For example, consider a block boundary
-    // between the keys "the quick brown fox" and "the who".  We can use
+    // first key for the next data block. This allows us to use shorter
+    // keys in the index block. For example, consider a block boundary
+    // between the keys "the quick brown fox" and "the who". We can use
     // "the r" as the key for the index block entry since it is >= all
-    // entries in the first block and < all entries in subsequent
-    // blocks.
+    // entries in the first block and < all entries in subsequent blocks.
     if (ok()) {
       r->index_builder->AddIndexEntry(&r->last_key, &key, r->pending_handle);
     }
@@ -395,13 +393,15 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
       assert(!rep->data_block.empty());
       r->builders[i]->Flush();
       if (r->builders[i]->ok()) {
-        rep->index_builder->AddIndexEntry(&rep->last_key, &key, rep->pending_handle);
+        rep->index_builder->AddIndexEntry(&rep->last_key, &key,
+                                          rep->pending_handle);
       }
     }
   }
 
   r->last_key.assign(key.data(), key.size());
   r->data_block.Add(key, val);
+  r->props.num_entries++;
   r->props.raw_key_size += key.size();
   r->props.raw_value_size += value.size();
   r->index_builder->OnKeyAdded(key);
@@ -410,7 +410,7 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
                                     r->ioptions.info_log);
 
   for (auto i = 0u; i < r->table_options.column_num; i++) {
-	const auto& rep = r->builders[i]->rep_;
+    const auto& rep = r->builders[i]->rep_;
     rep->last_key.assign(key.data(), key.size());
     rep->data_block.Add(vals.empty()? Slice(): vals[i], key);
     rep->props.num_entries++;
@@ -441,8 +441,7 @@ void ColumnTableBuilder::WriteBlock(BlockBuilder* block,
 }
 
 void ColumnTableBuilder::WriteBlock(const Slice& raw_block_contents,
-                                    BlockHandle* handle,
-                                    bool is_data_block) {
+                                    BlockHandle* handle, bool is_data_block) {
   // File format contains a sequence of blocks where each block has:
   //    block_data: uint8[n]
   //    type: uint8
@@ -496,7 +495,7 @@ void ColumnTableBuilder::WriteRawBlock(const Slice& block_contents,
 Status ColumnTableBuilder::status() const {
   for (const auto& it : rep_->builders) {
     if (it && !it->rep_->status.ok()) {
-	  return it->rep_->status;
+      return it->rep_->status;
     }
   }
   return rep_->status;
@@ -538,10 +537,11 @@ Status ColumnTableBuilder::Finish() {
   }
 
   // Write meta blocks and metaindex block with the following order.
-  //    1. [meta block: format, col_num; col_file_size...]
-  //    1. [meta block: properties]
-  //    2. [metaindex block]
-  // write meta blocks
+  //    1. [format, col_num; col_file_size...]
+  //    2. [properties]
+  //    3. [compression_dict]
+  //    4. [meta_index_builder]
+  //    5. [index_blocks]
   MetaIndexBuilder meta_index_builder;
 
   if (ok()) {
@@ -589,10 +589,12 @@ Status ColumnTableBuilder::Finish() {
       // Add basic properties
       property_block_builder.AddTableProperty(r->props);
 
-      // Add use collected properties
-      NotifyCollectTableCollectorsOnFinish(r->table_properties_collectors,
-                                           r->ioptions.info_log,
-                                           &property_block_builder);
+      // Add user collected properties
+      if (r->main_column) {
+        NotifyCollectTableCollectorsOnFinish(r->table_properties_collectors,
+                                             r->ioptions.info_log,
+                                             &property_block_builder);
+      }
 
       BlockHandle properties_block_handle;
       WriteRawBlock(property_block_builder.Finish(), kNoCompression,
@@ -614,8 +616,7 @@ Status ColumnTableBuilder::Finish() {
     // flush the meta index block
     WriteRawBlock(meta_index_builder.Finish(), kNoCompression,
                   &metaindex_block_handle);
-    WriteBlock(index_blocks.index_block_contents, &index_block_handle,
-               false /* is_data_block */);
+    WriteBlock(index_blocks.index_block_contents, &index_block_handle, false);
   }
 
   // Write footer
@@ -632,6 +633,8 @@ Status ColumnTableBuilder::Finish() {
     }
   }
 
+  // Different from blockbasedtable, we take care of subcolumn file sync and
+  // close inside the builder
   if (r->main_column) {
     for (const auto& it : r->builders) {
       if (it && it->rep_->status.ok()) {
@@ -671,7 +674,7 @@ uint64_t ColumnTableBuilder::FileSizeTotal() const {
       res += it->rep_->offset;
     }
   }
-  return res / rep_->table_options.denominator;
+  return res;
 }
 
 bool ColumnTableBuilder::NeedCompact() const {

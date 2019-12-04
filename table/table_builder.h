@@ -112,7 +112,8 @@ class TableBuilder {
   // Finish() call, returns the size of the final generated file.
   virtual uint64_t FileSize() const = 0;
 
-  // Specific for columnar format
+  // For compaction calculation purpose. For row based, should be equal to
+  // FileSize(), while for column equals to all column size + meta size.
   virtual uint64_t FileSizeTotal() const { return FileSize(); }  // Shichao
 
   // If the user defined table properties collector suggest the file to

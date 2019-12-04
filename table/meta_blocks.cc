@@ -270,7 +270,8 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
 /********************************** Shichao *********************************/
 Status ReadColumnBlock(const Slice& handle_value, RandomAccessFileReader* file,
                        const Footer& footer, Env* env, Logger* logger,
-                       uint32_t* column_num, std::vector<uint64_t>& file_sizes) {
+                       uint32_t* column_num,
+                       std::vector<uint64_t>& file_sizes) {
   Slice v = handle_value;
   BlockHandle handle;
   if (!handle.DecodeFrom(&v).ok()) {
@@ -280,8 +281,8 @@ Status ReadColumnBlock(const Slice& handle_value, RandomAccessFileReader* file,
   BlockContents block_contents;
   ReadOptions read_options;
   read_options.verify_checksums = false;
-  Status s = ReadBlockContents(file, footer, read_options, handle, &block_contents,
-	                           env, false /* decompress */);
+  Status s = ReadBlockContents(file, footer, read_options, handle,
+                               &block_contents, env, false /* decompress */);
   if (!s.ok()) {
     return s;
   }
@@ -293,9 +294,9 @@ Status ReadColumnBlock(const Slice& handle_value, RandomAccessFileReader* file,
   auto i = 0u;
   for (iter->SeekToFirst(); iter->Valid(); iter->Next(), ++i) {
     s = iter->status();
-	if (!s.ok()) {
-	  break;
-	}
+    if (!s.ok()) {
+      break;
+    }
 
     if (i == 0) {
       *column_num = DecodeFixed32(iter->value().data());

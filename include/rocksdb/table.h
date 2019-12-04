@@ -131,10 +131,7 @@ struct ColumnTableOptions {
   char delim = '|';
 
   // total column number excluding key
-  uint32_t column_num = 1;
-
-  // used for file size estimation
-  uint32_t denominator = 2;  // at least 2
+  uint32_t column_num = 0;
 };
 
 // Create default column table factory.

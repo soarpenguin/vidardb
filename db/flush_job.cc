@@ -220,7 +220,7 @@ Status FlushJob::WriteLevel0Table(const std::vector<MemTable*>& mems,
   db_mutex_->AssertHeld();
   const uint64_t start_micros = db_options_.env->NowMicros();
   // path 0 for level 0 file.
-  meta->fd = FileDescriptor(versions_->NewFileNumber(), 0, 0);
+  meta->fd = FileDescriptor(versions_->NewFileNumber(), 0, 0, 0);  // Shichao
 
   Version* base = cfd_->current();
   base->Ref();  // it is likely that we do not need this reference
@@ -305,8 +305,7 @@ Status FlushJob::WriteLevel0Table(const std::vector<MemTable*>& mems,
     edit->AddFile(0 /* level */, meta->fd.GetNumber(), meta->fd.GetPathId(),
                   meta->fd.GetFileSize(), meta->smallest, meta->largest,
                   meta->smallest_seqno, meta->largest_seqno,
-                  meta->marked_for_compaction,
-                  meta->fd.GetFileType(), meta->fd.GetFileSizeTotal());  // Shichao
+                  meta->marked_for_compaction, meta->fd.GetFileSizeTotal());  // Shichao
   }
 
   // Note that here we treat flush as level 0 compaction in internal stats

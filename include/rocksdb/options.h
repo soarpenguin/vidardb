@@ -1343,7 +1343,8 @@ struct ReadOptions {
   // Default: 0
   size_t readahead_size;
 
-  std::vector<uint32_t> columns;  // Shichao
+  // Shichao, internally starts from 0, but for user starts from 1
+  std::vector<uint32_t> columns;
 
   bool unique_key;  // Shichao
 

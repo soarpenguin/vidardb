@@ -66,11 +66,12 @@ class ColumnTableBuilder : public TableBuilder {
   // Number of calls to Add() so far.
   uint64_t NumEntries() const override;
 
-  // Size of the file generated so far. If invoked after a successful
+  // Size of the meta file generated so far. If invoked after a successful
   // Finish() call, returns the size of the final generated file.
   uint64_t FileSize() const override;
 
-  // Specific for columnar format
+  // For compaction calculation purpose. For row based, should be equal to
+  // FileSize(), while for column equals to all column size + meta size.
   uint64_t FileSizeTotal() const override;
 
   bool NeedCompact() const override;
@@ -104,6 +105,9 @@ class ColumnTableBuilder : public TableBuilder {
   // Some compression libraries fail when the raw size is bigger than int. If
   // uncompressed size is bigger than kCompressionSizeLimit, don't compress it
   const uint64_t kCompressionSizeLimit = std::numeric_limits<int>::max();
+
+  // Called by main column to create sub column builders
+  void CreateSubcolumnBuilders(Rep* r);
 
   // No copying allowed
   ColumnTableBuilder(const ColumnTableBuilder&) = delete;

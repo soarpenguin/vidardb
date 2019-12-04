@@ -1627,7 +1627,7 @@ Status DBImpl::WriteLevel0TableForRecovery(int job_id, ColumnFamilyData* cfd,
   FileMetaData meta;
   auto pending_outputs_inserted_elem =
       CaptureCurrentFileNumberInPendingOutputs();
-  meta.fd = FileDescriptor(versions_->NewFileNumber(), 0, 0);
+  meta.fd = FileDescriptor(versions_->NewFileNumber(), 0, 0, 0);  // Shichao
   ReadOptions ro;
   ro.total_order_seek = true;
   Arena arena;
@@ -1679,8 +1679,7 @@ Status DBImpl::WriteLevel0TableForRecovery(int job_id, ColumnFamilyData* cfd,
     edit->AddFile(level, meta.fd.GetNumber(), meta.fd.GetPathId(),
                   meta.fd.GetFileSize(), meta.smallest, meta.largest,
                   meta.smallest_seqno, meta.largest_seqno,
-                  meta.marked_for_compaction,
-                  meta.fd.GetFileType(), meta.fd.GetFileSizeTotal());  // Shichao
+                  meta.marked_for_compaction, meta.fd.GetFileSizeTotal());  // Shichao
   }
 
   InternalStats::CompactionStats stats(1);
@@ -2345,8 +2344,7 @@ Status DBImpl::ReFitLevel(ColumnFamilyData* cfd, int level, int target_level) {
       edit.AddFile(to_level, f->fd.GetNumber(), f->fd.GetPathId(),
                    f->fd.GetFileSize(), f->smallest, f->largest,
                    f->smallest_seqno, f->largest_seqno,
-                   f->marked_for_compaction,
-                   f->fd.GetFileType(), f->fd.GetFileSizeTotal());  // Shichao
+                   f->marked_for_compaction, f->fd.GetFileSizeTotal());  // Shichao
     }
     Log(InfoLogLevel::DEBUG_LEVEL, db_options_.info_log,
         "[%s] Apply version edit:\n%s", cfd->GetName().c_str(),
@@ -2736,14 +2734,7 @@ void DBImpl::ExportMeta(bool end) {
   for (const auto& level : cf_meta.levels) {
     int num = 1;
     for (const auto& file : level.files) {
-      std::string file_type;
-      if (file.type.ToString() == "BlockBasedTable") {
-        file_type = "r";
-      } else if (file.type.ToString() == "ColumnTable") {
-        file_type = "c";
-      } else {
-        file_type = "unknown";
-      }
+      std::string file_type = "unknown";
       std::string begin_key, end_key;
       db_options_.show_key_fun(file.smallestkey, begin_key);
       db_options_.show_key_fun(file.largestkey, end_key);
@@ -3279,8 +3270,7 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
         c->edit()->AddFile(c->output_level(), f->fd.GetNumber(), f->fd.GetPathId(),
                            f->fd.GetFileSize(), f->smallest, f->largest,
                            f->smallest_seqno, f->largest_seqno,
-                           f->marked_for_compaction,
-                           f->fd.GetFileType(), f->fd.GetFileSizeTotal());  // Shichao
+                           f->marked_for_compaction, f->fd.GetFileSizeTotal());  // Shichao
 
         LogToBuffer(log_buffer,
                     "[%s] Moving #%" PRIu64 " to level-%d %" PRIu64 " bytes\n",
@@ -3851,7 +3841,8 @@ Status DBImpl::AddFile(ColumnFamilyHandle* column_family,
     InstrumentedMutexLock l(&mutex_);
     pending_outputs_inserted_elem = CaptureCurrentFileNumberInPendingOutputs();
     meta.fd =
-        FileDescriptor(versions_->NewFileNumber(), 0, file_info->file_size);
+        FileDescriptor(versions_->NewFileNumber(), 0, file_info->file_size,
+                       file_info->file_size_total);  // Shichao
   }
 
   std::string db_fname = TableFileName(
@@ -3919,8 +3910,7 @@ Status DBImpl::AddFile(ColumnFamilyHandle* column_family,
       edit.AddFile(0, meta.fd.GetNumber(), meta.fd.GetPathId(),
                    meta.fd.GetFileSize(), meta.smallest, meta.largest,
                    meta.smallest_seqno, meta.largest_seqno,
-                   meta.marked_for_compaction,
-                   meta.fd.GetFileType(), meta.fd.GetFileSizeTotal());  // Shichao
+                   meta.marked_for_compaction, meta.fd.GetFileSizeTotal());  // Shichao
 
       status = versions_->LogAndApply(cfd, mutable_cf_options, &edit, &mutex_,
                                       directories_.GetDbDir());
