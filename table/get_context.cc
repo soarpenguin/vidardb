@@ -61,16 +61,6 @@ void GetContext::MarkKeyMayExist() {
   }
 }
 
-void GetContext::SaveValue(const Slice& value, SequenceNumber seq) {
-  assert(state_ == kNotFound);
-  appendToReplayLog(replay_log_, kTypeValue, value);
-
-  state_ = kFound;
-  if (value_ != nullptr) {
-    value_->assign(value.data(), value.size());
-  }
-}
-
 bool GetContext::SaveValue(const ParsedInternalKey& parsed_key,
                            const Slice& value) {
   if (ucmp_->Equal(parsed_key.user_key, user_key_)) {
@@ -96,8 +86,6 @@ bool GetContext::SaveValue(const ParsedInternalKey& parsed_key,
         return false;
 
       case kTypeDeletion:
-        // TODO(noetzli): Verify correctness once merge of single-deletes
-        // is supported
         assert(state_ == kNotFound);
         if (kNotFound == state_) {
           state_ = kDeleted;

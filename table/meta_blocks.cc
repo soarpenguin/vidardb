@@ -98,7 +98,7 @@ Slice PropertyBlockBuilder::Finish() {
 
 /******************************* Shichao *****************************/
 ColumnBlockBuilder::ColumnBlockBuilder()
-    : column_block_(new BlockBuilder(1, false)) {}
+    : column_block_(new BlockBuilder(1)) {}
 
 void ColumnBlockBuilder::Add(bool key, uint32_t value) {
   std::string str_key, str_val;

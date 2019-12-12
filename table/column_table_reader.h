@@ -157,12 +157,6 @@ class ColumnTable : public TableReader {
       Rep* rep, const ReadOptions& read_options, const Slice& index_value,
       BlockIter* input_iter = nullptr);
 
-  // read_options needs to be sanitized
-  void NewDataBlockIterators(
-      const ReadOptions& read_options,
-      const std::vector<std::string>& index_values,
-      ColumnIterator& input_iter);
-
   // Create a index reader based on the index type stored in the table.
   Status CreateIndexReader(IndexReader** index_reader);
 
@@ -178,10 +172,6 @@ class ColumnTable : public TableReader {
   InternalIterator* NewIndexIterator(
       const ReadOptions& read_options, BlockIter* input_iter = nullptr,
       CachableEntry<IndexReader>* index_entry = nullptr);
-
-  // read_options needs to be sanitized
-  void NewIndexIterators(
-      const ReadOptions& read_options, ColumnIterator& input_iter);
 
   explicit ColumnTable(Rep* rep)
       : rep_(rep), compaction_optimized_(false) {}

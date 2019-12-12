@@ -20,7 +20,7 @@ class BlockBuilder {
   BlockBuilder(const BlockBuilder&) = delete;
   void operator=(const BlockBuilder&) = delete;
 
-  explicit BlockBuilder(int block_restart_interval, bool column = false);  // Shichao
+  explicit BlockBuilder(int block_restart_interval);
 
   // Reset the contents as if the BlockBuilder was just constructed.
   void Reset();
@@ -54,8 +54,6 @@ class BlockBuilder {
   int                   counter_;   // Number of entries emitted since restart
   bool                  finished_;  // Has Finish() been called?
   std::string           last_key_;
-  bool                  column_;      // Shichao
-  std::string           last_value_;  // Shichao
 };
 
 }  // namespace rocksdb

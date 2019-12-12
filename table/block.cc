@@ -54,33 +54,6 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
   return p;
 }
 
-/********************************* Shichao ********************************/
-static inline const char* DecodeEntry(const char* p, const char* limit,
-                                      uint32_t* shared,
-                                      uint32_t* non_shared,
-                                      uint32_t* shared_value,
-                                      uint32_t* non_shared_value) {
-  if (limit - p < 4) return nullptr;
-  *shared = reinterpret_cast<const unsigned char*>(p)[0];
-  *non_shared = reinterpret_cast<const unsigned char*>(p)[1];
-  *shared_value = reinterpret_cast<const unsigned char*>(p)[2];
-  *non_shared_value = reinterpret_cast<const unsigned char*>(p)[3];
-  if ((*shared | *non_shared | *shared_value | *non_shared_value) < 128) {
-    p += 4;
-  } else {
-    if ((p = GetVarint32Ptr(p, limit, shared)) == nullptr) return nullptr;
-    if ((p = GetVarint32Ptr(p, limit, non_shared)) == nullptr) return nullptr;
-    if ((p = GetVarint32Ptr(p, limit, shared_value)) == nullptr) return nullptr;
-    if ((p = GetVarint32Ptr(p, limit, non_shared_value)) == nullptr) return nullptr;
-  }
-
-  if (static_cast<uint32_t>(limit - p) < (*non_shared + *non_shared_value)) {
-    return nullptr;
-  }
-  return p;
-}
-/********************************* Shichao ********************************/
-
 void BlockIter::Next() {
   assert(Valid());
   ParseNextKey();
@@ -122,8 +95,7 @@ void BlockIter::Seek(const Slice& target) {
   // Linear search (within restart block) for first key >= target
 
   while (true) {
-    if (!ParseNextKey() ||
-        Compare(reverse_? Slice(val_): key_.GetKey(), target) >= 0) {  // Shichao
+    if (!ParseNextKey() || Compare(key_.GetKey(), target) >= 0) {
       return;
     }
   }
@@ -153,7 +125,6 @@ void BlockIter::CorruptionError() {
   status_ = Status::Corruption("bad entry in block");
   key_.Clear();
   value_.clear();
-  val_.clear();  // Shichao
 }
 
 bool BlockIter::ParseNextKey() {
@@ -168,10 +139,8 @@ bool BlockIter::ParseNextKey() {
   }
 
   // Decode next entry
-  uint32_t shared, non_shared, value_length, non_shared_value;                        // Shichao
-  p = reverse_?                                                                       // Shichao
-      DecodeEntry(p, limit, &shared, &non_shared, &value_length, &non_shared_value):  // Shichao
-      DecodeEntry(p, limit, &shared, &non_shared, &value_length);
+  uint32_t shared, non_shared, value_length;
+  p = DecodeEntry(p, limit, &shared, &non_shared, &value_length);
   if (p == nullptr || key_.Size() < shared) {
     CorruptionError();
     return false;
@@ -185,14 +154,9 @@ bool BlockIter::ParseNextKey() {
       key_.TrimAppend(shared, p, non_shared);
     }
 
-    if (reverse_) {                                   // Shichao
-      val_.resize(value_length);                      // Shichao
-      val_.append(p + non_shared, non_shared_value);  // Shichao
-    }
-    value_ = Slice(p + non_shared, reverse_? non_shared_value: value_length);  // Shichao
-
+    value_ = Slice(p + non_shared, value_length);
     while (restart_index_ + 1 < num_restarts_ &&
-      GetRestartPoint(restart_index_ + 1) < current_) {
+           GetRestartPoint(restart_index_ + 1) < current_) {
       ++restart_index_;
     }
     return true;
@@ -208,18 +172,15 @@ bool BlockIter::BinarySeek(const Slice& target, uint32_t left, uint32_t right,
   while (left < right) {
     uint32_t mid = (left + right + 1) / 2;
     uint32_t region_offset = GetRestartPoint(mid);
-    uint32_t shared, non_shared, value_length, non_shared_value;        // Shichao
-    const char* key_ptr = reverse_?                                     // Shichao
-        DecodeEntry(data_ + region_offset, data_ + restarts_, &shared,  // Shichao
-                    &non_shared, &value_length, &non_shared_value):     // Shichao
+    uint32_t shared, non_shared, value_length;
+    const char* key_ptr =
         DecodeEntry(data_ + region_offset, data_ + restarts_, &shared,
                     &non_shared, &value_length);
     if (key_ptr == nullptr || (shared != 0)) {
       CorruptionError();
       return false;
     }
-    Slice mid_key(key_ptr + (reverse_? non_shared: 0),
-                  (reverse_? non_shared_value: non_shared));  // Shichao
+    Slice mid_key(key_ptr, non_shared);
     int cmp = Compare(mid_key, target);
     if (cmp < 0) {
       // Key at "mid" is smaller than "target". Therefore all
@@ -253,11 +214,10 @@ int BlockIter::CompareBlockKey(uint32_t block_index, const Slice& target) {
   return Compare(block_key, target);
 }
 
-// Binary search in block_ids to find the first block
-// with a key >= target
+// Binary search in block_ids to find the first block with a key >= target
 bool BlockIter::BinaryBlockIndexSeek(const Slice& target, uint32_t* block_ids,
-                          uint32_t left, uint32_t right,
-                          uint32_t* index) {
+                                     uint32_t left, uint32_t right,
+                                     uint32_t* index) {
   assert(left <= right);
   uint32_t left_bound = left;
 

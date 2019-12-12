@@ -995,12 +995,16 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
       ParsedInternalKey parsed_key;
       if (!ParseInternalKey(biter.key(), &parsed_key)) {
         s = Status::Corruption(Slice());
+        break;  // Shichao
       }
 
       if (!get_context->SaveValue(parsed_key, biter.value())) {
         done = true;
         break;
       }
+    }
+    if (!s.ok()) {
+      break;
     }
     s = biter.status();
   }

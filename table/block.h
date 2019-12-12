@@ -91,18 +91,16 @@ class BlockIter : public InternalIterator {
         num_restarts_(0),
         current_(0),
         restart_index_(0),
-        status_(Status::OK()),
-        reverse_(false) {}  // Shichao
+        status_(Status::OK()) {}
 
   BlockIter(const Comparator* comparator, const char* data, uint32_t restarts,
-            uint32_t num_restarts, bool reverse = false)  // Shichao
+            uint32_t num_restarts)
       : BlockIter() {
-    Initialize(comparator, data, restarts, num_restarts, reverse);  // Shichao
+    Initialize(comparator, data, restarts, num_restarts);
   }
 
   void Initialize(const Comparator* comparator, const char* data,
-                  uint32_t restarts, uint32_t num_restarts,
-                  bool reverse = false) {  // Shichao
+                  uint32_t restarts, uint32_t num_restarts) {
     assert(data_ == nullptr);           // Ensure it is called only once
     assert(num_restarts > 0);           // Ensure the param is valid
 
@@ -112,7 +110,6 @@ class BlockIter : public InternalIterator {
     num_restarts_ = num_restarts;
     current_ = restarts_;
     restart_index_ = num_restarts_;
-    reverse_ = reverse;  // Shichao
   }
 
   void SetStatus(Status s) {
@@ -123,11 +120,11 @@ class BlockIter : public InternalIterator {
   virtual Status status() const override { return status_; }
   virtual Slice key() const override {
     assert(Valid());
-    return reverse_? Slice(val_): key_.GetKey();  // Shichao
+    return key_.GetKey();
   }
   virtual Slice value() const override {
     assert(Valid());
-    return reverse_? key_.GetKey(): value_;  // Shichao
+    return value_;
   }
 
   virtual void Next() override;
@@ -155,8 +152,6 @@ class BlockIter : public InternalIterator {
 
   virtual bool IsKeyPinned() const override { return key_.IsKeyPinned(); }
 
-  void SetReverse(bool reverse) { reverse_ = reverse; }  // Shichao
-
  private:
   const Comparator* comparator_;
   const char* data_;       // underlying block contents
@@ -169,9 +164,6 @@ class BlockIter : public InternalIterator {
   IterKey key_;
   Slice value_;
   Status status_;
-
-  bool reverse_;     // Shichao
-  std::string val_;  // Shichao
 
   inline int Compare(const Slice& a, const Slice& b) const {
     return comparator_->Compare(a, b);

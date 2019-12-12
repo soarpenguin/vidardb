@@ -282,7 +282,7 @@ struct ColumnTableBuilder::Rep {
         table_options(table_opt),
         internal_comparator(icomparator),
         file(f),
-        data_block(table_options.block_restart_interval, true),
+        data_block(table_options.block_restart_interval),
         index_builder(
             CreateIndexBuilder(&internal_comparator,
                                table_options.index_block_restart_interval)),
@@ -368,9 +368,17 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
     CreateSubcolumnBuilders(r);
   }
 
-  std::string val;
-  PutVarint64(&val, r->props.num_entries);
-  auto should_flush = r->flush_block_policy->Update(key, val);
+  std::string pos;
+  PutVarint64(&pos, r->props.num_entries);
+
+  ParsedInternalKey parsed_key;
+  ParseInternalKey(key, &parsed_key);
+  parsed_key.user_key = Slice(pos);
+
+  std::string packed_pos;
+  AppendInternalKey(&packed_pos, parsed_key);
+
+  auto should_flush = r->flush_block_policy->Update(key, packed_pos);
   if (should_flush) {
     assert(!r->data_block.empty());
     Flush();
@@ -389,34 +397,41 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
 
   for (auto i = 0u; i < r->table_options.column_num; i++) {
     const auto& rep = r->builders[i]->rep_;
-    if (rep->flush_block_policy->Update(vals.empty()? Slice(): vals[i], key)) {
+    // empty key to subcolumn data block, but tail index should not empty key
+    should_flush = rep->flush_block_policy->Update(
+        packed_pos, vals.empty()? Slice(): vals[i]);
+    if (should_flush) {
       assert(!rep->data_block.empty());
       r->builders[i]->Flush();
       if (r->builders[i]->ok()) {
-        rep->index_builder->AddIndexEntry(&rep->last_key, &key,
+        Slice packed_pos_slice(packed_pos);
+        rep->index_builder->AddIndexEntry(&rep->last_key, &packed_pos_slice,
                                           rep->pending_handle);
       }
     }
   }
 
   r->last_key.assign(key.data(), key.size());
-  r->data_block.Add(key, val);
+  // main column format (keyN, pos): (key0, 0), (key1, 1) ...
+  r->data_block.Add(key, packed_pos);
   r->props.num_entries++;
   r->props.raw_key_size += key.size();
-  r->props.raw_value_size += value.size();
+  r->props.raw_value_size += packed_pos.size();
   r->index_builder->OnKeyAdded(key);
-  NotifyCollectTableCollectorsOnAdd(key, value, r->offset,
+  NotifyCollectTableCollectorsOnAdd(key, packed_pos, r->offset,
                                     r->table_properties_collectors,
                                     r->ioptions.info_log);
 
   for (auto i = 0u; i < r->table_options.column_num; i++) {
     const auto& rep = r->builders[i]->rep_;
-    rep->last_key.assign(key.data(), key.size());
-    rep->data_block.Add(vals.empty()? Slice(): vals[i], key);
+    rep->last_key.assign(packed_pos.data(), packed_pos.size());
+    // sub column format (, vals[i]): (, vals[i+0]), (, vals[i+1])
+    // TODO: waste 2+8 bytes in should be empty key, will improve later on
+    rep->data_block.Add(packed_pos, vals.empty()? Slice(): vals[i]);
     rep->props.num_entries++;
-    rep->props.raw_key_size += vals.empty()? 0: vals[i].size();
-    rep->props.raw_value_size += key.size();
-    rep->index_builder->OnKeyAdded(key);
+    rep->props.raw_key_size += packed_pos.size();
+    rep->props.raw_value_size += vals.empty()? 0: vals[i].size();
+    rep->index_builder->OnKeyAdded(packed_pos);
   }
 }
 
@@ -523,8 +538,8 @@ Status ColumnTableBuilder::Finish() {
       compression_dict_block_handle;
 
   // To make sure properties block is able to keep the accurate size of index
-  // block, we will finish writing all index entries here and flush them
-  // to storage after metaindex block is written.
+  // block, we will finish writing all index entries here and flush them to
+  // storage after metaindex block is written.
   if (ok() && !empty_data_block) {
     r->index_builder->AddIndexEntry(
         &r->last_key, nullptr /* no next data block */, r->pending_handle);
@@ -545,20 +560,20 @@ Status ColumnTableBuilder::Finish() {
   MetaIndexBuilder meta_index_builder;
 
   if (ok()) {
-	// Write column block.
-	{
+    // Write column block.
+    {
       ColumnBlockBuilder column_block_builder;
       uint32_t column_num = r->builders.size();
       column_block_builder.Add(r->main_column, column_num);
-	  for (auto i = 0u; i < column_num; i++) {
-	    column_block_builder.Add(i+1, r->builders[i]->rep_->offset);
-	  }
+      for (auto i = 0u; i < column_num; i++) {
+        column_block_builder.Add(i+1, r->builders[i]->rep_->offset);
+      }
 
-	  BlockHandle column_block_handle;
-	  WriteRawBlock(column_block_builder.Finish(), kNoCompression,
-			        &column_block_handle);
-	  meta_index_builder.Add(kColumnBlock, column_block_handle);
-	}
+      BlockHandle column_block_handle;
+      WriteRawBlock(column_block_builder.Finish(), kNoCompression,
+                     &column_block_handle);
+      meta_index_builder.Add(kColumnBlock, column_block_handle);
+    }
 
     // Write properties and compression dictionary blocks.
     {

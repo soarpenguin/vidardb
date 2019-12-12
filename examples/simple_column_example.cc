@@ -22,31 +22,35 @@ int main() {
   static_cast<ColumnTableOptions*>(column_table_factory->GetOptions())->column_num = M;
   options.table_factory.reset(column_table_factory);
 
-//  options.table_factory.reset(NewBlockBasedTableFactory());
-
   Status s = DB::Open(options, kDBPath, &db);
   assert(s.ok());
 
-  s = db->Put(WriteOptions(), "column", "val1|val2");
+  s = db->Put(WriteOptions(), "column1", "val1|val2");
+  s = db->Put(WriteOptions(), "column2", "val3|val4");
   db->Flush(FlushOptions());
   if (!s.ok()) cout << "Put not ok!" << endl;
 
   ReadOptions ro;
-  ro.columns = {1};
+//  ro.columns = {1};
 
-  vector<string> resRQ;
-  s = db->RangeQuery(ro, Range(), resRQ, nullptr);
-  if (!s.ok()) cout << "RangQuery not ok!" << endl;
-  cout << "RangeQuery count: " << resRQ.size() << endl;
+//  vector<string> resRQ;
+//  s = db->RangeQuery(ro, Range(), resRQ, nullptr);
+//  if (!s.ok()) cout << "RangQuery not ok!" << endl;
+//  cout << "RangeQuery count: " << resRQ.size() << endl;
 
   string val;
-  s = db->Get(ro, "column", &val);
+  s = db->Get(ro, "column2", &val);
   if (!s.ok()) cout << "Get not ok!" << endl;
   cout<<val<<endl;
 
   Iterator *it = db->NewIterator(ro);
+  it->Seek("column1");
+  if (it->Valid()) {
+    cout<<"value: "<<it->value().ToString()<<endl;
+  }
   for (it->SeekToFirst(); it->Valid(); it->Next()) {
-    cout<<it->key().ToString()<<endl;
+    cout<<"key: "<<it->key().ToString()
+        <<" value: "<<it->value().ToString()<<endl;
     s = db->Delete(WriteOptions(), it->key());
     if (!s.ok()) cout << "Delete not ok!" << endl;
   }

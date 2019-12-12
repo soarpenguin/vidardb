@@ -34,10 +34,6 @@ class GetContext {
   //         False if the complete value has been found.
   bool SaveValue(const ParsedInternalKey& parsed_key, const Slice& value);
 
-  // Simplified version of the previous function. Should only be used when we
-  // know that the operation is a Put.
-  void SaveValue(const Slice& value, SequenceNumber seq);
-
   GetState State() const { return state_; }
 
   // If a non-null string is passed, all the SaveValue calls will be
@@ -47,6 +43,13 @@ class GetContext {
 
   // Do we need to fetch the SequenceNumber for this key?
   bool NeedToReadSequence() const { return (seq_ != nullptr); }
+
+  /************************** Shichao *******************************/
+  // For column store only
+  bool IsEqualToUserKey(const ParsedInternalKey& parsed_key) const {
+    return ucmp_->Equal(parsed_key.user_key, user_key_);
+  }
+  /************************** Shichao *******************************/
 
  private:
   const Comparator* ucmp_;
