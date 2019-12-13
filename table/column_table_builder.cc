@@ -348,6 +348,63 @@ void ColumnTableBuilder::CreateSubcolumnBuilders(Rep* r) {
   }
 }
 
+void ColumnTableBuilder::AddInSubcolumnBuilders(Rep* r, const Slice& key,
+                                                const Slice& value) {
+  std::vector<std::string> vals(StringSplit(value.ToString(),
+                                            r->table_options.delim));
+  if (!vals.empty() && vals.size() != r->table_options.column_num) {
+    r->status = Status::InvalidArgument("table_options.column_num");
+    return;
+  }
+
+  for (auto i = 0u; i < r->table_options.column_num; i++) {
+    const auto& rep = r->builders[i]->rep_;
+    assert(!rep->closed);
+    if (!r->builders[i]->ok()) return;
+    if (rep->props.num_entries > 0) {
+      assert(rep->internal_comparator.Compare(key, Slice(rep->last_key)) > 0);
+    }
+
+    // TODO: empty key to subcolumn data block, but tail index should not empty key
+    auto should_flush = rep->flush_block_policy->
+            Update(key, vals.empty()? Slice(): vals[i]);
+    if (should_flush) {
+      assert(!rep->data_block.empty());
+      r->builders[i]->Flush();
+      if (r->builders[i]->ok()) {
+        rep->index_builder->AddIndexEntry(&rep->last_key, &key,
+                                          rep->pending_handle);
+      }
+    }
+
+    rep->last_key.assign(key.data(), key.size());
+    // sub column format (, vals[i]): (, vals[i+0]), (, vals[i+1])
+    // TODO: waste 2+8 bytes in should be empty key, will improve later on
+    rep->data_block.Add(key, vals.empty()? Slice(): vals[i]);
+    rep->props.num_entries++;
+    rep->props.raw_key_size += key.size();
+    rep->props.raw_value_size += vals.empty()? 0: vals[i].size();
+    rep->index_builder->OnKeyAdded(key);
+  }
+}
+
+inline void EncodeFixed64Bigendian(char* buf, uint64_t value) {
+  buf[0] = (value >> 56) & 0xff;
+  buf[1] = (value >> 48) & 0xff;
+  buf[2] = (value >> 40) & 0xff;
+  buf[3] = (value >> 32) & 0xff;
+  buf[4] = (value >> 24) & 0xff;
+  buf[5] = (value >> 16) & 0xff;
+  buf[6] = (value >> 8) & 0xff;
+  buf[7] = value & 0xff;
+}
+
+inline void PutFixed64Bigendian(std::string* dst, uint64_t value) {
+  char buf[sizeof(value)];
+  EncodeFixed64Bigendian(buf, value);
+  dst->append(buf, sizeof(buf));
+}
+
 void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
   Rep* r = rep_;
   assert(!r->closed);
@@ -356,20 +413,15 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
     assert(r->internal_comparator.Compare(key, Slice(r->last_key)) > 0);
   }
 
-  std::vector<std::string> vals(StringSplit(value.ToString(),
-                                            r->table_options.delim));
-  if (!vals.empty() && vals.size() != r->table_options.column_num) {
-    r->status = Status::InvalidArgument("table_options.column_num");
-    return;
-  }
-
   // We create subcolumn builders here
   if (r->builders.empty()) {
     CreateSubcolumnBuilders(r);
   }
 
+  // Be carefull about big endian and small endian issue
+  // when comparing number with binary format
   std::string pos;
-  PutVarint64(&pos, r->props.num_entries);
+  PutFixed64Bigendian(&pos, r->props.num_entries);
 
   ParsedInternalKey parsed_key;
   ParseInternalKey(key, &parsed_key);
@@ -395,22 +447,6 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
     }
   }
 
-  for (auto i = 0u; i < r->table_options.column_num; i++) {
-    const auto& rep = r->builders[i]->rep_;
-    // empty key to subcolumn data block, but tail index should not empty key
-    should_flush = rep->flush_block_policy->Update(
-        packed_pos, vals.empty()? Slice(): vals[i]);
-    if (should_flush) {
-      assert(!rep->data_block.empty());
-      r->builders[i]->Flush();
-      if (r->builders[i]->ok()) {
-        Slice packed_pos_slice(packed_pos);
-        rep->index_builder->AddIndexEntry(&rep->last_key, &packed_pos_slice,
-                                          rep->pending_handle);
-      }
-    }
-  }
-
   r->last_key.assign(key.data(), key.size());
   // main column format (keyN, pos): (key0, 0), (key1, 1) ...
   r->data_block.Add(key, packed_pos);
@@ -422,17 +458,7 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
                                     r->table_properties_collectors,
                                     r->ioptions.info_log);
 
-  for (auto i = 0u; i < r->table_options.column_num; i++) {
-    const auto& rep = r->builders[i]->rep_;
-    rep->last_key.assign(packed_pos.data(), packed_pos.size());
-    // sub column format (, vals[i]): (, vals[i+0]), (, vals[i+1])
-    // TODO: waste 2+8 bytes in should be empty key, will improve later on
-    rep->data_block.Add(packed_pos, vals.empty()? Slice(): vals[i]);
-    rep->props.num_entries++;
-    rep->props.raw_key_size += packed_pos.size();
-    rep->props.raw_value_size += vals.empty()? 0: vals[i].size();
-    rep->index_builder->OnKeyAdded(packed_pos);
-  }
+  AddInSubcolumnBuilders(r, Slice(packed_pos), value);
 }
 
 void ColumnTableBuilder::Flush() {

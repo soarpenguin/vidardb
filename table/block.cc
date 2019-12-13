@@ -87,7 +87,6 @@ void BlockIter::Seek(const Slice& target) {
   }
   uint32_t index = 0;
   bool ok = BinarySeek(target, 0, num_restarts_ - 1, &index);
-
   if (!ok) {
     return;
   }
