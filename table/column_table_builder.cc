@@ -21,6 +21,7 @@
 #include "table/block.h"
 #include "table/column_table_reader.h"
 #include "table/block_builder.h"
+#include "table/column_block_builder.h"
 #include "table/column_table_factory.h"
 #include "table/format.h"
 #include "table/meta_blocks.h"
@@ -234,13 +235,15 @@ Slice CompressBlock(const Slice& raw,
 const uint64_t kColumnTableMagicNumber = 0x88e241b785f4cfffull;
 
 struct ColumnTableBuilder::Rep {
+  bool main_column;
   const ImmutableCFOptions ioptions;
   const ColumnTableOptions table_options;
   const InternalKeyComparator& internal_comparator;
+  std::unique_ptr<ColumnKeyComparator> column_comparator;
   WritableFileWriter* file;
   uint64_t offset = 0;
   Status status;
-  BlockBuilder data_block;
+  std::unique_ptr<BlockBuilder> data_block;
 
   std::unique_ptr<IndexBuilder> index_builder;
 
@@ -263,10 +266,10 @@ struct ColumnTableBuilder::Rep {
   std::vector<std::unique_ptr<IntTblPropCollector>> table_properties_collectors;
 
   const EnvOptions& env_options;
-  bool main_column;
   std::vector<std::unique_ptr<ColumnTableBuilder>> builders;
 
-  Rep(const ImmutableCFOptions& _ioptions,
+  Rep(bool _main_column,
+      const ImmutableCFOptions& _ioptions,
       const ColumnTableOptions& table_opt,
       const InternalKeyComparator& icomparator,
       const std::vector<std::unique_ptr<IntTblPropCollectorFactory>>*
@@ -276,13 +279,16 @@ struct ColumnTableBuilder::Rep {
       const CompressionOptions& _compression_opts,
       const std::string* _compression_dict,
       const std::string& _column_family_name,
-      const EnvOptions& _env_options,
-      bool _main_column)
-      : ioptions(_ioptions),
+      const EnvOptions& _env_options)
+      : main_column(_main_column),
+        ioptions(_ioptions),
         table_options(table_opt),
         internal_comparator(icomparator),
+        column_comparator(main_column ? new ColumnKeyComparator() : nullptr),
         file(f),
-        data_block(table_options.block_restart_interval),
+        data_block(main_column ?
+                new BlockBuilder(table_options.block_restart_interval) :
+                new ColumnBlockBuilder(table_options.block_restart_interval)),
         index_builder(
             CreateIndexBuilder(&internal_comparator,
                                table_options.index_block_restart_interval)),
@@ -291,11 +297,10 @@ struct ColumnTableBuilder::Rep {
         compression_dict(_compression_dict),
         flush_block_policy(
             table_options.flush_block_policy_factory->NewFlushBlockPolicy(
-                table_options, data_block)),
+                table_options, *data_block)),
         column_family_id(_column_family_id),
         column_family_name(_column_family_name),
-        env_options(_env_options),
-        main_column(_main_column) {
+        env_options(_env_options) {
     if (main_column && int_tbl_prop_collector_factories) {
       for (auto& collector_factories : *int_tbl_prop_collector_factories) {
         table_properties_collectors.emplace_back(
@@ -318,10 +323,10 @@ ColumnTableBuilder::ColumnTableBuilder(
     const std::string& column_family_name,
     const EnvOptions& env_options,
     bool main_column) {
-  rep_ = new Rep(ioptions, table_options, internal_comparator,
+  rep_ = new Rep(main_column, ioptions, table_options, internal_comparator,
                  int_tbl_prop_collector_factories, column_family_id, file,
                  compression_type, compression_opts, compression_dict,
-                 column_family_name, env_options, main_column);
+                 column_family_name, env_options);
 }
 
 ColumnTableBuilder::~ColumnTableBuilder() {
@@ -341,7 +346,7 @@ void ColumnTableBuilder::CreateSubcolumnBuilders(Rep* r) {
     assert(r->status.ok());
     file->SetIOPriority(pri);
     r->builders[i].reset(new ColumnTableBuilder(r->ioptions, r->table_options,
-        r->internal_comparator, nullptr, r->column_family_id,
+        *(r->column_comparator), nullptr, r->column_family_id,
         new WritableFileWriter(std::move(file), r->env_options),
         r->compression_type, r->compression_opts, r->compression_dict,
         r->column_family_name, r->env_options, false));
@@ -365,11 +370,11 @@ void ColumnTableBuilder::AddInSubcolumnBuilders(Rep* r, const Slice& key,
       assert(rep->internal_comparator.Compare(key, Slice(rep->last_key)) > 0);
     }
 
-    // TODO: empty key to subcolumn data block, but tail index should not empty key
+    // empty key to subcolumn data block, but tail index should not empty key
     auto should_flush = rep->flush_block_policy->
             Update(key, vals.empty()? Slice(): vals[i]);
     if (should_flush) {
-      assert(!rep->data_block.empty());
+      assert(!rep->data_block->empty());
       r->builders[i]->Flush();
       if (r->builders[i]->ok()) {
         rep->index_builder->AddIndexEntry(&rep->last_key, &key,
@@ -379,30 +384,13 @@ void ColumnTableBuilder::AddInSubcolumnBuilders(Rep* r, const Slice& key,
 
     rep->last_key.assign(key.data(), key.size());
     // sub column format (, vals[i]): (, vals[i+0]), (, vals[i+1])
-    // TODO: waste 2+8 bytes in should be empty key, will improve later on
-    rep->data_block.Add(key, vals.empty()? Slice(): vals[i]);
+    // however, key is stored in the first elem of every restart
+    rep->data_block->Add(key, vals.empty()? Slice(): vals[i]);
     rep->props.num_entries++;
-    rep->props.raw_key_size += key.size();
+    rep->props.raw_key_size += rep->data_block->IsKeyStored() ? key.size() : 0;
     rep->props.raw_value_size += vals.empty()? 0: vals[i].size();
     rep->index_builder->OnKeyAdded(key);
   }
-}
-
-inline void EncodeFixed64Bigendian(char* buf, uint64_t value) {
-  buf[0] = (value >> 56) & 0xff;
-  buf[1] = (value >> 48) & 0xff;
-  buf[2] = (value >> 40) & 0xff;
-  buf[3] = (value >> 32) & 0xff;
-  buf[4] = (value >> 24) & 0xff;
-  buf[5] = (value >> 16) & 0xff;
-  buf[6] = (value >> 8) & 0xff;
-  buf[7] = value & 0xff;
-}
-
-inline void PutFixed64Bigendian(std::string* dst, uint64_t value) {
-  char buf[sizeof(value)];
-  EncodeFixed64Bigendian(buf, value);
-  dst->append(buf, sizeof(buf));
 }
 
 void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
@@ -421,18 +409,11 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
   // Be carefull about big endian and small endian issue
   // when comparing number with binary format
   std::string pos;
-  PutFixed64Bigendian(&pos, r->props.num_entries);
+  PutFixed64BigEndian(&pos, r->props.num_entries);
 
-  ParsedInternalKey parsed_key;
-  ParseInternalKey(key, &parsed_key);
-  parsed_key.user_key = Slice(pos);
-
-  std::string packed_pos;
-  AppendInternalKey(&packed_pos, parsed_key);
-
-  auto should_flush = r->flush_block_policy->Update(key, packed_pos);
+  auto should_flush = r->flush_block_policy->Update(key, pos);
   if (should_flush) {
-    assert(!r->data_block.empty());
+    assert(!r->data_block->empty());
     Flush();
 
     // Add item to index block.
@@ -449,24 +430,24 @@ void ColumnTableBuilder::Add(const Slice& key, const Slice& value) {
 
   r->last_key.assign(key.data(), key.size());
   // main column format (keyN, pos): (key0, 0), (key1, 1) ...
-  r->data_block.Add(key, packed_pos);
+  r->data_block->Add(key, pos);
   r->props.num_entries++;
   r->props.raw_key_size += key.size();
-  r->props.raw_value_size += packed_pos.size();
+  r->props.raw_value_size += pos.size();
   r->index_builder->OnKeyAdded(key);
-  NotifyCollectTableCollectorsOnAdd(key, packed_pos, r->offset,
+  NotifyCollectTableCollectorsOnAdd(key, pos, r->offset,
                                     r->table_properties_collectors,
                                     r->ioptions.info_log);
 
-  AddInSubcolumnBuilders(r, Slice(packed_pos), value);
+  AddInSubcolumnBuilders(r, pos, value);
 }
 
 void ColumnTableBuilder::Flush() {
   Rep* r = rep_;
   assert(!r->closed);
   if (!ok()) return;
-  if (r->data_block.empty()) return;
-  WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
+  if (r->data_block->empty()) return;
+  WriteBlock(r->data_block.get(), &r->pending_handle, true /* is_data_block */);
   if (ok()) {
     r->status = r->file->Flush();
   }
@@ -555,7 +536,7 @@ Status ColumnTableBuilder::Finish() {
     }
   }
 
-  bool empty_data_block = r->data_block.empty();
+  bool empty_data_block = r->data_block->empty();
   Flush();
   assert(!r->closed);
   r->closed = true;
@@ -588,16 +569,16 @@ Status ColumnTableBuilder::Finish() {
   if (ok()) {
     // Write column block.
     {
-      ColumnBlockBuilder column_block_builder;
+      MetaColumnBlockBuilder meta_column_block_builder;
       uint32_t column_num = r->builders.size();
-      column_block_builder.Add(r->main_column, column_num);
+      meta_column_block_builder.Add(r->main_column, column_num);
       for (auto i = 0u; i < column_num; i++) {
-        column_block_builder.Add(i+1, r->builders[i]->rep_->offset);
+          meta_column_block_builder.Add(i+1, r->builders[i]->rep_->offset);
       }
 
       BlockHandle column_block_handle;
-      WriteRawBlock(column_block_builder.Finish(), kNoCompression,
-                     &column_block_handle);
+      WriteRawBlock(meta_column_block_builder.Finish(), kNoCompression,
+                    &column_block_handle);
       meta_index_builder.Add(kColumnBlock, column_block_handle);
     }
 

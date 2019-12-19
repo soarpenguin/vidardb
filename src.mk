@@ -48,11 +48,12 @@ LIB_SOURCES =                                                   \
   table/block_based_table_builder.cc                            \
   table/block_based_table_factory.cc                            \
   table/block_based_table_reader.cc                             \
-  table/column_table_builder.cc                            	\
-  table/column_table_factory.cc                            	\
-  table/column_table_reader.cc                             	\
+  table/column_table_builder.cc                                 \
+  table/column_table_factory.cc                                 \
+  table/column_table_reader.cc                                  \
   table/block_builder.cc                                        \
   table/block.cc                                                \
+  table/column_block_builder.cc                                 \
   table/flush_block_policy.cc                                   \
   table/format.cc                                               \
   table/get_context.cc                                          \
@@ -130,13 +131,13 @@ TEST_BENCH_SOURCES =                                                    \
   db/dbformat_test.cc                                                   \
   db/db_iter_test.cc                                                    \
   db/db_test.cc                                                         \
-	db/db_block_cache_test.cc																							\
+  db/db_block_cache_test.cc                                             \
   db/db_io_failure_test.cc                                              \
   db/db_compaction_test.cc                                              \
   db/db_dynamic_level_test.cc                                           \
-	db/db_iterator_test.cc																								\
+  db/db_iterator_test.cc                                                \
   db/db_log_iter_test.cc                                                \
-	db/db_sst_test.cc																											\
+  db/db_sst_test.cc                                                     \
   db/db_tailing_iter_test.cc                                            \
   db/db_universal_compaction_test.cc                                    \
   db/db_wal_test.cc                                                     \
@@ -177,7 +178,7 @@ TEST_BENCH_SOURCES =                                                    \
   util/filelock_test.cc                                                 \
   util/histogram_test.cc                                                \
   utilities/env_registry_test.cc                                        \
-	util/iostats_context_test.cc																					\
+  util/iostats_context_test.cc                                          \
   util/log_write_bench.cc                                               \
   util/mock_env_test.cc                                                 \
   util/options_test.cc                                                  \

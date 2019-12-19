@@ -98,7 +98,7 @@ void TableReaderBenchmark(Options& opts, EnvOptions& env_options,
                             CompressionType::kNoCompression,
                             CompressionOptions(),
                             nullptr /* compression_dict */,
-                            kDefaultColumnFamilyName),
+                            kDefaultColumnFamilyName, EnvOptions()),
         0 /* column_family_id */, file_writer.get());
   } else {
     s = DB::Open(opts, dbname, &db);

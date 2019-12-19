@@ -97,30 +97,30 @@ Slice PropertyBlockBuilder::Finish() {
 }
 
 /******************************* Shichao *****************************/
-ColumnBlockBuilder::ColumnBlockBuilder()
-    : column_block_(new BlockBuilder(1)) {}
+MetaColumnBlockBuilder::MetaColumnBlockBuilder()
+    : meta_column_block_(new BlockBuilder(1)) {}
 
-void ColumnBlockBuilder::Add(bool key, uint32_t value) {
+void MetaColumnBlockBuilder::Add(bool key, uint32_t value) {
   std::string str_key, str_val;
   PutFixed32(&str_key, key);
   PutFixed32(&str_val, value);
   Add(str_key, str_val);
 }
 
-void ColumnBlockBuilder::Add(uint32_t key, uint64_t value) {
+void MetaColumnBlockBuilder::Add(uint32_t key, uint64_t value) {
   std::string str_key, str_val;
   PutFixed32(&str_key, key);
   PutFixed64(&str_val, value);
   Add(str_key, str_val);
 }
 
-void ColumnBlockBuilder::Add(const std::string& key,
+void MetaColumnBlockBuilder::Add(const std::string& key,
                              const std::string& value) {
-  column_block_->Add(key, value);
+    meta_column_block_->Add(key, value);
 }
 
-Slice ColumnBlockBuilder::Finish() {
-  return column_block_->Finish();
+Slice MetaColumnBlockBuilder::Finish() {
+  return meta_column_block_->Finish();
 }
 /******************************* Shichao *****************************/
 
@@ -268,10 +268,10 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
 }
 
 /********************************** Shichao *********************************/
-Status ReadColumnBlock(const Slice& handle_value, RandomAccessFileReader* file,
-                       const Footer& footer, Env* env, Logger* logger,
-                       uint32_t* column_num,
-                       std::vector<uint64_t>& file_sizes) {
+Status ReadMetaColumnBlock(const Slice& handle_value,
+                           RandomAccessFileReader* file, const Footer& footer,
+                           Env* env, Logger* logger, uint32_t* column_num,
+                           std::vector<uint64_t>& file_sizes) {
   Slice v = handle_value;
   BlockHandle handle;
   if (!handle.DecodeFrom(&v).ok()) {

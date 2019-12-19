@@ -68,12 +68,12 @@ class PropertyBlockBuilder {
 };
 
 /******************************* Shichao *****************************/
-class ColumnBlockBuilder {
+class MetaColumnBlockBuilder {
  public:
-  ColumnBlockBuilder(const ColumnBlockBuilder&) = delete;
-  ColumnBlockBuilder& operator=(const ColumnBlockBuilder&) = delete;
+  MetaColumnBlockBuilder(const MetaColumnBlockBuilder&) = delete;
+  MetaColumnBlockBuilder& operator=(const MetaColumnBlockBuilder&) = delete;
 
-  ColumnBlockBuilder();
+  MetaColumnBlockBuilder();
 
   void Add(bool key, uint32_t value);
   void Add(uint32_t key, uint64_t value);
@@ -83,7 +83,7 @@ class ColumnBlockBuilder {
   Slice Finish();
 
  private:
-  std::unique_ptr<BlockBuilder> column_block_;
+  std::unique_ptr<BlockBuilder> meta_column_block_;
 };
 /******************************* Shichao *****************************/
 
@@ -118,11 +118,12 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
                       TableProperties** table_properties);
 
 /*********************************** Shichao *******************************/
-// Read the column block from the table.
+// Read the meta column block from the table.
 // @returns a status to indicate if the operation succeeded.
-Status ReadColumnBlock(const Slice& handle_value, RandomAccessFileReader* file,
-                       const Footer& footer, Env* env, Logger* logger,
-                       uint32_t* column_num, std::vector<uint64_t>& file_sizes);
+Status ReadMetaColumnBlock(const Slice& handle_value,
+                           RandomAccessFileReader* file, const Footer& footer,
+                           Env* env, Logger* logger, uint32_t* column_num,
+                           std::vector<uint64_t>& file_sizes);
 /*********************************** Shichao *******************************/
 
 // Directly read the properties from the properties block of a plain table.

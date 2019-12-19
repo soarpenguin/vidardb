@@ -54,7 +54,7 @@ struct TableBuilderOptions {
       const CompressionOptions& _compression_opts,
       const std::string* _compression_dict,
       const std::string& _column_family_name,
-      const EnvOptions& _env_options = EnvOptions())  // Shichao
+      const EnvOptions& _env_options)  // Shichao
       : ioptions(_ioptions),
         internal_comparator(_internal_comparator),
         int_tbl_prop_collector_factories(_int_tbl_prop_collector_factories),

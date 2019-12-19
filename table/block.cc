@@ -165,7 +165,7 @@ bool BlockIter::ParseNextKey() {
 // Binary search in restart array to find the first restart point
 // with a key >= target (TODO: this comment is inaccurate)
 bool BlockIter::BinarySeek(const Slice& target, uint32_t left, uint32_t right,
-                  uint32_t* index) {
+                           uint32_t* index) {
   assert(left <= right);
 
   while (left < right) {
@@ -198,72 +198,6 @@ bool BlockIter::BinarySeek(const Slice& target, uint32_t left, uint32_t right,
   return true;
 }
 
-// Compare target key and the block key of the block of `block_index`.
-// Return -1 if error.
-int BlockIter::CompareBlockKey(uint32_t block_index, const Slice& target) {
-  uint32_t region_offset = GetRestartPoint(block_index);
-  uint32_t shared, non_shared, value_length;
-  const char* key_ptr = DecodeEntry(data_ + region_offset, data_ + restarts_,
-                                    &shared, &non_shared, &value_length);
-  if (key_ptr == nullptr || (shared != 0)) {
-    CorruptionError();
-    return 1;  // Return target is smaller
-  }
-  Slice block_key(key_ptr, non_shared);
-  return Compare(block_key, target);
-}
-
-// Binary search in block_ids to find the first block with a key >= target
-bool BlockIter::BinaryBlockIndexSeek(const Slice& target, uint32_t* block_ids,
-                                     uint32_t left, uint32_t right,
-                                     uint32_t* index) {
-  assert(left <= right);
-  uint32_t left_bound = left;
-
-  while (left <= right) {
-    uint32_t mid = (left + right) / 2;
-
-    int cmp = CompareBlockKey(block_ids[mid], target);
-    if (!status_.ok()) {
-      return false;
-    }
-    if (cmp < 0) {
-      // Key at "target" is larger than "mid". Therefore all
-      // blocks before or at "mid" are uninteresting.
-      left = mid + 1;
-    } else {
-      // Key at "target" is <= "mid". Therefore all blocks
-      // after "mid" are uninteresting.
-      // If there is only one block left, we found it.
-      if (left == right) break;
-      right = mid;
-    }
-  }
-
-  if (left == right) {
-    // In one of the two following cases:
-    // (1) left is the first one of block_ids
-    // (2) there is a gap of blocks between block of `left` and `left-1`.
-    // we can further distinguish the case of key in the block or key not
-    // existing, by comparing the target key and the key of the previous
-    // block to the left of the block found.
-    if (block_ids[left] > 0 &&
-        (left == left_bound || block_ids[left - 1] != block_ids[left] - 1) &&
-        CompareBlockKey(block_ids[left] - 1, target) > 0) {
-      current_ = restarts_;
-      return false;
-    }
-
-    *index = block_ids[left];
-    return true;
-  } else {
-    assert(left > right);
-    // Mark iterator invalid
-    current_ = restarts_;
-    return false;
-  }
-}
-
 uint32_t Block::NumRestarts() const {
   assert(size_ >= 2*sizeof(uint32_t));
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
@@ -286,8 +220,141 @@ Block::Block(BlockContents&& contents)
   }
 }
 
+// Helper routine: decode the next block entry starting at "p",
+// storing the number of the length of the key or value in "key_length"
+// or "*value_length". Will not derefence past "limit".
+//
+// If any errors are detected, returns nullptr. Otherwise, returns a
+// pointer to the key delta (just past the decoded values).
+static inline const char* DecodeKeyOrValue(const char* p, const char* limit,
+                                           uint32_t* length) {
+  if (limit - p < 1) return nullptr;
+  *length = reinterpret_cast<const unsigned char*>(p)[0];
+  if (*length < 128) {
+    // Fast path: key_length is encoded in one byte each
+    p++;
+  } else {
+    if ((p = GetVarint32Ptr(p, limit, length)) == nullptr) return nullptr;
+  }
+
+  if (static_cast<uint32_t>(limit - p) <  *length) {
+    return nullptr;
+  }
+  return p;
+}
+
+void ColumnBlockIter::Seek(const Slice& target) {
+  PERF_TIMER_GUARD(block_seek_nanos);
+  if (data_ == nullptr) {  // Not init yet
+    return;
+  }
+  uint32_t index = 0;
+  bool ok = BinarySeek(target, 0, num_restarts_ - 1, &index);
+  if (!ok) {
+    return;
+  }
+
+  SeekToRestartPoint(index);
+
+  if (!ParseNextKey()) {
+    return;
+  }
+
+  Slice key = key_.GetKey();
+  uint64_t restart_pos;
+  GetFixed64BigEndian(&key, &restart_pos);
+
+  uint64_t target_pos;
+  GetFixed64BigEndian(&target, &target_pos);
+
+  uint64_t step = target_pos - restart_pos;
+
+  // Linear search (within restart block) for first key >= target
+  for (uint64_t i = 0u; i < step; i++) {
+    if (!ParseNextKey()) {
+      return;
+    }
+  }
+}
+
+bool ColumnBlockIter::ParseNextKey() {
+  current_ = NextEntryOffset();
+  const char* p = data_ + current_;
+  const char* limit = data_ + restarts_;  // Restarts come right after data
+  if (p >= limit) {
+    // No more entries to return.  Mark as invalid.
+    current_ = restarts_;
+    restart_index_ = num_restarts_;
+    return false;
+  }
+
+  while (restart_index_ + 1 < num_restarts_ &&
+         GetRestartPoint(restart_index_ + 1) <= current_) {
+    ++restart_index_;
+  }
+
+  uint32_t restart_offset = GetRestartPoint(restart_index_);
+  bool has_key = (restart_offset == current_ ? true : false);
+
+  // Decode next entry
+  uint32_t key_length = 0;
+  if (has_key) {
+    p = DecodeKeyOrValue(p, limit, &key_length);
+    if (p == nullptr) {
+      CorruptionError();
+      return false;
+    }
+    key_.SetKey(Slice(p, key_length), false /* copy */);
+  }
+  p += key_length;
+  uint32_t value_length;
+  p = DecodeKeyOrValue(p, limit, &value_length);
+  if (p == nullptr) {
+    CorruptionError();
+    return false;
+  }
+
+  value_ = Slice(p, value_length);
+  return true;
+}
+
+// Binary search in restart array to find the first restart point
+// with a key >= target (TODO: this comment is inaccurate)
+bool ColumnBlockIter::BinarySeek(const Slice& target, uint32_t left,
+                                    uint32_t right, uint32_t* index) {
+  assert(left <= right);
+
+  while (left < right) {
+    uint32_t mid = (left + right + 1) / 2;
+    uint32_t region_offset = GetRestartPoint(mid);
+    uint32_t key_length;
+    const char* key_ptr =
+        DecodeKeyOrValue(data_ + region_offset, data_ + restarts_, &key_length);
+    if (key_ptr == nullptr) {
+      CorruptionError();
+      return false;
+    }
+    Slice mid_key(key_ptr, key_length);
+    int cmp = Compare(mid_key, target);
+    if (cmp < 0) {
+      // Key at "mid" is smaller than "target". Therefore all
+      // blocks before "mid" are uninteresting.
+      left = mid;
+    } else if (cmp > 0) {
+      // Key at "mid" is >= "target". Therefore all blocks at or
+      // after "mid" are uninteresting.
+      right = mid - 1;
+    } else {
+      left = right = mid;
+    }
+  }
+
+  *index = left;
+  return true;
+}
+
 InternalIterator* Block::NewIterator(const Comparator* cmp, BlockIter* iter,
-                                     bool total_order_seek) {
+                                     bool column) {
   if (size_ < 2*sizeof(uint32_t)) {
     if (iter != nullptr) {
       iter->SetStatus(Status::Corruption("bad block contents"));
@@ -308,7 +375,9 @@ InternalIterator* Block::NewIterator(const Comparator* cmp, BlockIter* iter,
     if (iter != nullptr) {
       iter->Initialize(cmp, data_, restart_offset_, num_restarts);
     } else {
-      iter = new BlockIter(cmp, data_, restart_offset_, num_restarts);
+      iter = column ?
+              new ColumnBlockIter(cmp, data_, restart_offset_, num_restarts):
+              new BlockIter(cmp, data_, restart_offset_, num_restarts);
     }
   }
 

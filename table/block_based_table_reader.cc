@@ -137,8 +137,7 @@ class BlockBasedTable::IndexReader {
   // Create an iterator for index access.
   // An iter is passed in, if it is not null, update this one and return it
   // If it is null, create a new Iterator
-  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr,
-                                        bool total_order_seek = true) = 0;
+  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr) = 0;
 
   // The size of the index.
   virtual size_t size() const = 0;
@@ -184,9 +183,8 @@ class BinarySearchIndexReader : public IndexReader {
     return s;
   }
 
-  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr,
-                                        bool dont_care = true) override {
-    return index_block_->NewIterator(comparator_, iter, true);
+  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr) override {
+    return index_block_->NewIterator(comparator_, iter);
   }
 
   virtual size_t size() const override { return index_block_->size(); }
@@ -510,8 +508,7 @@ InternalIterator* BlockBasedTable::NewIndexIterator(
     CachableEntry<IndexReader>* index_entry) {
   // index reader has already been pre-populated.
   if (rep_->index_reader) {
-    return rep_->index_reader->NewIterator(
-        input_iter, read_options.total_order_seek);
+    return rep_->index_reader->NewIterator(input_iter);
   }
 
   PERF_TIMER_GUARD(read_index_block_nanos);
@@ -566,8 +563,7 @@ InternalIterator* BlockBasedTable::NewIndexIterator(
   }
 
   assert(cache_handle);
-  auto* iter = index_reader->NewIterator(input_iter,
-                                         read_options.total_order_seek);
+  auto* iter = index_reader->NewIterator(input_iter);
 
   // the caller would like to take ownership of the index block
   // don't call RegisterCleanup() in this case, the caller will take care of it

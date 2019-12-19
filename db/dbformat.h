@@ -112,13 +112,13 @@ inline ValueType ExtractValueType(const Slice& internal_key) {
 // A comparator for internal keys that uses a specified comparator for
 // the user key portion and breaks ties by decreasing sequence number.
 class InternalKeyComparator : public Comparator {
- private:
+ protected:
   const Comparator* user_comparator_;
   std::string name_;
  public:
   explicit InternalKeyComparator(const Comparator* c) : user_comparator_(c),
     name_("rocksdb.InternalKeyComparator:" +
-          std::string(user_comparator_->Name())) {
+          (c != nullptr ? std::string(user_comparator_->Name()): "")) {
   }
   virtual ~InternalKeyComparator() {}
 
@@ -132,6 +132,39 @@ class InternalKeyComparator : public Comparator {
 
   int Compare(const InternalKey& a, const InternalKey& b) const;
   int Compare(const ParsedInternalKey& a, const ParsedInternalKey& b) const;
+};
+
+// A comparator for sub column key.
+class ColumnKeyComparator : public InternalKeyComparator {
+ private:
+ public:
+  explicit ColumnKeyComparator() :
+    InternalKeyComparator(nullptr) {
+    name_ = "vidardb.ColumnKeyComparator";
+  }
+  virtual ~ColumnKeyComparator() {}
+
+  virtual int Compare(const Slice& a, const Slice& b) const override {
+    assert(a.size() == b.size());
+    return a.compare(b);
+  }
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const override {}
+  virtual void FindShortSuccessor(std::string* key) const override {}
+
+  const Comparator* user_comparator() const {
+    assert(false);
+    return nullptr;
+  }
+
+  int Compare(const InternalKey& a, const InternalKey& b) const {
+    assert(false);
+    return -1;
+  }
+  int Compare(const ParsedInternalKey& a, const ParsedInternalKey& b) const {
+    assert(false);
+    return -1;
+  }
 };
 
 // Modules in this directory should keep internal keys wrapped inside

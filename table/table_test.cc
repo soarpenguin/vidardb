@@ -306,7 +306,8 @@ class TableConstructor: public Constructor {
         TableBuilderOptions(ioptions, internal_comparator,
                             &int_tbl_prop_collector_factories,
                             options.compression, CompressionOptions(),
-                            nullptr /* compression_dict */, column_family_name),
+                            nullptr /* compression_dict */, column_family_name,
+                            EnvOptions()),
         TablePropertiesCollectorFactory::Context::kUnknownColumnFamily,
         file_writer_.get()));
 

@@ -130,8 +130,7 @@ class ColumnTable::IndexReader {
   // Create an iterator for index access.
   // An iter is passed in, if it is not null, update this one and return it
   // If it is null, create a new Iterator
-  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr,
-                                        bool total_order_seek = true) = 0;
+  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr) = 0;
 
   // The size of the index.
   virtual size_t size() const = 0;
@@ -177,9 +176,8 @@ class BinarySearchIndexReader : public IndexReader {
     return s;
   }
 
-  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr,
-                                        bool dont_care = true) override {
-    return index_block_->NewIterator(comparator_, iter, true);
+  virtual InternalIterator* NewIterator(BlockIter* iter = nullptr) override {
+    return index_block_->NewIterator(comparator_, iter);
   }
 
   virtual size_t size() const override { return index_block_->size(); }
@@ -251,6 +249,7 @@ struct ColumnTable::Rep {
   const EnvOptions& env_options;
   const ColumnTableOptions& table_options;
   const InternalKeyComparator& internal_comparator;
+  std::unique_ptr<ColumnKeyComparator> column_comparator;
   Status status;
   unique_ptr<RandomAccessFileReader> file;
   char cache_key_prefix[kMaxCacheKeyPrefixSize];
@@ -469,7 +468,8 @@ InternalIterator* ColumnTable::NewDataBlockIterator(
 
   InternalIterator* iter;
   if (s.ok() && block.value != nullptr) {
-    iter = block.value->NewIterator(&rep->internal_comparator, input_iter);
+    iter = block.value->NewIterator(&rep->internal_comparator, input_iter,
+                                    !rep->main_column);
     if (block.cache_handle != nullptr) {
       iter->RegisterCleanup(&ReleaseCachedEntry, block_cache,
                             block.cache_handle);
@@ -503,8 +503,7 @@ InternalIterator* ColumnTable::NewIndexIterator(
     CachableEntry<IndexReader>* index_entry) {
   // index reader has already been pre-populated.
   if (rep_->index_reader) {
-    return rep_->index_reader->NewIterator(
-        input_iter, read_options.total_order_seek);
+    return rep_->index_reader->NewIterator(input_iter);
   }
 
   PERF_TIMER_GUARD(read_index_block_nanos);
@@ -559,8 +558,7 @@ InternalIterator* ColumnTable::NewIndexIterator(
   }
 
   assert(cache_handle);
-  auto* iter = index_reader->NewIterator(input_iter,
-                                         read_options.total_order_seek);
+  auto* iter = index_reader->NewIterator(input_iter);
 
   // the caller would like to take ownership of the index block
   // don't call RegisterCleanup() in this case, the caller will take care of it
@@ -721,7 +719,6 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
   rep->file = std::move(file);
   rep->footer = footer;
   SetupCacheKeyPrefix(rep, file_size);
-  unique_ptr<ColumnTable> new_table(new ColumnTable(rep));
 
   // Read meta index
   std::unique_ptr<Block> meta;
@@ -745,9 +742,9 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
 
     uint32_t column_num;
     std::vector<uint64_t> file_sizes;
-    s = ReadColumnBlock(meta_iter->value(), rep->file.get(), rep->footer,
-                        ioptions.env, ioptions.info_log, &column_num,
-                        file_sizes);
+    s = ReadMetaColumnBlock(meta_iter->value(), rep->file.get(), rep->footer,
+                            ioptions.env, ioptions.info_log, &column_num,
+                            file_sizes);
     if (!s.ok()) {
       return s;
     }
@@ -756,6 +753,9 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
     rep->main_column = rep->tables.empty()? false: true;
     if (rep->main_column && column_num != rep->table_options.column_num) {
       return Status::InvalidArgument("table_options.column_num");
+    }
+    if (rep->main_column) {
+      rep->column_comparator.reset(new ColumnKeyComparator());
     }
 
     size_t readahead = rep->file->file()->ReadaheadSize();
@@ -779,9 +779,9 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
       unique_ptr<RandomAccessFileReader> file_reader(
           new RandomAccessFileReader(std::move(col_file), ioptions.env));
       unique_ptr<TableReader> table;
-      s = Open(ioptions, env_options, table_options, internal_comparator,
-               std::move(file_reader), file_sizes[i], &table,
-               prefetch_index, level);
+      s = Open(ioptions, env_options, table_options, *(rep->column_comparator),
+               std::move(file_reader), file_sizes[i], &table, prefetch_index,
+               level);
       if (!s.ok()) {
         return s;
       }
@@ -839,6 +839,7 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
     }
   }
 
+  unique_ptr<ColumnTable> new_table(new ColumnTable(rep));
   if (prefetch_index) {
     // pre-fetching of blocks is turned on
     // If we don't use block cache for index blocks access, we'll
@@ -882,10 +883,11 @@ class ColumnTable::BlockEntryIteratorState : public TwoLevelIteratorState {
 class ColumnTable::ColumnIterator : public InternalIterator {
  public:
   ColumnIterator(const std::vector<InternalIterator*>& columns, char delim,
+                 bool has_main_column,
                  const InternalKeyComparator& internal_comparator,
-                 bool has_main_column, uint64_t num_entries = 0)
-  : columns_(columns), delim_(delim), internal_comparator_(internal_comparator),
-    has_main_column_(has_main_column), num_entries_(num_entries) {}
+                 uint64_t num_entries = 0)
+  : columns_(columns), delim_(delim), has_main_column_(has_main_column),
+    internal_comparator_(internal_comparator), num_entries_(num_entries) {}
 
   virtual ~ColumnIterator() {
     for (const auto& it : columns_) {
@@ -1131,8 +1133,8 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   std::string value_;
   char delim_;
   Status status_;
-  const InternalKeyComparator& internal_comparator_;
   bool has_main_column_;  // true in NewIterator, false in Get & Prefetch
+  const InternalKeyComparator& internal_comparator_; // used in rangrquery
   uint64_t num_entries_;  // used in rangrquery
 };
 
@@ -1167,7 +1169,7 @@ InternalIterator* ColumnTable::NewIterator(const ReadOptions& read_options,
         rep_->tables[it]->NewIndexIterator(ro), arena));
   }
   return new ColumnIterator(iters, rep_->table_options.delim,
-                            rep_->internal_comparator, true,
+                            true, rep_->internal_comparator,
                             rep_->table_properties->num_entries);
 }
 
@@ -1181,25 +1183,25 @@ Status ColumnTable::Get(const ReadOptions& read_options, const Slice& key,
   Status s;
   bool done = false;
   for (iiter.Seek(key); iiter.Valid() && !done; iiter.Next()) {
-    BlockIter biter;
-    NewDataBlockIterator(rep_, ro, iiter.value(), &biter);
-    if (ro.read_tier == kBlockCacheTier && biter.status().IsIncomplete()) {
+    std::unique_ptr<InternalIterator> biter;
+    biter.reset(NewDataBlockIterator(rep_, ro, iiter.value()));
+    if (ro.read_tier == kBlockCacheTier && biter->status().IsIncomplete()) {
       // couldn't get block from block_cache
       // Update Saver.state to Found because we are only looking for whether
       // we can guarantee the key is not there when "no_io" is set
       get_context->MarkKeyMayExist();
       break;
     }
-    if (!biter.status().ok()) {
-      s = biter.status();
+    if (!biter->status().ok()) {
+      s = biter->status();
       break;
     }
 
     bool isIncomplete = false;
     // Call the *saver function on each entry/block until it returns false
-    for (biter.Seek(key); biter.Valid(); biter.Next()) {
+    for (biter->Seek(key); biter->Valid(); biter->Next()) {
       ParsedInternalKey parsed_key;
-      if (!ParseInternalKey(biter.key(), &parsed_key)) {
+      if (!ParseInternalKey(biter->key(), &parsed_key)) {
         s = Status::Corruption(Slice());
         break;
       }
@@ -1218,14 +1220,14 @@ Status ColumnTable::Get(const ReadOptions& read_options, const Slice& key,
       }
 
       ColumnIterator citers(iters, rep_->table_options.delim,
-                            rep_->internal_comparator, false,
+                            false, rep_->internal_comparator, /* might change*/
                             rep_->table_properties->num_entries);
       if (!citers.status().ok()) {
         s = citers.status();
         break;
       }
 
-      citers.Seek(biter.value());
+      citers.Seek(biter->value());
       if (ro.read_tier == kBlockCacheTier && citers.status().IsIncomplete()) {
         isIncomplete = true;
         get_context->MarkKeyMayExist();
@@ -1245,7 +1247,7 @@ Status ColumnTable::Get(const ReadOptions& read_options, const Slice& key,
     if (isIncomplete || !s.ok()) {
       break;
     } else {
-      s = biter.status();
+      s = biter->status();
     }
   }
   if (s.ok()) {
@@ -1294,16 +1296,16 @@ Status ColumnTable::Prefetch(const Slice* const begin, const Slice* const end,
     }
 
     // Load the block specified by the block_handle into the block cache
-    BlockIter biter;
-    NewDataBlockIterator(rep_, ro, iiter.value(), &biter);
-    if (!biter.status().ok()) {
+    std::unique_ptr<InternalIterator> biter;
+    biter.reset(NewDataBlockIterator(rep_, ro, iiter.value()));
+    if (!biter->status().ok()) {
       // there was an unexpected error while pre-fetching
-      return biter.status();
+      return biter->status();
     }
 
-    biter.SeekToFirst();
-    if (!biter.status().ok()) {
-      return biter.status();
+    biter->SeekToFirst();
+    if (!biter->status().ok()) {
+      return biter->status();
     }
 
     std::vector<InternalIterator*> iters;
@@ -1314,13 +1316,13 @@ Status ColumnTable::Prefetch(const Slice* const begin, const Slice* const end,
     }
 
     ColumnIterator citers(iters, rep_->table_options.delim,
-                          rep_->internal_comparator, false,
+                          false, rep_->internal_comparator,
                           rep_->table_properties->num_entries);
     if (!citers.status().ok()) {
       return citers.status();
     }
 
-    citers.Seek(biter.value());
+    citers.Seek(biter->value());
     if (!citers.status().ok()) {
       return citers.status();
     }

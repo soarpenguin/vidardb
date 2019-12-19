@@ -22,31 +22,38 @@ class BlockBuilder {
 
   explicit BlockBuilder(int block_restart_interval);
 
+  virtual ~BlockBuilder() {}
+
   // Reset the contents as if the BlockBuilder was just constructed.
-  void Reset();
+  virtual void Reset();
 
   // REQUIRES: Finish() has not been callled since the last call to Reset().
   // REQUIRES: key is larger than any previously added key
-  void Add(const Slice& key, const Slice& value);
+  virtual void Add(const Slice& key, const Slice& value);
 
   // Finish building the block and return a slice that refers to the
   // block contents.  The returned slice will remain valid for the
   // lifetime of this builder or until Reset() is called.
-  Slice Finish();
+  virtual Slice Finish();
 
   // Returns an estimate of the current (uncompressed) size of the block
   // we are building.
-  size_t CurrentSizeEstimate() const;
+  virtual size_t CurrentSizeEstimate() const;
 
   // Returns an estimated block size after appending key and value.
-  size_t EstimateSizeAfterKV(const Slice& key, const Slice& value) const;
+  virtual size_t EstimateSizeAfterKV(const Slice& key, const Slice& value) const;
 
   // Return true iff no entries have been added since the last Reset()
-  bool empty() const {
+  virtual bool empty() const {
     return buffer_.empty();
   }
 
- private:
+  // Called after Add
+  virtual bool IsKeyStored() const {
+    return true;
+  }
+
+ protected:
   const int             block_restart_interval_;
 
   std::string           buffer_;    // Destination buffer
