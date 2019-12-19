@@ -91,7 +91,6 @@ Slice BlockBuilder::Finish() {
 }
 
 void BlockBuilder::Add(const Slice& key, const Slice& value) {
-  Slice last_key_piece(last_key_);
   assert(!finished_);
   assert(counter_ <= block_restart_interval_);
   size_t shared = 0;  // number of bytes shared with prev key
@@ -101,8 +100,8 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
     counter_ = 0;
   } else {
     // See how much sharing to do with previous string
-    const size_t min_length = std::min(last_key_piece.size(), key.size());
-    while ((shared < min_length) && (last_key_piece[shared] == key[shared])) {
+    size_t min_length = std::min(last_key_.size(), key.size());
+    while ((shared < min_length) && (last_key_[shared] == key[shared])) {
       shared++;
     }
   }
