@@ -448,13 +448,10 @@ class Version {
            bool* key_exists = nullptr, SequenceNumber* seq = nullptr);
 
   /**************** Shichao *******************/
-  void RangeQuery(const ReadOptions& options,
+  void RangeQuery(ReadOptions& options,
                   const LookupRange& range,
                   std::map<std::string, SeqTypeVal>& res,
-                  Status* status,
-                  filterFun filter,
-                  groupFun group,
-                  void* arg);
+                  Status* status);
   /**************** Shichao *******************/
 
   // Loads some stats information from files. Call without mutex held. It needs

@@ -90,6 +90,19 @@ struct Range {
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 
+/***************************** Quanzhao ******************/
+struct RangeQueryMeta {
+  Slice next;                       // Next included key
+  void* column_family_data;         // Column family data
+  void* super_version;              // Super version
+  SequenceNumber snapshot;          // Current snapshot
+
+  RangeQueryMeta(void* cfd, void* sv, SequenceNumber s) :
+    column_family_data(cfd), super_version(sv),
+    snapshot(s) {}
+};
+/***************************** Quanzhao ******************/
+
 // A collections of table properties objects, where
 //  key: is the table's file name.
 //  value: the table properties object of the given table.
@@ -227,22 +240,20 @@ class DB {
   // OLAP, given a range of keys, return attribute(s) values.
   // Do not support merge currently. In other words,
   // it will ignore kTypeMerge keys.
-  virtual Status RangeQuery(const ReadOptions& options,
-                            ColumnFamilyHandle* column_family,
-                            const Range& range,
-                            std::vector<std::string>& res,
-                            filterFun filter = nullptr,
-                            groupFun group = nullptr,
-                            void* arg = nullptr) {
-    return Status::NotSupported(Slice());
+  // If another sub range query, it returns true, else false.
+  virtual bool RangeQuery(ReadOptions& options,
+                          ColumnFamilyHandle* column_family,
+                          const Range& range,
+                          std::vector<std::string>& res,
+                          Status* s = nullptr) {
+    *s = Status::NotSupported(Slice());
+    return false;
   }
-  virtual Status RangeQuery(const ReadOptions& options,
-                            const Range& range,
-                            std::vector<std::string>& res,
-                            filterFun filter = nullptr,
-                            groupFun group = nullptr,
-                            void* arg = nullptr) {
-    return RangeQuery(options, DefaultColumnFamily(), range, res, filter, group, arg);
+  virtual bool RangeQuery(ReadOptions& options,
+                          const Range& range,
+                          std::vector<std::string>& res,
+                          Status* s = nullptr) {
+    return RangeQuery(options, DefaultColumnFamily(), range, res, s);
   }
   /***************** Shichao **********************/
 

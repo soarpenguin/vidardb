@@ -176,13 +176,10 @@ class MemTable {
   // If memtable does not overlap with the range, store a NotFound() error
   // in *status and return true.
   // Else, return false.
-  bool RangeQuery(const LookupRange& range,
+  bool RangeQuery(ReadOptions& read_options,
+                  const LookupRange& range,
                   std::map<std::string, SeqTypeVal>& res,
-                  Status* s,
-                  filterFun filter,
-                  groupFun group,
-                  void* arg,
-                  bool unique_key);
+                  Status* s);
   /******************************* Shichao *******************************/
 
   // Attempts to update the new_value inplace, else does normal Add

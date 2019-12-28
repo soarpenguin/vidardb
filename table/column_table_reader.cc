@@ -978,12 +978,9 @@ class ColumnTable::ColumnIterator : public InternalIterator {
     return s;
   }
 
-  virtual Status RangeQuery(const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res,
-                            filterFun filter,
-                            groupFun group,
-                            void* arg,
-                            bool unique_key) const {
+  virtual Status RangeQuery(ReadOptions& read_options,
+                            const LookupRange& range,
+                            std::map<std::string, SeqTypeVal>& res) const {
     SequenceNumber sequence_num = range.SequenceNum();
     std::vector<std::string> tmp_keys;
     std::vector<SeqTypeVal> tmp_STVs;
@@ -998,27 +995,24 @@ class ColumnTable::ColumnIterator : public InternalIterator {
     for (auto i = 0u; i < columns_.size(); i++) {
       InternalIterator* it = columns_[i];
       std::string val, user_key;
-      std::vector<const std::string*> v;
+
       if (i == 0) {
         for (it->Seek(range.start_->internal_key()); it->Valid(); it->Next()) {
-          if (internal_comparator_.Compare(it->key(), range.limit_->internal_key()) >= 0) {
+          if (internal_comparator_.Compare(it->key(),
+              range.limit_->internal_key()) >= 0) {
             break;
           }
+
           ParsedInternalKey parsed_key;
           if (!ParseInternalKey(it->key(), &parsed_key)) {
             return Status::Corruption("corrupted internal key in Table::Iter");
           }
+
           if (parsed_key.sequence <= sequence_num) {
             out_bs.push_back(true);
             val.assign(it->value().data(), it->value().size());
             user_key.assign(it->key().data(), it->key().size() - 8);
-            v.clear();
-            v.push_back(&user_key);
-            v.push_back(&val);
-            if (filter && !filter(v, i + 1)) {
-              out_bs.back() = false;
-              continue;
-            }
+
             inn_bs.push_back(true);
             tmp_keys.push_back(std::move(user_key));
             tmp_STVs.push_back(SeqTypeVal(parsed_key.sequence, parsed_key.type, std::move(val)));
@@ -1034,17 +1028,13 @@ class ColumnTable::ColumnIterator : public InternalIterator {
           if (!out_bs[out_cnt++]) {
             continue;
           }
+
           if (!inn_bs[inn_cnt]) {
             inn_cnt++;
             continue;
           }
+
           val.assign(it->value().data(), it->value().size());
-          v.clear();
-          v.push_back(&val);
-          if (filter && !filter(v, i + 1)) {
-            inn_bs[inn_cnt++] = false;
-            continue;
-          }
           tmp_STVs[inn_cnt].val_ += delim_;
           tmp_STVs[inn_cnt++].val_ += val;
         }
@@ -1053,44 +1043,31 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
     assert(tmp_keys.size() == tmp_STVs.size());
     assert(tmp_keys.size() == inn_bs.size());
-    auto hint = res.end();
     for (auto i = 0u; i < tmp_keys.size(); i++) {
       if (!inn_bs[i]) {
         continue;
       }
-      std::vector<const std::string*> v{&tmp_keys[i], &tmp_STVs[i].val_};
-      if (filter && !filter(v, columns_.size() + 1)) {
-        continue;
+
+      auto hint = res.end();
+      while (hint != res.end() && hint->first < tmp_keys[i]) {
+        hint++;
       }
 
-      if (!unique_key) {
-        while (hint != res.end() && hint->first < tmp_keys[i]) {
-          hint++;
-        }
-        if (hint == res.end() || hint->first > tmp_keys[i]) {
-          hint = res.emplace_hint(hint, tmp_keys[i], tmp_STVs[i]);
-          if (hint->second.seq_ < tmp_STVs[i].seq_) {
-            hint->second.seq_ = tmp_STVs[i].seq_;
-            hint->second.type_ = tmp_STVs[i].type_;
-            hint->second.val_ = tmp_STVs[i].val_;
-          }
-        } else if (hint->second.seq_ < tmp_STVs[i].seq_) {
-          assert(hint->first == tmp_keys[i]);
+      if (hint == res.end() || hint->first > tmp_keys[i]) {
+        hint = res.emplace_hint(hint, tmp_keys[i], tmp_STVs[i]);
+        if (hint->second.seq_ < tmp_STVs[i].seq_) {
           hint->second.seq_ = tmp_STVs[i].seq_;
           hint->second.type_ = tmp_STVs[i].type_;
           hint->second.val_ = tmp_STVs[i].val_;
         }
-      }
-      if (group && (unique_key || hint->second.seq_ == tmp_STVs[i].seq_)) {
-        if (group(v, columns_.size() + 1, arg) && !unique_key) {
-          hint = res.erase(hint);
-          continue;
-        }
+      } else if (hint->second.seq_ < tmp_STVs[i].seq_) {
+        assert(hint->first == tmp_keys[i]);
+        hint->second.seq_ = tmp_STVs[i].seq_;
+        hint->second.type_ = tmp_STVs[i].type_;
+        hint->second.val_ = tmp_STVs[i].val_;
       }
 
-      if (!unique_key) {
-        hint++;
-      }
+      CompressResultMap(&res, read_options.max_result_num);
     }
 
     return Status();

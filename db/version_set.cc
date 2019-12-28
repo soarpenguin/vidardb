@@ -1002,31 +1002,38 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
 }
 
 /******************************** Shichao ********************************/
-void Version::RangeQuery(const ReadOptions& read_options,
+void Version::RangeQuery(ReadOptions& read_options,
                          const LookupRange& range,
                          std::map<std::string, SeqTypeVal>& res,
-                         Status* status,
-                         filterFun filter,
-                         groupFun group,
-                         void* arg) {
+                         Status* status) {
   assert(status->ok());
-  FilePicker fp(
-      storage_info_.files_, range.limit_->user_key(), range.start_->internal_key(),
-      &storage_info_.level_files_brief_, storage_info_.num_non_empty_levels_,
-      &storage_info_.file_indexer_, user_comparator(), internal_comparator());
+
+  FilePicker fp(storage_info_.files_,
+                range.limit_->user_key(),
+                range.start_->internal_key(),
+                &storage_info_.level_files_brief_,
+                storage_info_.num_non_empty_levels_,
+                &storage_info_.file_indexer_,
+                user_comparator(),
+                internal_comparator());
+
   FdWithKeyRange* f = fp.GetNextFileForRangeQuery();
   while (f != nullptr) {
-    std::unique_ptr<InternalIterator> iter(table_cache_->NewIterator(
-        read_options, vset_->env_options_, *internal_comparator(), f->fd,
-        nullptr, nullptr, true, nullptr, -1, false));
+    std::unique_ptr<InternalIterator> iter(
+      table_cache_->NewIterator(read_options,
+       vset_->env_options_, *internal_comparator(),
+       f->fd, nullptr, nullptr, true, nullptr, -1,
+       false));
     *status = iter->status();
     if (!status->ok()) {
       return;
     }
-    *status = iter->RangeQuery(range, res, filter, group, arg, read_options.unique_key);
+
+    *status = iter->RangeQuery(read_options, range, res);
     if (!status->ok()) {
       return;
     }
+
     f = fp.GetNextFileForRangeQuery();
   }
   *status = Status::OK();

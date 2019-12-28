@@ -383,7 +383,7 @@ struct Saver {
   Status* status;
   const LookupKey* key;
   const LookupRange* range;  // Shichao
-  bool* found_final_value;  // Is value set correctly? Used by KeyMayExist
+  bool* found_final_value;   // Is value set correctly? Used by KeyMayExist
   std::string* value;
   std::map<std::string, SeqTypeVal>* res;  // Shichao
   SequenceNumber seq;
@@ -391,10 +391,7 @@ struct Saver {
   Logger* logger;
   Statistics* statistics;
   Env* env_;
-  filterFun filter;  // Shichao
-  groupFun group;    // Shichao
-  void* arg;         // Shichao
-  bool unique_key;   // Shichao
+  ReadOptions* read_options; // Quanzhao
 };
 }  // namespace
 
@@ -469,24 +466,16 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
           std::string user_key(internal_key.data(), internal_key.size() - 8);
           std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
 
-          std::vector<const std::string*> v{&user_key, &val};
-          if (!s->filter || (s->filter && s->filter(v, 0))) {
-            auto it = s->res->end();
-            if (!s->unique_key) {
-              it = s->res->emplace_hint(it, user_key, SeqTypeVal(s->seq, type, val));
-              if (it->second.seq_ < s->seq) {
-                it->second.seq_ = s->seq;
-                it->second.type_ = type;
-                it->second.val_ = val;
-              }
-            }
-
-            if (s->group && (s->unique_key || it->second.seq_ == s->seq)) {
-              if (s->group(v, 0, s->arg) && !s->unique_key) {
-                s->res->erase(it);
-              }
-            }
+          SeqTypeVal user_val = SeqTypeVal(s->seq, type, val);
+          auto it = s->res->end();
+          it = s->res->emplace_hint(it, user_key, user_val);
+          if (it->second.seq_ < s->seq) {
+            it->second.seq_ = s->seq;
+            it->second.type_ = type;
+            it->second.val_ = val;
           }
+
+          CompressResultMap(s->res, s->read_options->max_result_num);
         }
         [[gnu::fallthrough]];  // check should fall through?
       }
@@ -540,13 +529,10 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
 }
 
 /***************************** Shichao *****************************/
-bool MemTable::RangeQuery(const LookupRange& range,
+bool MemTable::RangeQuery(ReadOptions& read_options,
+                          const LookupRange& range,
                           std::map<std::string, SeqTypeVal>& res,
-                          Status* s,
-                          filterFun filter,
-                          groupFun group,
-                          void* arg,
-                          bool unique_key) {
+                          Status* s) {
   if (IsEmpty()) {
     *s = Status::NotFound(Slice());
     return true;
@@ -561,10 +547,8 @@ bool MemTable::RangeQuery(const LookupRange& range,
   saver.logger = moptions_.info_log;
   saver.statistics = moptions_.statistics;
   saver.env_ = env_;
-  saver.filter = filter;
-  saver.group = group;
-  saver.arg = arg;
-  saver.unique_key = unique_key;
+  saver.read_options = &read_options;
+
   size_t orig_size = res.size();
   table_->RangeQuery(range, res, &saver, SaveValueForRangeQuery);
   if (res.size() == orig_size) {

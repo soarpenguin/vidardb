@@ -11,7 +11,7 @@
 #include <vector>  // Shichao
 #include "rocksdb/iterator.h"
 #include "rocksdb/status.h"
-
+#include "rocksdb/options.h" // Quanzhao
 
 namespace rocksdb {
 
@@ -75,12 +75,9 @@ class InternalIterator : public Cleanable {
 
   /***************************** Shichao **********************************/
   // Support OLAP range query, Table iterator should re-implement this.
-  virtual Status RangeQuery(const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res,
-                            filterFun filter,
-                            groupFun group,
-                            void* arg,
-                            bool unique_key) const {
+  virtual Status RangeQuery(ReadOptions& read_options,
+                            const LookupRange& range,
+                            std::map<std::string, SeqTypeVal>& res) const {
     return Status::NotSupported(Slice("not supported iterator..."));
   }
   /***************************** Shichao **********************************/
