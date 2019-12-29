@@ -81,12 +81,15 @@ class ColumnFamilyHandle {
 static const int kMajorVersion = __ROCKSDB_MAJOR__;
 static const int kMinorVersion = __ROCKSDB_MINOR__;
 
+static const Slice kMin = Slice("min"); // Quanzhao
+static const Slice kMax = Slice("max"); // Quanzhao
+
 // A range of keys
 struct Range {
   Slice start;          // Included in the range
   Slice limit;          // Not included in the range
 
-  Range() { }
+  Range() : start(kMin), limit(kMax) { } // Full search
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 

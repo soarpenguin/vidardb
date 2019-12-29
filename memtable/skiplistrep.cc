@@ -67,8 +67,14 @@ public:
                           override {
     SkipListRep::Iterator iter(&skip_list_);
     Slice dummy_slice;
-    for (iter.Seek(dummy_slice, range.start_->memtable_key().data());
-         iter.Valid() && callback_func(callback_args, iter.key());
+
+    if (range.start_->user_key() == kMin) {
+      iter.SeekToFirst(); // Full search
+    } else {
+      iter.Seek(dummy_slice, range.start_->memtable_key().data());
+    }
+
+    for (; iter.Valid() && callback_func(callback_args, iter.key());
          iter.Next()) {
     }
   }

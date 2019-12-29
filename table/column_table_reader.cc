@@ -997,9 +997,16 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       std::string val, user_key;
 
       if (i == 0) {
-        for (it->Seek(range.start_->internal_key()); it->Valid(); it->Next()) {
-          if (internal_comparator_.Compare(it->key(),
-              range.limit_->internal_key()) >= 0) {
+        if (range.start_->user_key() == kMin) {
+          it->SeekToFirst(); // Full search
+        } else {
+          it->Seek(range.start_->internal_key());
+        }
+
+        for (; it->Valid(); it->Next()) {
+          bool valid = (range.limit_->user_key() == kMax)? true : (internal_comparator_.Compare(it->key(),
+              range.limit_->internal_key()) < 0);
+          if (!valid) {
             break;
           }
 
@@ -1023,8 +1030,14 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       } else {
         size_t out_cnt = 0;
         size_t inn_cnt = 0;
-        for (it->Seek(range.start_->internal_key()); it->Valid()
-             && out_cnt < out_bs.size(); it->Next()) {
+
+        if (range.start_->user_key() == kMin) {
+          it->SeekToFirst(); // Full search
+        } else {
+          it->Seek(range.start_->internal_key());
+        }
+
+        for (; it->Valid() && out_cnt < out_bs.size(); it->Next()) {
           if (!out_bs[out_cnt++]) {
             continue;
           }

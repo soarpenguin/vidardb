@@ -3736,13 +3736,13 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Check if have the next range query
-  bool need_proceed = true;
-  if (tmp_res.size() == 0) { // no result
-    need_proceed = false;
+  bool next_query = true;
+  if (res.size() == 0) { // no result
+    next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
   }
 
-  return need_proceed;
+  return next_query;
 }
 /***************************** Shichao ******************************/
 

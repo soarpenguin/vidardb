@@ -452,8 +452,10 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   uint32_t key_length;
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
-  if (s->mem->GetInternalKeyComparator().Compare(internal_key,
-      s->range->limit_->internal_key()) < 0) {
+
+  bool valid = (s->range->limit_->user_key() == kMax)? true: (s->mem->GetInternalKeyComparator().Compare(internal_key,
+      s->range->limit_->internal_key()) < 0);
+  if (valid) {
     const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
     ValueType type;
     UnPackSequenceAndType(tag, &s->seq, &type);
