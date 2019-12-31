@@ -880,14 +880,14 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     SequenceNumber sequence_num = range.SequenceNum();
     std::string user_key, val;
 
-    if (range.start_->user_key() == kMin) {
+    if (range.start_->user_key().compare(kMin) == 0) {
       iter_->SeekToFirst(); // Full search
     } else {
       iter_->Seek(range.start_->internal_key());
     }
 
     for (; iter_->Valid(); iter_->Next()) {
-      bool valid = (range.limit_->user_key() == kMax)? true: (internal_comparator_.Compare(iter_->key(),
+      bool valid = (range.limit_->user_key().compare(kMax) == 0)? true: (internal_comparator_.Compare(iter_->key(),
           range.limit_->internal_key()) < 0);
       if (!valid) {
         break;

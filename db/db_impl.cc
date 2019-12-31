@@ -3686,7 +3686,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     auto cfd = cfh->cfd();
 
     SuperVersion* sv = GetAndRefSuperVersion(cfd);
-    *read_options.range_query_meta = RangeQueryMeta(cfd, sv, snapshot);
+    read_options.range_query_meta = new RangeQueryMeta(cfd, sv, snapshot);
     read_options.range_query_meta->next = range.start;
   }
 
@@ -3720,9 +3720,10 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Update the next range query start key
-  if (tmp_res.size() > 0) {
-    auto it = tmp_res.end();
-    read_options.range_query_meta->next = Slice(it->second.val_);
+  if (tmp_res.size() > 0 && read_options.max_result_num > 0 &&
+      tmp_res.size() > read_options.max_result_num) {
+    auto it = --(tmp_res.end());
+    read_options.range_query_meta->next = Slice(it->first);
     tmp_res.erase(it); // Not include the next start key
   }
 
@@ -3737,9 +3738,14 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
   // Check if have the next range query
   bool next_query = true;
-  if (res.size() == 0) { // no result
+  if (res.size() == 0 || (read_options.max_result_num > 0 &&
+      res.size() < read_options.max_result_num) ||
+      read_options.max_result_num == 0) {
+    // no extra result
     next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
+    delete read_options.range_query_meta;
+    read_options.range_query_meta = nullptr;
   }
 
   return next_query;

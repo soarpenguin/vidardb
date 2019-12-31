@@ -1354,11 +1354,11 @@ struct ReadOptions {
   // given maximum size in every batch. In addition, it will return the
   // all result keys in one batch.
   // Default: 0
-  size_t max_result_num;
+  size_t max_result_num = 0;
 
   // Stores the temporary states for RangeQuery.
   // Note: Caller should not set the value.
-  RangeQueryMeta* range_query_meta;
+  RangeQueryMeta* range_query_meta = nullptr;
   /***************************** Quanzhao *******************************/
 
   ReadOptions();

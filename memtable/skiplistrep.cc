@@ -68,7 +68,7 @@ public:
     SkipListRep::Iterator iter(&skip_list_);
     Slice dummy_slice;
 
-    if (range.start_->user_key() == kMin) {
+    if (range.start_->user_key().compare(kMin) == 0) {
       iter.SeekToFirst(); // Full search
     } else {
       iter.Seek(dummy_slice, range.start_->memtable_key().data());

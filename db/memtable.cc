@@ -453,7 +453,7 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
 
-  bool valid = (s->range->limit_->user_key() == kMax)? true: (s->mem->GetInternalKeyComparator().Compare(internal_key,
+  bool valid = (s->range->limit_->user_key().compare(kMax) == 0)? true: (s->mem->GetInternalKeyComparator().Compare(internal_key,
       s->range->limit_->internal_key()) < 0);
   if (valid) {
     const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
@@ -479,7 +479,10 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
 
           CompressResultMap(s->res, s->read_options->max_result_num);
         }
-        [[gnu::fallthrough]];  // check should fall through?
+        // TODO: check should fall through?
+        // [[gnu::fallthrough]];
+        *(s->status) = Status::OK();
+        return true;
       }
 //      case kTypeMerge: {
 //        *(s->status) = Status::OK();
