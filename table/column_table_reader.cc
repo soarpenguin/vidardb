@@ -927,6 +927,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         if (!it->Valid()) {
           return;
         }
+        // set sub column target key
         sub_column_target = it->value();
       } else {
         it->Seek(sub_column_target);
@@ -980,109 +981,56 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
   virtual Status RangeQuery(ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) const {
+                            std::map<std::string, SeqTypeVal>& res) {
     SequenceNumber sequence_num = range.SequenceNum();
-    std::vector<std::string> tmp_keys;
-    std::vector<SeqTypeVal> tmp_STVs;
-    std::vector<bool> out_bs, inn_bs;
-    if (num_entries_ > 0) {
-      tmp_keys.reserve(num_entries_);
-      tmp_STVs.reserve(num_entries_);
-      out_bs.reserve(num_entries_);
-      inn_bs.reserve(num_entries_);
+    std::string user_key, val;
+
+    if (range.start_->user_key().compare(kMin) == 0) {
+      SeekToFirst(); // Full search
+    } else {
+      Seek(range.start_->internal_key());
     }
 
-    for (auto i = 0u; i < columns_.size(); i++) {
-      InternalIterator* it = columns_[i];
-      std::string val, user_key;
-
-      if (i == 0) {
-        if (range.start_->user_key().compare(kMin) == 0) {
-          it->SeekToFirst(); // Full search
-        } else {
-          it->Seek(range.start_->internal_key());
-        }
-
-        for (; it->Valid(); it->Next()) {
-          bool valid = CompareRangeLimit(internal_comparator_,
-                                         it->key(),
-                                         range.limit_) <= 0;
-          if (!valid) {
-            break;
-          }
-
-          ParsedInternalKey parsed_key;
-          if (!ParseInternalKey(it->key(), &parsed_key)) {
-            return Status::Corruption("corrupted internal key in Table::Iter");
-          }
-
-          if (parsed_key.sequence <= sequence_num) {
-            out_bs.push_back(true);
-            val.assign(it->value().data(), it->value().size());
-            user_key.assign(it->key().data(), it->key().size() - 8);
-
-            inn_bs.push_back(true);
-            tmp_keys.push_back(std::move(user_key));
-            tmp_STVs.push_back(SeqTypeVal(parsed_key.sequence, parsed_key.type, std::move(val)));
-          } else {
-            out_bs.push_back(false);
-          }
-        }
-      } else {
-        size_t out_cnt = 0;
-        size_t inn_cnt = 0;
-
-        if (range.start_->user_key().compare(kMin) == 0) {
-          it->SeekToFirst(); // Full search
-        } else {
-          it->Seek(range.start_->internal_key());
-        }
-
-        for (; it->Valid() && out_cnt < out_bs.size(); it->Next()) {
-          if (!out_bs[out_cnt++]) {
-            continue;
-          }
-
-          if (!inn_bs[inn_cnt]) {
-            inn_cnt++;
-            continue;
-          }
-
-          val.assign(it->value().data(), it->value().size());
-          tmp_STVs[inn_cnt].val_ += delim_;
-          tmp_STVs[inn_cnt++].val_ += val;
-        }
-      }
-    }
-
-    assert(tmp_keys.size() == tmp_STVs.size());
-    assert(tmp_keys.size() == inn_bs.size());
-    for (auto i = 0u; i < tmp_keys.size(); i++) {
-      if (!inn_bs[i]) {
-        continue;
+    for (; Valid(); Next()) { // Composite iterator
+      bool valid = CompareRangeLimit(internal_comparator_,
+                                     key(), range.limit_) <= 0;
+      if (!valid) {
+        break;
       }
 
-      auto hint = res.end();
-      while (hint != res.end() && hint->first < tmp_keys[i]) {
-        hint++;
+      ParsedInternalKey parsed_key;
+      if (!ParseInternalKey(key(), &parsed_key)) {
+        return Status::Corruption("corrupted internal key in Table::Iter");
       }
 
-      if (hint == res.end() || hint->first > tmp_keys[i]) {
-        hint = res.emplace_hint(hint, tmp_keys[i], tmp_STVs[i]);
-        if (hint->second.seq_ < tmp_STVs[i].seq_) {
-          hint->second.seq_ = tmp_STVs[i].seq_;
-          hint->second.type_ = tmp_STVs[i].type_;
-          hint->second.val_ = tmp_STVs[i].val_;
+      if (parsed_key.sequence <= sequence_num) {
+        user_key.assign(key().data(), key().size() - 8);
+        val.assign(value().data(), value().size());
+
+        auto hint = res.end();
+        while (hint != res.end() && hint->first < user_key) {
+          hint++;
         }
-      } else if (hint->second.seq_ < tmp_STVs[i].seq_) {
-        assert(hint->first == tmp_keys[i]);
-        hint->second.seq_ = tmp_STVs[i].seq_;
-        hint->second.type_ = tmp_STVs[i].type_;
-        hint->second.val_ = tmp_STVs[i].val_;
-      }
 
-      // TODO check whether scan the remaining key
-      CompressResultMap(&res, read_options.max_result_num);
+        if (hint == res.end() || hint->first > user_key) {
+          SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
+           parsed_key.type, val);
+          hint = res.emplace_hint(hint, user_key, user_val);
+          if (hint->second.seq_ < parsed_key.sequence) {
+            hint->second.seq_ = parsed_key.sequence;
+            hint->second.type_ = parsed_key.type;
+            hint->second.val_ = val;
+          }
+        } else if (hint->second.seq_ < parsed_key.sequence) {
+          assert(hint->first == user_key);
+          hint->second.seq_ = parsed_key.sequence;
+          hint->second.type_ = parsed_key.type;
+          hint->second.val_ = val;
+        }
+
+        // TODO check whether scan the remaining key
+        CompressResultMap(&res, read_options.max_result_num);
+      }
     }
 
     return Status();
@@ -1111,8 +1059,10 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         return false;
       }
       if (has_main_column_ && i==0u) {
+        // skip main column (only key)
         continue;
       }
+      // val1|val2|val3|...
       value_.append(columns_[i]->value().ToString());
       if (i < columns_.size() - 1) {
         value_.append(1, delim_);
@@ -1133,7 +1083,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 inline static ReadOptions SanitizeColumnReadOptions(
         uint32_t column_num, const ReadOptions& read_options) {
   ReadOptions ro = read_options;
-  if (ro.columns.empty()) {
+  if (ro.columns.empty()) { // all columns
     ro.columns.resize(column_num);
     for (uint32_t i = 0; i < column_num; i++) {
       ro.columns[i] = i;
@@ -1142,7 +1092,8 @@ inline static ReadOptions SanitizeColumnReadOptions(
   }
 
   for (auto& i : ro.columns) {
-    --i;
+    assert(i <= column_num);
+    --i; // index from 0
   }
   return ro;
 }
@@ -1152,13 +1103,13 @@ InternalIterator* ColumnTable::NewIterator(const ReadOptions& read_options,
   ReadOptions ro = SanitizeColumnReadOptions(
       rep_->table_options.column_num, read_options);
 
-  std::vector<InternalIterator*> iters;
+  std::vector<InternalIterator*> iters; // main column
   iters.push_back(NewTwoLevelIterator(new BlockEntryIteratorState(this, ro),
                                       NewIndexIterator(ro), arena));
-  for (const auto& it : ro.columns) {
+  for (const auto& column_index : ro.columns) { // sub column
     iters.push_back(NewTwoLevelIterator(
-        new BlockEntryIteratorState(rep_->tables[it].get(), ro),
-        rep_->tables[it]->NewIndexIterator(ro), arena));
+        new BlockEntryIteratorState(rep_->tables[column_index].get(), ro),
+        rep_->tables[column_index]->NewIndexIterator(ro), arena));
   }
   return new ColumnIterator(iters, rep_->table_options.delim,
                             true, rep_->internal_comparator,

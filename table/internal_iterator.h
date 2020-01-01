@@ -73,14 +73,14 @@ class InternalIterator : public Cleanable {
   // satisfied without doing some IO, then this returns Status::Incomplete().
   virtual Status status() const = 0;
 
-  /***************************** Shichao **********************************/
+  /***************************** Shichao ******************************/
   // Support OLAP range query, Table iterator should re-implement this.
   virtual Status RangeQuery(ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) const {
+                            std::map<std::string, SeqTypeVal>& res) {
     return Status::NotSupported(Slice("not supported iterator..."));
   }
-  /***************************** Shichao **********************************/
+  /***************************** Shichao ******************************/
 
   // Pass the PinnedIteratorsManager to the Iterator, most Iterators dont
   // communicate with PinnedIteratorsManager so default implementation is no-op

@@ -1344,12 +1344,12 @@ struct ReadOptions {
   // Default: 0
   size_t readahead_size;
 
-  // Shichao, internally starts from 0, but for user starts from 1
+  /***************************** Quanzhao *********************************/
+  // If empty, RangeQuery will return all columns, else return the specified
+  // index column.
+  // Note: Column index must be from 1 to MAX_COLUMN_INDEX.
   std::vector<uint32_t> columns;
 
-  bool unique_key;  // Shichao
-
-  /***************************** Quanzhao *******************************/
   // If non-zero, RangeQuery will return the expected result keys of the
   // given maximum size in every batch. In addition, it will return the
   // all result keys in one batch.
@@ -1359,7 +1359,7 @@ struct ReadOptions {
   // Stores the temporary states for RangeQuery.
   // Note: Caller should not set the value.
   RangeQueryMeta* range_query_meta = nullptr;
-  /***************************** Quanzhao *******************************/
+  /***************************** Quanzhao *********************************/
 
   ReadOptions();
   ReadOptions(bool cksum, bool cache);

@@ -763,8 +763,7 @@ ReadOptions::ReadOptions()
       tailing(false),
       total_order_seek(false),
       pin_data(false),
-      readahead_size(0),
-      unique_key(false) {  // Shichao
+      readahead_size(0) {
 }
 
 ReadOptions::ReadOptions(bool cksum, bool cache)
@@ -776,8 +775,7 @@ ReadOptions::ReadOptions(bool cksum, bool cache)
       tailing(false),
       total_order_seek(false),
       pin_data(false),
-      readahead_size(0),
-      unique_key(false) {  // Shichao
+      readahead_size(0) {
 }
 
 }  // namespace rocksdb

@@ -928,6 +928,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
         CompressResultMap(&res, read_options.max_result_num);
       }
     }
+
     return Status();
   }
 
