@@ -41,15 +41,16 @@ int main(int argc, char* argv[]) {
     assert(s.ok());
     s = db->Put(write_options, "5", "data5");
     assert(s.ok());
+    s = db->Put(write_options, "6", "data6");
+    assert(s.ok());
 
     ReadOptions read_options;
-    // read_options.max_result_num = 0; // ok
-    read_options.max_result_num = 2; // ok
+    read_options.max_result_num = 0; // full search // ok
+    // read_options.max_result_num = 2; // in batch // ok
 
     // Range range; // full search // ok
-    // Range range("2", "5"); // key range // ok
-    Range range("2", kMax); // key range ???
-    // support [start, limit] ???
+    // Range range("2", "5"); // [2, 5] // ok
+    Range range("2", kMax); // [2, max] // ok
 
     std::vector<std::string> res;
     bool next = db->RangeQuery(read_options, range, res, &s);

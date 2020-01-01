@@ -887,8 +887,9 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     }
 
     for (; iter_->Valid(); iter_->Next()) {
-      bool valid = (range.limit_->user_key().compare(kMax) == 0)? true: (internal_comparator_.Compare(iter_->key(),
-          range.limit_->internal_key()) < 0);
+      bool valid = CompareRangeLimit(internal_comparator_,
+                                     iter_->key(),
+                                     range.limit_) <= 0;
       if (!valid) {
         break;
       }
@@ -923,6 +924,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
           hint->second.val_ = val;
         }
 
+        // TODO check whether scan the remaining key
         CompressResultMap(&res, read_options.max_result_num);
       }
     }

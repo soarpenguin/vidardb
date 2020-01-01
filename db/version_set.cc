@@ -282,8 +282,8 @@ class FilePicker {
   unsigned int start_index_in_curr_level_;
   // Slice user_key_; // limit
   // Slice ikey_; // start
-  const LookupKey& start_; // Quanzhao
-  const LookupKey& limit_; // Quanzhao
+  const LookupKey& start_; // Quanzhao, Included
+  const LookupKey& limit_; // Quanzhao, Included
   FileIndexer* file_indexer_;
   const Comparator* user_comparator_;
   const InternalKeyComparator* internal_comparator_;

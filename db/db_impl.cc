@@ -3720,11 +3720,24 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Update the next range query start key
-  if (tmp_res.size() > 0 && read_options.max_result_num > 0 &&
-      tmp_res.size() > read_options.max_result_num) {
+  size_t tmp_res_size = tmp_res.size();
+  if (tmp_res_size > 0 && read_options.max_result_num > 0 &&
+      tmp_res_size > read_options.max_result_num) {
     auto it = --(tmp_res.end());
     read_options.range_query_meta->next = Slice(it->first);
     tmp_res.erase(it); // Not include the next start key
+  }
+
+  // Check if have the next range query
+  bool next_query = true;
+  if (tmp_res_size == 0 || (read_options.max_result_num > 0 &&
+      tmp_res_size <= read_options.max_result_num) ||
+      read_options.max_result_num == 0) {
+    // no extra result
+    next_query = false;
+    ReturnAndCleanupSuperVersion(cfd, sv);
+    delete read_options.range_query_meta;
+    read_options.range_query_meta = nullptr;
   }
 
   // Copy to return the valid result list
@@ -3734,18 +3747,6 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
       res.push_back(it->second.val_);
     }
     it = tmp_res.erase(it);
-  }
-
-  // Check if have the next range query
-  bool next_query = true;
-  if (res.size() == 0 || (read_options.max_result_num > 0 &&
-      res.size() < read_options.max_result_num) ||
-      read_options.max_result_num == 0) {
-    // no extra result
-    next_query = false;
-    ReturnAndCleanupSuperVersion(cfd, sv);
-    delete read_options.range_query_meta;
-    read_options.range_query_meta = nullptr;
   }
 
   return next_query;

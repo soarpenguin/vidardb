@@ -376,6 +376,23 @@ inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
     }
   }
 }
+
+inline int CompareRangeLimit(const InternalKeyComparator& comparator,
+                             const Slice& internal_key,
+                             const LookupKey* limit) {
+  if (limit->user_key().compare(kMax) == 0) {
+    return -1;
+  } else if (comparator.user_comparator()->Compare(
+             ExtractUserKey(internal_key),
+             limit->user_key()) == 0) {
+    // include limit
+    return comparator.Compare(limit->internal_key(),
+                              internal_key);
+  } else {
+    return comparator.Compare(internal_key,
+                              limit->internal_key());
+  }
+}
 /**************************** Quanzhao *****************************/
 
 class IterKey {

@@ -1004,8 +1004,9 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         }
 
         for (; it->Valid(); it->Next()) {
-          bool valid = (range.limit_->user_key().compare(kMax) == 0)? true : (internal_comparator_.Compare(it->key(),
-              range.limit_->internal_key()) < 0);
+          bool valid = CompareRangeLimit(internal_comparator_,
+                                         it->key(),
+                                         range.limit_) <= 0;
           if (!valid) {
             break;
           }
@@ -1080,6 +1081,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         hint->second.val_ = tmp_STVs[i].val_;
       }
 
+      // TODO check whether scan the remaining key
       CompressResultMap(&res, read_options.max_result_num);
     }
 

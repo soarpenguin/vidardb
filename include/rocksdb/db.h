@@ -87,7 +87,7 @@ static const Slice kMax = Slice("max"); // Quanzhao
 // A range of keys
 struct Range {
   Slice start;          // Included in the range
-  Slice limit;          // Not included in the range
+  Slice limit;          // Included in the range
 
   Range() : start(kMin), limit(kMax) { } // Full search
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
