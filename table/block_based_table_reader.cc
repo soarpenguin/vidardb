@@ -876,7 +876,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
 
   virtual Status RangeQuery(ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) const {
+                            std::map<std::string, SeqTypeVal>& res) {
     SequenceNumber sequence_num = range.SequenceNum();
     std::string user_key, val;
 

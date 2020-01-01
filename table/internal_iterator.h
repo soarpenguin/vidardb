@@ -78,7 +78,7 @@ class InternalIterator : public Cleanable {
   virtual Status RangeQuery(ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
-    return Status::NotSupported(Slice("not supported iterator..."));
+    return Status::NotSupported(Slice("not implemented"));
   }
   /***************************** Shichao ******************************/
 
