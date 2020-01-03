@@ -45,6 +45,7 @@ class Slice;
 class Statistics;
 class InternalKeyComparator;
 class WalFilter;
+struct RangeQueryMeta;
 
 // DB contents are stored in a set of blocks, each of which holds a
 // sequence of key,value pairs.  Each block may be compressed before
@@ -1343,10 +1344,22 @@ struct ReadOptions {
   // Default: 0
   size_t readahead_size;
 
-  // Shichao, internally starts from 0, but for user starts from 1
+  /***************************** Quanzhao *********************************/
+  // If empty, RangeQuery will return all columns, else return the specified
+  // index column.
+  // Note: Column index must be from 1 to MAX_COLUMN_INDEX.
   std::vector<uint32_t> columns;
 
-  bool unique_key;  // Shichao
+  // If non-zero, RangeQuery will return the expected result keys of the
+  // given maximum size in every batch. In addition, it will return the
+  // all result keys in one batch.
+  // Default: 0
+  size_t max_result_num = 0;
+
+  // Stores the temporary states for RangeQuery.
+  // Note: Caller should not set the value.
+  RangeQueryMeta* range_query_meta = nullptr;
+  /***************************** Quanzhao *********************************/
 
   ReadOptions();
   ReadOptions(bool cksum, bool cache);

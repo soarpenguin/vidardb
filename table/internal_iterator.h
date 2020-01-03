@@ -11,7 +11,7 @@
 #include <vector>  // Shichao
 #include "rocksdb/iterator.h"
 #include "rocksdb/status.h"
-
+#include "rocksdb/options.h" // Quanzhao
 
 namespace rocksdb {
 
@@ -73,17 +73,14 @@ class InternalIterator : public Cleanable {
   // satisfied without doing some IO, then this returns Status::Incomplete().
   virtual Status status() const = 0;
 
-  /***************************** Shichao **********************************/
+  /***************************** Shichao ******************************/
   // Support OLAP range query, Table iterator should re-implement this.
-  virtual Status RangeQuery(const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res,
-                            filterFun filter,
-                            groupFun group,
-                            void* arg,
-                            bool unique_key) const {
-    return Status::NotSupported(Slice("not supported iterator..."));
+  virtual Status RangeQuery(ReadOptions& read_options,
+                            const LookupRange& range,
+                            std::map<std::string, SeqTypeVal>& res) {
+    return Status::NotSupported(Slice("not implemented"));
   }
-  /***************************** Shichao **********************************/
+  /***************************** Shichao ******************************/
 
   // Pass the PinnedIteratorsManager to the Iterator, most Iterators dont
   // communicate with PinnedIteratorsManager so default implementation is no-op

@@ -874,68 +874,61 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     return iter_->status();
   }
 
-  virtual Status RangeQuery(const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res,
-                            filterFun filter,
-                            groupFun group,
-                            void* arg,
-                            bool unique_key) const {
+  virtual Status RangeQuery(ReadOptions& read_options,
+                            const LookupRange& range,
+                            std::map<std::string, SeqTypeVal>& res) {
     SequenceNumber sequence_num = range.SequenceNum();
-    auto hint = res.end();
     std::string user_key, val;
-    std::vector<const std::string*> v;
-    for (iter_->Seek(range.start_->internal_key()); iter_->Valid(); iter_->Next()) {
-      if (internal_comparator_.Compare(iter_->key(),
-          range.limit_->internal_key()) >= 0) {
+
+    if (range.start_->user_key().compare(kMin) == 0) {
+      iter_->SeekToFirst(); // Full search
+    } else {
+      iter_->Seek(range.start_->internal_key());
+    }
+
+    for (; iter_->Valid(); iter_->Next()) {
+      bool valid = CompareRangeLimit(internal_comparator_,
+                                     iter_->key(),
+                                     range.limit_) <= 0;
+      if (!valid) {
         break;
       }
+
       ParsedInternalKey parsed_key;
       if (!ParseInternalKey(iter_->key(), &parsed_key)) {
         return Status::Corruption("corrupted internal key in Table::Iter");
       }
+
       if (parsed_key.sequence <= sequence_num) {
         user_key.assign(iter_->key().data(), iter_->key().size() - 8);
         val.assign(iter_->value().data(), iter_->value().size());
 
-        v.clear();
-        v.push_back(&user_key);
-        v.push_back(&val);
-        if (filter && !filter(v, 0)) {
-          continue;
+        auto hint = res.end();
+        while (hint != res.end() && hint->first < user_key) {
+          hint++;
         }
 
-        if (!unique_key) {
-          while (hint != res.end() && hint->first < user_key) {
-            hint++;
-          }
-          if (hint == res.end() || hint->first > user_key) {
-            hint = res.emplace_hint(hint, user_key,
-                SeqTypeVal(parsed_key.sequence, parsed_key.type, val));
-            if (hint->second.seq_ < parsed_key.sequence) {
-              hint->second.seq_ = parsed_key.sequence;
-              hint->second.type_ = parsed_key.type;
-              hint->second.val_ = val;
-            }
-          } else if (hint->second.seq_ < parsed_key.sequence) {
-            assert(hint->first == user_key);
+        if (hint == res.end() || hint->first > user_key) {
+          SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
+           parsed_key.type, val);
+          hint = res.emplace_hint(hint, user_key, user_val);
+          if (hint->second.seq_ < parsed_key.sequence) {
             hint->second.seq_ = parsed_key.sequence;
             hint->second.type_ = parsed_key.type;
             hint->second.val_ = val;
           }
+        } else if (hint->second.seq_ < parsed_key.sequence) {
+          assert(hint->first == user_key);
+          hint->second.seq_ = parsed_key.sequence;
+          hint->second.type_ = parsed_key.type;
+          hint->second.val_ = val;
         }
 
-        if (group && (unique_key || hint->second.seq_ == parsed_key.sequence)) {
-          if (group(v, 0, arg) && !unique_key) {
-            hint = res.erase(hint);
-            continue;
-          }
-        }
-
-        if (!unique_key) {
-          hint++;
-        }
+        // TODO check whether scan the remaining key
+        CompressResultMap(&res, read_options.max_result_num);
       }
     }
+
     return Status();
   }
 
