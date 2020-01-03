@@ -81,19 +81,19 @@ class ColumnFamilyHandle {
 static const int kMajorVersion = __ROCKSDB_MAJOR__;
 static const int kMinorVersion = __ROCKSDB_MINOR__;
 
-static const Slice kMin = Slice("min"); // Quanzhao
-static const Slice kMax = Slice("max"); // Quanzhao
+static const Slice kRangeQueryMin = Slice("min");  // Quanzhao
+static const Slice kRangeQueryMax = Slice("max");  // Quanzhao
 
 // A range of keys
 struct Range {
   Slice start;          // Included in the range
   Slice limit;          // Included in the range
 
-  Range() : start(kMin), limit(kMax) { } // Full search
+  Range() : start(kRangeQueryMin), limit(kRangeQueryMax) { }  // Full search
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 
-/***************************** Quanzhao ******************/
+/***************************** Quanzhao *****************************/
 struct RangeQueryMeta {
   Slice next;                       // Next included key
   void* column_family_data;         // Column family data
@@ -101,10 +101,9 @@ struct RangeQueryMeta {
   SequenceNumber snapshot;          // Current snapshot
 
   RangeQueryMeta(void* cfd, void* sv, SequenceNumber s) :
-    column_family_data(cfd), super_version(sv),
-    snapshot(s) {}
+    column_family_data(cfd), super_version(sv), snapshot(s) {}
 };
-/***************************** Quanzhao ******************/
+/***************************** Quanzhao *****************************/
 
 // A collections of table properties objects, where
 //  key: is the table's file name.
@@ -112,11 +111,6 @@ struct RangeQueryMeta {
 typedef std::unordered_map<std::string, std::shared_ptr<const TableProperties>>
     TablePropertiesCollection;
 
-/************************ Shichao **************************/
-using filterFun = bool(*)(std::vector<const std::string*>&, int);
-struct SeqTypeVal;
-using groupFun = bool(*)(std::vector<const std::string*>&, int, void*);
-/************************ Shichao **************************/
 
 // A DB is a persistent ordered map from keys to values.
 // A DB is safe for concurrent access from multiple threads without
@@ -235,15 +229,14 @@ class DB {
   virtual Status Get(const ReadOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
                      std::string* value) = 0;
-  virtual Status Get(const ReadOptions& options, const Slice& key, std::string* value) {
+  virtual Status Get(const ReadOptions& options, const Slice& key,
+                     std::string* value) {
     return Get(options, DefaultColumnFamily(), key, value);
   }
 
   /***************** Shichao **********************/
   // OLAP, given a range of keys, return attribute(s) values.
-  // Do not support merge currently. In other words,
-  // it will ignore kTypeMerge keys.
-  // If another sub range query, it returns true, else false.
+  // If another subrange query exists, it returns true, else false.
   virtual bool RangeQuery(ReadOptions& options,
                           ColumnFamilyHandle* column_family,
                           const Range& range,

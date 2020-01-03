@@ -3691,48 +3691,51 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Create lookup key range
-  LookupKey sLkey(read_options.range_query_meta->next, read_options.range_query_meta->snapshot);
-  LookupKey lLkey(range.limit, kMaxSequenceNumber);
-  LookupRange lookup_range(&sLkey, &lLkey);
+  LookupKey start_lookup_key(read_options.range_query_meta->next,
+                             read_options.range_query_meta->snapshot);
+  // TODO: might change the sequence number
+  LookupKey limit_lookup_key(range.limit, kMaxSequenceNumber);
+  LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
 
   // Prepare range query
-  std::map<std::string, SeqTypeVal> tmp_res;
-  bool skip_memtable = (read_options.read_tier == kPersistedTier &&   has_unpersisted_data_);
-  ColumnFamilyData* cfd = reinterpret_cast<ColumnFamilyData*>(read_options.range_query_meta->column_family_data);
-  SuperVersion* sv = reinterpret_cast<SuperVersion*>(read_options.range_query_meta->super_version);
-
+  std::map<std::string, SeqTypeVal> map_res;
+  ColumnFamilyData* cfd = reinterpret_cast<ColumnFamilyData*>(
+                          read_options.range_query_meta->column_family_data);
+  SuperVersion* sv = reinterpret_cast<SuperVersion*>(
+                     read_options.range_query_meta->super_version);
+  bool skip_memtable =
+      (read_options.read_tier == kPersistedTier && has_unpersisted_data_);
   // First look in the memtable, then in the immutable memtable (if any).
-  // s is both in/out. When in, s could either be OK or MergeInProgress.
-  // merge_operands will contain the sequence of merges in the latter case.
+  // s is both in/out. When in, s could be OK.
   if (!skip_memtable) {
-    if (!sv->mem->RangeQuery(read_options, lookup_range, tmp_res, s)) {
+    if (!sv->mem->RangeQuery(read_options, lookup_range, map_res, s)) {
       return false;
     }
-    if (!sv->imm->RangeQuery(read_options, lookup_range, tmp_res, s)) {
+    if (!sv->imm->RangeQuery(read_options, lookup_range, map_res, s)) {
       return false;
     }
   }
 
   *s = Status::OK();
-  sv->current->RangeQuery(read_options, lookup_range, tmp_res, s);
+  sv->current->RangeQuery(read_options, lookup_range, map_res, s);
   if (!s->ok()) {
     return false;
   }
 
   // Update the next range query start key
-  size_t tmp_res_size = tmp_res.size();
-  if (tmp_res_size > 0 && read_options.max_result_num > 0 &&
-      tmp_res_size > read_options.max_result_num) {
-    auto it = --(tmp_res.end());
+  size_t map_size = map_res.size();
+  if (read_options.batch_capacity > 0 &&
+      map_size > read_options.batch_capacity) {
+    auto it = --(map_res.end());
     read_options.range_query_meta->next = Slice(it->first);
-    tmp_res.erase(it); // Not include the next start key
+    map_res.erase(it);  // Not include the next start key
   }
 
   // Check if have the next range query
   bool next_query = true;
-  if (tmp_res_size == 0 || (read_options.max_result_num > 0 &&
-      tmp_res_size <= read_options.max_result_num) ||
-      read_options.max_result_num == 0) {
+  // TODO: not clear about 3rd condition, < or <=
+  if (map_size == 0 || read_options.batch_capacity == 0 ||
+      map_size <= read_options.batch_capacity) {
     // no extra result
     next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
@@ -3741,12 +3744,12 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Copy to return the valid result list
-  res.reserve(tmp_res.size());
-  for (auto it = tmp_res.begin(); it != tmp_res.end(); ) {
+  res.reserve(map_res.size());
+  for (auto it = map_res.begin(); it != map_res.end(); ) {
     if (it->second.type_ == kTypeValue) {
       res.push_back(it->second.val_);
     }
-    it = tmp_res.erase(it);
+    it = map_res.erase(it);
   }
 
   return next_query;

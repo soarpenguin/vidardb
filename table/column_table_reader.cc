@@ -985,7 +985,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
     SequenceNumber sequence_num = range.SequenceNum();
     std::string user_key, val;
 
-    if (range.start_->user_key().compare(kMin) == 0) {
+    if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
       SeekToFirst(); // Full search
     } else {
       Seek(range.start_->internal_key());
@@ -1029,7 +1029,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         }
 
         // TODO check whether scan the remaining key
-        CompressResultMap(&res, read_options.max_result_num);
+        CompressResultMap(&res, read_options.batch_capacity);
       }
     }
 

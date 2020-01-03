@@ -215,7 +215,7 @@ class FilePicker {
         is_hit_file_last_in_level_ =
             curr_index_in_curr_level_ == curr_file_level_->num_files - 1;
 
-        bool valid = (start_.user_key().compare(kMin) == 0)? false: (internal_comparator_->
+        bool valid = (start_.user_key().compare(kRangeQueryMin) == 0)? false: (internal_comparator_->
             InternalKeyComparator::Compare(f->largest_key, start_.internal_key()) < 0);
         if (is_hit_file_last_in_level_ && valid) {
           break;
@@ -223,10 +223,10 @@ class FilePicker {
 
         int cmp_largest = -1;
         if (num_levels_ > 1 || curr_file_level_->num_files > 3) {
-          int cmp_smallest = (limit_.user_key().compare(kMax) == 0)? 1: (user_comparator_->Compare(limit_.user_key(),
+          int cmp_smallest = (limit_.user_key().compare(kRangeQueryMax) == 0)? 1: (user_comparator_->Compare(limit_.user_key(),
               ExtractUserKey(f->smallest_key)));
           if (cmp_smallest > 0) {
-            cmp_largest = (limit_.user_key().compare(kMax) == 0) ? 1: (user_comparator_->Compare(limit_.user_key(),
+            cmp_largest = (limit_.user_key().compare(kRangeQueryMax) == 0) ? 1: (user_comparator_->Compare(limit_.user_key(),
                 ExtractUserKey(f->largest_key)));
           } else {
             if (curr_level_ == 0) {
@@ -318,7 +318,7 @@ class FilePicker {
       // any level. Otherwise, it only occurs at Level-0 (since Put/Deletes
       // are always compacted into a single entry).
       int32_t start_index;
-      if (curr_level_ == 0 || start_.user_key().compare(kMin) == 0) {
+      if (curr_level_ == 0 || start_.user_key().compare(kRangeQueryMin) == 0) {
         // On Level-0, we read through all files to check for overlap.
         start_index = 0;
       } else {

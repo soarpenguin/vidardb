@@ -36,7 +36,6 @@ enum InfoLogLevel : unsigned char;
 class SstFileManager;
 class FilterPolicy;
 class Logger;
-class MergeOperator;
 class Snapshot;
 class TableFactory;
 class MemTableRepFactory;
@@ -1350,11 +1349,11 @@ struct ReadOptions {
   // Note: Column index must be from 1 to MAX_COLUMN_INDEX.
   std::vector<uint32_t> columns;
 
-  // If non-zero, RangeQuery will return the expected result keys of the
-  // given maximum size in every batch. In addition, it will return the
-  // all result keys in one batch.
+  // If non-zero, RangeQuery will return the expected result keys of the given
+  // maximum size in every batch. Otherwise, it will return the all result keys
+  // in one batch.
   // Default: 0
-  size_t max_result_num = 0;
+  size_t batch_capacity = 0;
 
   // Stores the temporary states for RangeQuery.
   // Note: Caller should not set the value.

@@ -43,12 +43,12 @@ int main(int argc, char* argv[]) {
   assert(s.ok());
 
   ReadOptions read_options;
-  // read_options.max_result_num = 0; // full search // ok
-  read_options.max_result_num = 2; // in batch // ok
+  // read_options.batch_capacity = 0; // full search // ok
+  read_options.batch_capacity = 2; // in batch // ok
 
   Range range; // full search // ok
 //  Range range("2", "4"); // [2, 4] // ok
-//  Range range("1", kMax); // [1, max] // ok
+//  Range range("1", kRangeQueryMax); // [1, max] // ok
 
   vector<string> res;
   bool next = true;

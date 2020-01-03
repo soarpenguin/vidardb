@@ -479,7 +479,7 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
           }
 
           // TODO check whether scan the remaining key
-          CompressResultMap(s->res, s->read_options->max_result_num);
+          CompressResultMap(s->res, s->read_options->batch_capacity);
         }
         // FIXME: check should fall through?
         // [[gnu::fallthrough]];
