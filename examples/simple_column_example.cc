@@ -31,26 +31,33 @@ int main() {
   if (!s.ok()) cout << "Put not ok!" << endl;
 
   ReadOptions ro;
-//  ro.columns = {1};
+  ro.columns = {1};
 
-//  vector<string> resRQ;
-//  s = db->RangeQuery(ro, Range(), resRQ, nullptr);
-//  if (!s.ok()) cout << "RangQuery not ok!" << endl;
-//  cout << "RangeQuery count: " << resRQ.size() << endl;
+  vector<string> resRQ;
+  bool next = true;
+  while (next) { // range query loop
+    next = db->RangeQuery(ro, Range(), resRQ, &s);
+    assert(s.ok());
+    for (auto it = resRQ.begin(); it != resRQ.end(); it++) {
+      cout << *it << " ";
+    }
+    cout << endl;
+  }
+
 
   string val;
   s = db->Get(ro, "column2", &val);
   if (!s.ok()) cout << "Get not ok!" << endl;
-  cout<<val<<endl;
+  cout << "Get: " << val << endl;
 
   Iterator *it = db->NewIterator(ro);
   it->Seek("column1");
   if (it->Valid()) {
-    cout<<"value: "<<it->value().ToString()<<endl;
+    cout << "value: " << it->value().ToString() << endl;
   }
   for (it->SeekToFirst(); it->Valid(); it->Next()) {
-    cout<<"key: "<<it->key().ToString()
-        <<" value: "<<it->value().ToString()<<endl;
+    cout << "key: " << it->key().ToString()
+         << " value: " << it->value().ToString() << endl;
     s = db->Delete(WriteOptions(), it->key());
     if (!s.ok()) cout << "Delete not ok!" << endl;
   }
