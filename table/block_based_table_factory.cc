@@ -50,19 +50,19 @@ BlockBasedTableFactory::BlockBasedTableFactory(
 Status BlockBasedTableFactory::NewTableReader(
     const TableReaderOptions& table_reader_options,
     unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
-    unique_ptr<TableReader>* table_reader) const {
-  return NewTableReader(table_reader_options, std::move(file), file_size,
-                        table_reader, true);
-}
-
-Status BlockBasedTableFactory::NewTableReader(
-    const TableReaderOptions& table_reader_options,
-    unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
     unique_ptr<TableReader>* table_reader, bool prefetch_enabled) const {
   return BlockBasedTable::Open(
       table_reader_options.ioptions, table_reader_options.env_options,
       table_options_, table_reader_options.internal_comparator, std::move(file),
       file_size, table_reader, prefetch_enabled, table_reader_options.level);
+}
+
+Status BlockBasedTableFactory::NewTableReader(
+    const TableReaderOptions& table_reader_options,
+    unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
+    unique_ptr<TableReader>* table_reader) const {
+  return NewTableReader(table_reader_options, std::move(file), file_size,
+                        table_reader, true);
 }
 
 TableBuilder* BlockBasedTableFactory::NewTableBuilder(

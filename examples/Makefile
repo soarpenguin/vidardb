@@ -2,7 +2,7 @@ include ../make_config.mk
 
 .PHONY: clean librocksdb
 
-all: simple_example column_families_example compact_files_example transaction_example simple_column_example
+all: simple_example column_families_example compact_files_example transaction_example simple_column_example range_query_example range_query_column_example
 
 simple_example: librocksdb simple_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
@@ -19,8 +19,14 @@ transaction_example: librocksdb transaction_example.cc
 simple_column_example: librocksdb simple_column_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 
+range_query_example: librocksdb range_query_example.cc
+	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
+
+range_query_column_example: librocksdb range_query_column_example.cc
+	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
+
 clean:
-	rm -rf ./simple_example ./column_families_example ./compact_files_example ./transaction_example ./simple_column_example
+	rm -rf ./simple_example ./column_families_example ./compact_files_example ./transaction_example ./simple_column_example ./range_query_example ./range_query_column_example
 
 librocksdb:
 	cd .. && $(MAKE) static_lib

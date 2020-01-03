@@ -3665,51 +3665,82 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
 }
 
 /***************************** Shichao ******************************/
-Status DBImpl::RangeQuery(const ReadOptions& read_options,
-                          ColumnFamilyHandle* column_family,
-                          const Range& range,
-                          std::vector<std::string>& res,
-                          filterFun filter,
-                          groupFun group,
-                          void* arg) {
+bool DBImpl::RangeQuery(ReadOptions& read_options,
+                        ColumnFamilyHandle* column_family,
+                        const Range& range,
+                        std::vector<std::string>& res,
+                        Status* s) {
   res.clear();
-  auto cfh = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family);
-  auto cfd = cfh->cfd();
 
-  SequenceNumber snapshot;
-  if (read_options.snapshot != nullptr) {
-    snapshot = reinterpret_cast<const SnapshotImpl*>(
-        read_options.snapshot)->number_;
-  } else {
-    snapshot = versions_->LastSequence();
+  // Create range query metadata at first
+  if (read_options.range_query_meta == nullptr) {
+    SequenceNumber snapshot;
+    if (read_options.snapshot != nullptr) {
+      snapshot = reinterpret_cast<const SnapshotImpl*>(
+          read_options.snapshot)->number_;
+    } else {
+      snapshot = versions_->LastSequence();
+    }
+
+    auto cfh = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family);
+    auto cfd = cfh->cfd();
+
+    SuperVersion* sv = GetAndRefSuperVersion(cfd);
+    read_options.range_query_meta = new RangeQueryMeta(cfd, sv, snapshot);
+    read_options.range_query_meta->next = range.start;
   }
-  // Acquire SuperVersion
-  SuperVersion* sv = GetAndRefSuperVersion(cfd);
-  Status s;
+
+  // Create lookup key range
+  LookupKey sLkey(read_options.range_query_meta->next, read_options.range_query_meta->snapshot);
+  LookupKey lLkey(range.limit, kMaxSequenceNumber);
+  LookupRange lookup_range(&sLkey, &lLkey);
+
+  // Prepare range query
+  std::map<std::string, SeqTypeVal> tmp_res;
+  bool skip_memtable = (read_options.read_tier == kPersistedTier &&   has_unpersisted_data_);
+  ColumnFamilyData* cfd = reinterpret_cast<ColumnFamilyData*>(read_options.range_query_meta->column_family_data);
+  SuperVersion* sv = reinterpret_cast<SuperVersion*>(read_options.range_query_meta->super_version);
+
   // First look in the memtable, then in the immutable memtable (if any).
   // s is both in/out. When in, s could either be OK or MergeInProgress.
   // merge_operands will contain the sequence of merges in the latter case.
-  LookupKey sLkey(range.start, snapshot);
-  LookupKey lLkey(range.limit, kMaxSequenceNumber);
-  LookupRange lookup_range(&sLkey, &lLkey);
-  std::map<std::string, SeqTypeVal> tmp_res;
-  bool skip_memtable =
-      (read_options.read_tier == kPersistedTier && has_unpersisted_data_);
   if (!skip_memtable) {
-    if (!sv->mem->RangeQuery(lookup_range, tmp_res, &s, filter, group, arg,
-        read_options.unique_key)) {
-      return s;
+    if (!sv->mem->RangeQuery(read_options, lookup_range, tmp_res, s)) {
+      return false;
     }
-    if (!sv->imm->RangeQuery(lookup_range, tmp_res, &s, filter, group, arg,
-        read_options.unique_key)) {
-      return s;
+    if (!sv->imm->RangeQuery(read_options, lookup_range, tmp_res, s)) {
+      return false;
     }
   }
-  s = s.OK();
-  sv->current->RangeQuery(read_options, lookup_range, tmp_res, &s, filter, group, arg);
-  if (!s.ok()) {
-    return s;
+
+  *s = Status::OK();
+  sv->current->RangeQuery(read_options, lookup_range, tmp_res, s);
+  if (!s->ok()) {
+    return false;
   }
+
+  // Update the next range query start key
+  size_t tmp_res_size = tmp_res.size();
+  if (tmp_res_size > 0 && read_options.max_result_num > 0 &&
+      tmp_res_size > read_options.max_result_num) {
+    auto it = --(tmp_res.end());
+    read_options.range_query_meta->next = Slice(it->first);
+    tmp_res.erase(it); // Not include the next start key
+  }
+
+  // Check if have the next range query
+  bool next_query = true;
+  if (tmp_res_size == 0 || (read_options.max_result_num > 0 &&
+      tmp_res_size <= read_options.max_result_num) ||
+      read_options.max_result_num == 0) {
+    // no extra result
+    next_query = false;
+    ReturnAndCleanupSuperVersion(cfd, sv);
+    delete read_options.range_query_meta;
+    read_options.range_query_meta = nullptr;
+  }
+
+  // Copy to return the valid result list
   res.reserve(tmp_res.size());
   for (auto it = tmp_res.begin(); it != tmp_res.end(); ) {
     if (it->second.type_ == kTypeValue) {
@@ -3718,9 +3749,7 @@ Status DBImpl::RangeQuery(const ReadOptions& read_options,
     it = tmp_res.erase(it);
   }
 
-  ReturnAndCleanupSuperVersion(cfd, sv);
-
-  return s;
+  return next_query;
 }
 /***************************** Shichao ******************************/
 

@@ -83,13 +83,11 @@ class DBImpl : public DB {
 
   /*************************** Shichao ****************************/
   using DB::RangeQuery;
-  virtual Status RangeQuery(const ReadOptions& options,
-                            ColumnFamilyHandle* column_family,
-                            const Range& range,
-                            std::vector<std::string>& res,
-                            filterFun filter = nullptr,
-                            groupFun group = nullptr,
-                            void* arg = nullptr) override;
+  virtual bool RangeQuery(ReadOptions& options,
+                          ColumnFamilyHandle* column_family,
+                          const Range& range,
+                          std::vector<std::string>& res,
+                          Status* s = nullptr) override;
   /*************************** Shichao ****************************/
 
   virtual Status CreateColumnFamily(const ColumnFamilyOptions& options,

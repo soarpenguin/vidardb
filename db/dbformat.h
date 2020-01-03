@@ -355,6 +355,46 @@ struct SeqTypeVal {
 
 /**************** Shichao ******************/
 
+/**************************** Quanzhao *****************************/
+inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
+                              size_t max_result_num) {
+  if (max_result_num <= 0) { // infinite
+    return;
+  }
+
+  // reserve the next start key
+  size_t acceptable_size = max_result_num + 1;
+  if (res->size() <= acceptable_size) {
+    return;
+  }
+
+  std::map<std::string, SeqTypeVal>::reverse_iterator it = res->rbegin();
+  for (size_t i = acceptable_size; i < res->size(); i++) {
+    if (it != res->rend()) {
+      it = std::map<std::string, SeqTypeVal>::reverse_iterator(
+        res->erase((++it).base()));
+    }
+  }
+}
+
+inline int CompareRangeLimit(const InternalKeyComparator& comparator,
+                             const Slice& internal_key,
+                             const LookupKey* limit) {
+  if (limit->user_key().compare(kMax) == 0) {
+    return -1;
+  } else if (comparator.user_comparator()->Compare(
+             ExtractUserKey(internal_key),
+             limit->user_key()) == 0) {
+    // include limit
+    return comparator.Compare(limit->internal_key(),
+                              internal_key);
+  } else {
+    return comparator.Compare(internal_key,
+                              limit->internal_key());
+  }
+}
+/**************************** Quanzhao *****************************/
+
 class IterKey {
  public:
   IterKey()
