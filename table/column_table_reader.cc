@@ -982,19 +982,16 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   virtual Status RangeQuery(ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
-    SequenceNumber sequence_num = range.SequenceNum();
-    std::string user_key, val;
-
     if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
       SeekToFirst(); // Full search
     } else {
       Seek(range.start_->internal_key());
     }
 
+    SequenceNumber sequence_num = range.SequenceNum();
     for (; Valid(); Next()) { // Composite iterator
-      bool valid = CompareRangeLimit(internal_comparator_,
-                                     key(), range.limit_) <= 0;
-      if (!valid) {
+      if (!(CompareRangeLimit(internal_comparator_,
+                             key(), range.limit_) <= 0)) {
         break;
       }
 
@@ -1004,31 +1001,19 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       }
 
       if (parsed_key.sequence <= sequence_num) {
-        user_key.assign(key().data(), key().size() - 8);
-        val.assign(value().data(), value().size());
+        std::string user_key(key().data(), key().size() - 8);
+        std::string val(value().data(), value().size());
+        SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
+                                         parsed_key.type, val);
 
-        auto hint = res.end();
-        while (hint != res.end() && hint->first < user_key) {
-          hint++;
+        auto it = res.end();
+        it = res.emplace_hint(it, user_key, user_val);
+        if (it->second.seq_ < parsed_key.sequence) {
+          it->second.seq_ = parsed_key.sequence;
+          it->second.type_ = parsed_key.type;
+          it->second.val_ = val;
         }
 
-        if (hint == res.end() || hint->first > user_key) {
-          SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
-           parsed_key.type, val);
-          hint = res.emplace_hint(hint, user_key, user_val);
-          if (hint->second.seq_ < parsed_key.sequence) {
-            hint->second.seq_ = parsed_key.sequence;
-            hint->second.type_ = parsed_key.type;
-            hint->second.val_ = val;
-          }
-        } else if (hint->second.seq_ < parsed_key.sequence) {
-          assert(hint->first == user_key);
-          hint->second.seq_ = parsed_key.sequence;
-          hint->second.type_ = parsed_key.type;
-          hint->second.val_ = val;
-        }
-
-        // TODO check whether scan the remaining key
         CompressResultMap(&res, read_options.batch_capacity);
       }
     }

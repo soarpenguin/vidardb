@@ -37,6 +37,10 @@ int main(int argc, char* argv[]) {
   assert(s.ok());
   s = db->Delete(write_options, "1");
   assert(s.ok());
+  s = db->Put(write_options, "3", "data333");
+  assert(s.ok());
+  s = db->Put(write_options, "6", "data666");
+  assert(s.ok());
 
   // test sstable or memtable
   s = db->Flush(FlushOptions());
@@ -46,9 +50,10 @@ int main(int argc, char* argv[]) {
   // read_options.batch_capacity = 0; // full search // ok
   read_options.batch_capacity = 2; // in batch // ok
 
-  Range range; // full search // ok
-//  Range range("2", "4"); // [2, 4] // ok
-//  Range range("1", kRangeQueryMax); // [1, max] // ok
+  // Range range; // full search // ok
+  // Range range("2", "4"); // [2, 4] // ok
+  Range range("1", "6"); // [1, 6] // ok
+  // Range range("1", kRangeQueryMax); // [1, max] // ok
 
   vector<string> res;
   bool next = true;

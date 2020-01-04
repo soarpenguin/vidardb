@@ -3693,8 +3693,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   // Create lookup key range
   LookupKey start_lookup_key(read_options.range_query_meta->next,
                              read_options.range_query_meta->snapshot);
-  // TODO: might change the sequence number
-  LookupKey limit_lookup_key(range.limit, kMaxSequenceNumber);
+  LookupKey limit_lookup_key(range.limit, 0); // include limit key
   LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
 
   // Prepare range query

@@ -306,7 +306,7 @@ inline LookupKey::~LookupKey() {
 // A range of LookupKeys
 struct LookupRange {
   LookupKey* start_;          // Included in the range
-  LookupKey* limit_;          // Not included in the range
+  LookupKey* limit_;          // Included in the range
 
   LookupRange(): start_(NULL), limit_(NULL) { }
   LookupRange(LookupKey* start, LookupKey* limit) :
@@ -382,13 +382,9 @@ inline int CompareRangeLimit(const InternalKeyComparator& comparator,
                              const LookupKey* limit) {
   if (limit->user_key().compare(kRangeQueryMax) == 0) {
     return -1;
-  } else if (comparator.user_comparator()->Compare(
-             ExtractUserKey(internal_key), limit->user_key()) == 0) {
-    // include limit
-    return comparator.Compare(limit->internal_key(), internal_key);
-  } else {
-    return comparator.Compare(internal_key, limit->internal_key());
   }
+
+  return comparator.Compare(internal_key, limit->internal_key());
 }
 /**************************** Quanzhao *****************************/
 

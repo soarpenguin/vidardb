@@ -45,6 +45,10 @@ int main(int argc, char* argv[]) {
   assert(s.ok());
   s = db->Delete(write_options, "1");
   assert(s.ok());
+  s = db->Put(write_options, "3", "zhao333|35|nanjing");
+  assert(s.ok());
+  s = db->Put(write_options, "6", "lian666|30|changsha");
+  assert(s.ok());
 
   // force flush to disk
   s = db->Flush(FlushOptions());

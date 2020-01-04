@@ -453,51 +453,49 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
 
-  bool valid = CompareRangeLimit(s->mem->GetInternalKeyComparator(),
-                                 internal_key,
-                                 s->range->limit_) <= 0;
-  if (valid) {
-    const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
-    ValueType type;
-    UnPackSequenceAndType(tag, &s->seq, &type);
-    SequenceNumber sequence_num = s->range->SequenceNum();
-    switch (type) {
-      case kTypeValue:
-      case kTypeDeletion:
-      case kTypeSingleDeletion: {
-        if (s->seq <= sequence_num) {
-          std::string user_key(internal_key.data(), internal_key.size() - 8);
-          std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
-
-          SeqTypeVal user_val = SeqTypeVal(s->seq, type, val);
-          auto it = s->res->end();
-          it = s->res->emplace_hint(it, user_key, user_val);
-          if (it->second.seq_ < s->seq) {
-            it->second.seq_ = s->seq;
-            it->second.type_ = type;
-            it->second.val_ = val;
-          }
-
-          // TODO check whether scan the remaining key
-          CompressResultMap(s->res, s->read_options->batch_capacity);
-        }
-        // FIXME: check should fall through?
-        // [[gnu::fallthrough]];
-        *(s->status) = Status::OK();
-        return true;
-      }
-//      case kTypeMerge: {
-//        *(s->status) = Status::OK();
-//        return true;
-//      }
-      default:
-        *(s->status) = Status::Corruption(Slice());
-        return false;
-    }
+  if (!(CompareRangeLimit(s->mem->GetInternalKeyComparator(),
+                         internal_key,
+                         s->range->limit_) <= 0)) {
+    *(s->status) = Status::OK();
+    return false;
   }
 
-  *(s->status) = Status::OK();
-  return false;
+  const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
+  ValueType type;
+  UnPackSequenceAndType(tag, &s->seq, &type);
+  SequenceNumber sequence_num = s->range->SequenceNum();
+  switch (type) {
+    case kTypeValue:
+    case kTypeDeletion:
+    case kTypeSingleDeletion: {
+      if (s->seq <= sequence_num) {
+        std::string user_key(internal_key.data(), internal_key.size() - 8);
+        std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
+        SeqTypeVal user_val = SeqTypeVal(s->seq, type, val);
+
+        auto it = s->res->end();
+        it = s->res->emplace_hint(it, user_key, user_val);
+        if (it->second.seq_ < s->seq) {
+          it->second.seq_ = s->seq;
+          it->second.type_ = type;
+          it->second.val_ = val;
+        }
+
+        CompressResultMap(s->res, s->read_options->batch_capacity);
+      }
+      // FIXME: check should fall through?
+      // [[gnu::fallthrough]];
+      *(s->status) = Status::OK();
+      return true;
+    }
+    // case kTypeMerge: {
+    //   *(s->status) = Status::OK();
+    //   return true;
+    // }
+    default:
+      *(s->status) = Status::Corruption(Slice());
+      return false;
+  }
 }
 /***************************** Shichao *****************************/
 
