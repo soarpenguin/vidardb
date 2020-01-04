@@ -172,14 +172,12 @@ class MemTable {
 
   /******************************* Shichao *******************************/
   // If memtable overlaps with the range including the deleted key, store
-  // it in res and return true. Ignore kTypeMerge keys currently.
+  // it in res and return true.
   // If memtable does not overlap with the range, store a NotFound() error
   // in *status and return true.
   // Else, return false.
-  bool RangeQuery(ReadOptions& read_options,
-                  const LookupRange& range,
-                  std::map<std::string, SeqTypeVal>& res,
-                  Status* s);
+  bool RangeQuery(ReadOptions& read_options, const LookupRange& range,
+                  std::map<std::string, SeqTypeVal>& res, Status* s);
   /******************************* Shichao *******************************/
 
   // Attempts to update the new_value inplace, else does normal Add
@@ -192,9 +190,7 @@ class MemTable {
   //
   // REQUIRES: external synchronization to prevent simultaneous
   // operations on the same MemTable.
-  void Update(SequenceNumber seq,
-              const Slice& key,
-              const Slice& value);
+  void Update(SequenceNumber seq, const Slice& key, const Slice& value);
 
   // If prev_value for key exists, attempts to update it inplace.
   // else returns false
@@ -208,9 +204,7 @@ class MemTable {
   //
   // REQUIRES: external synchronization to prevent simultaneous
   // operations on the same MemTable.
-  bool UpdateCallback(SequenceNumber seq,
-                      const Slice& key,
-                      const Slice& delta);
+  bool UpdateCallback(SequenceNumber seq, const Slice& key, const Slice& delta);
 
   // Get total number of entries in the mem table.
   // REQUIRES: external synchronization to prevent simultaneous

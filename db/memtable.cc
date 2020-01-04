@@ -536,10 +536,8 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
 }
 
 /***************************** Shichao *****************************/
-bool MemTable::RangeQuery(ReadOptions& read_options,
-                          const LookupRange& range,
-                          std::map<std::string, SeqTypeVal>& res,
-                          Status* s) {
+bool MemTable::RangeQuery(ReadOptions& read_options, const LookupRange& range,
+                          std::map<std::string, SeqTypeVal>& res, Status* s) {
   if (IsEmpty()) {
     *s = Status::NotFound(Slice());
     return true;
@@ -556,21 +554,17 @@ bool MemTable::RangeQuery(ReadOptions& read_options,
   saver.env_ = env_;
   saver.read_options = &read_options;
 
-  size_t orig_size = res.size();
+  size_t old_size = res.size();
   table_->RangeQuery(range, res, &saver, SaveValueForRangeQuery);
-  if (res.size() == orig_size) {
+  if (res.size() == old_size) {
     *s = Status::NotFound(Slice());
   }
-  if (s->ok() || s->IsNotFound()) {
-    return true;
-  } else {
-    return false;
-  }
+
+  return (s->ok() || s->IsNotFound());
 }
 /***************************** Shichao *****************************/
 
-void MemTable::Update(SequenceNumber seq,
-                      const Slice& key,
+void MemTable::Update(SequenceNumber seq, const Slice& key,
                       const Slice& value) {
   LookupKey lkey(key, seq);
   Slice mem_key = lkey.memtable_key();
@@ -616,7 +610,6 @@ void MemTable::Update(SequenceNumber seq,
   // key doesn't exist
   Add(seq, kTypeValue, key, value);
 }
-
 
 void MemTableRep::Get(const LookupKey& k, void* callback_args,
                       bool (*callback_func)(void* arg, const char* entry)) {
