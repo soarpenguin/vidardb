@@ -3666,10 +3666,8 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
 
 /***************************** Shichao ******************************/
 bool DBImpl::RangeQuery(ReadOptions& read_options,
-                        ColumnFamilyHandle* column_family,
-                        const Range& range,
-                        std::vector<std::string>& res,
-                        Status* s) {
+                        ColumnFamilyHandle* column_family, const Range& range,
+                        std::vector<std::string>& res, Status* s) {
   res.clear();
 
   // Create range query metadata at first

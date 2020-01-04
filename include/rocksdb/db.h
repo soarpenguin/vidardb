@@ -122,8 +122,7 @@ class DB {
   // OK on success.
   // Stores nullptr in *dbptr and returns a non-OK status on error.
   // Caller should delete *dbptr when it is no longer needed.
-  static Status Open(const Options& options,
-                     const std::string& name,
+  static Status Open(const Options& options, const std::string& name,
                      DB** dbptr);
 
   // Open the database for read only. All DB interfaces
@@ -134,8 +133,8 @@ class DB {
   // Not supported in ROCKSDB_LITE, in which case the function will
   // return Status::NotSupported.
   static Status OpenForReadOnly(const Options& options,
-      const std::string& name, DB** dbptr,
-      bool error_if_log_file_exist = false);
+                                const std::string& name, DB** dbptr,
+                                bool error_if_log_file_exist = false);
 
   // Open the database for read only with column families. When opening DB with
   // read only, you can specify only a subset of column families in the
@@ -238,17 +237,13 @@ class DB {
   // OLAP, given a range of keys, return attribute(s) values.
   // If another subrange query exists, it returns true, else false.
   virtual bool RangeQuery(ReadOptions& options,
-                          ColumnFamilyHandle* column_family,
-                          const Range& range,
-                          std::vector<std::string>& res,
-                          Status* s = nullptr) {
+                          ColumnFamilyHandle* column_family, const Range& range,
+                          std::vector<std::string>& res, Status* s = nullptr) {
     *s = Status::NotSupported(Slice());
     return false;
   }
-  virtual bool RangeQuery(ReadOptions& options,
-                          const Range& range,
-                          std::vector<std::string>& res,
-                          Status* s = nullptr) {
+  virtual bool RangeQuery(ReadOptions& options, const Range& range,
+                          std::vector<std::string>& res, Status* s = nullptr) {
     return RangeQuery(options, DefaultColumnFamily(), range, res, s);
   }
   /***************** Shichao **********************/
@@ -578,16 +573,16 @@ class DB {
   //
   // @see GetDataBaseMetaData
   // @see GetColumnFamilyMetaData
-  virtual Status CompactFiles(
-      const CompactionOptions& compact_options,
-      ColumnFamilyHandle* column_family,
-      const std::vector<std::string>& input_file_names,
-      const int output_level, const int output_path_id = -1) = 0;
+  virtual Status CompactFiles(const CompactionOptions& compact_options,
+                              ColumnFamilyHandle* column_family,
+                              const std::vector<std::string>& input_file_names,
+                              const int output_level,
+                              const int output_path_id = -1) = 0;
 
-  virtual Status CompactFiles(
-      const CompactionOptions& compact_options,
-      const std::vector<std::string>& input_file_names,
-      const int output_level, const int output_path_id = -1) {
+  virtual Status CompactFiles(const CompactionOptions& compact_options,
+                              const std::vector<std::string>& input_file_names,
+                              const int output_level,
+                              const int output_path_id = -1) {
     return CompactFiles(compact_options, DefaultColumnFamily(),
                         input_file_names, output_level, output_path_id);
   }
@@ -738,8 +733,7 @@ class DB {
                                        ColumnFamilyMetaData* /*metadata*/) {}
 
   // Get the metadata of the default column family.
-  void GetColumnFamilyMetaData(
-      ColumnFamilyMetaData* metadata) {
+  void GetColumnFamilyMetaData(ColumnFamilyMetaData* metadata) {
     GetColumnFamilyMetaData(DefaultColumnFamily(), metadata);
   }
 
