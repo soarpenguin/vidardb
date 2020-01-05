@@ -3740,12 +3740,10 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Copy to return the valid result list
-  res.reserve(map_res.size());
-  for (auto it = map_res.begin(); it != map_res.end(); ) {
-    if (it->second.type_ == kTypeValue) {
-      res.push_back(it->second.val_);
+  for (const auto& it : map_res) {
+    if (it.second.type_ == kTypeValue) {
+      res.emplace_back(std::move(it.second.val_));
     }
-    it = map_res.erase(it);
   }
 
   return next_query;
