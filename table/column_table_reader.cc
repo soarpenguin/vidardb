@@ -979,7 +979,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
     return s;
   }
 
-  virtual Status RangeQuery(ReadOptions& read_options,
+  virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
     if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
@@ -989,9 +989,8 @@ class ColumnTable::ColumnIterator : public InternalIterator {
     }
 
     SequenceNumber sequence_num = range.SequenceNum();
-    for (; Valid(); Next()) { // Composite iterator
-      if (!(CompareRangeLimit(internal_comparator_,
-                             key(), range.limit_) <= 0)) {
+    for ( ; Valid(); Next()) {  // Composite iterator
+      if (CompareRangeLimit(internal_comparator_, key(), range.limit_) > 0) {
         break;
       }
 

@@ -874,7 +874,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     return iter_->status();
   }
 
-  virtual Status RangeQuery(ReadOptions& read_options,
+  virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
     if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
@@ -885,9 +885,8 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
 
     SequenceNumber sequence_num = range.SequenceNum();
     for (; iter_->Valid(); iter_->Next()) {
-      if (!(CompareRangeLimit(internal_comparator_,
-                             iter_->key(),
-                             range.limit_) <= 0)) {
+      if (CompareRangeLimit(internal_comparator_, iter_->key(),
+                            range.limit_) > 0) {
         break;
       }
 
@@ -899,11 +898,10 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
       if (parsed_key.sequence <= sequence_num) {
         std::string user_key(iter_->key().data(), iter_->key().size() - 8);
         std::string val(iter_->value().data(), iter_->value().size());
-        SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
-                                         parsed_key.type, val);
+        SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type, val);
 
         auto it = res.end();
-        it = res.emplace_hint(it, user_key, user_val);
+        it = res.emplace_hint(it, std::move(user_key), std::move(stv));
         if (it->second.seq_ < parsed_key.sequence) {
           it->second.seq_ = parsed_key.sequence;
           it->second.type_ = parsed_key.type;

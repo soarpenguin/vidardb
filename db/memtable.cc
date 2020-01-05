@@ -473,7 +473,7 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
         SeqTypeVal stv = SeqTypeVal(s->seq, type, val);
 
         auto it = s->res->end();
-        it = s->res->emplace_hint(it, user_key, stv);
+        it = s->res->emplace_hint(it, std::move(user_key), std::move(stv));
         if (it->second.seq_ < s->seq) {
           it->second.seq_ = s->seq;
           it->second.type_ = type;

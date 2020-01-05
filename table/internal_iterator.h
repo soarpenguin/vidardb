@@ -75,7 +75,7 @@ class InternalIterator : public Cleanable {
 
   /***************************** Shichao ******************************/
   // Support OLAP range query, Table iterator should re-implement this.
-  virtual Status RangeQuery(ReadOptions& read_options,
+  virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
     return Status::NotSupported(Slice("not implemented"));

@@ -215,19 +215,22 @@ class FilePicker {
         is_hit_file_last_in_level_ =
             curr_index_in_curr_level_ == curr_file_level_->num_files - 1;
 
-        bool valid = (start_.user_key().compare(kRangeQueryMin) == 0)? false: (internal_comparator_->
-            InternalKeyComparator::Compare(f->largest_key, start_.internal_key()) < 0);
+        bool valid = (start_.user_key().compare(kRangeQueryMin) == 0) ? false :
+                     (internal_comparator_->InternalKeyComparator::Compare(
+                         f->largest_key, start_.internal_key()) < 0);
         if (is_hit_file_last_in_level_ && valid) {
           break;
         }
 
         int cmp_largest = -1;
         if (num_levels_ > 1 || curr_file_level_->num_files > 3) {
-          int cmp_smallest = (limit_.user_key().compare(kRangeQueryMax) == 0)? 1: (user_comparator_->Compare(limit_.user_key(),
-              ExtractUserKey(f->smallest_key)));
+          int cmp_smallest = (limit_.user_key().compare(kRangeQueryMax) == 0) ?
+              1 : user_comparator_->Compare(limit_.user_key(),
+                                            ExtractUserKey(f->smallest_key));
           if (cmp_smallest > 0) {
-            cmp_largest = (limit_.user_key().compare(kRangeQueryMax) == 0) ? 1: (user_comparator_->Compare(limit_.user_key(),
-                ExtractUserKey(f->largest_key)));
+            cmp_largest = (limit_.user_key().compare(kRangeQueryMax) == 0) ?
+                1 : user_comparator_->Compare(limit_.user_key(),
+                                              ExtractUserKey(f->largest_key));
           } else {
             if (curr_level_ == 0) {
               ++curr_index_in_curr_level_;
@@ -280,8 +283,6 @@ class FilePicker {
   LevelFilesBrief* curr_file_level_;
   unsigned int curr_index_in_curr_level_;
   unsigned int start_index_in_curr_level_;
-  // Slice user_key_; // limit
-  // Slice ikey_; // start
   const LookupKey& start_; // Quanzhao, Included
   const LookupKey& limit_; // Quanzhao, Included
   FileIndexer* file_indexer_;
@@ -332,11 +333,11 @@ class FilePicker {
             search_right_bound_ =
                 static_cast<int32_t>(curr_file_level_->num_files) - 1;
           }
-          start_index = FindFileInRange(*internal_comparator_,
-                                        *curr_file_level_,
-                                        start_.internal_key(),
-                                        static_cast<uint32_t>(search_left_bound_),
-                                        static_cast<uint32_t>(search_right_bound_));
+          start_index =
+              FindFileInRange(*internal_comparator_, *curr_file_level_,
+                              start_.internal_key(),
+                              static_cast<uint32_t>(search_left_bound_),
+                              static_cast<uint32_t>(search_right_bound_));
         } else {
           // search_left_bound > search_right_bound, key does not exist in
           // this level. Since no comparison is done in this level, it will
@@ -960,11 +961,9 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
       GetContext::kNotFound, user_key,
       value, value_found, this->env_, seq);
 
-  FilePicker fp(storage_info_.files_, k, k,
-                &storage_info_.level_files_brief_,
+  FilePicker fp(storage_info_.files_, k, k, &storage_info_.level_files_brief_,
                 storage_info_.num_non_empty_levels_,
-                &storage_info_.file_indexer_,
-                user_comparator(),
+                &storage_info_.file_indexer_, user_comparator(),
                 internal_comparator());
   FdWithKeyRange* f = fp.GetNextFile();
   while (f != nullptr) {
@@ -1008,28 +1007,24 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
 }
 
 /******************************** Shichao ********************************/
-void Version::RangeQuery(ReadOptions& read_options,
+void Version::RangeQuery(const ReadOptions& read_options,
                          const LookupRange& range,
                          std::map<std::string, SeqTypeVal>& res,
                          Status* status) {
   assert(status->ok());
 
-  FilePicker fp(storage_info_.files_,
-                *range.start_,
-                *range.limit_,
+  FilePicker fp(storage_info_.files_, *range.start_, *range.limit_,
                 &storage_info_.level_files_brief_,
                 storage_info_.num_non_empty_levels_,
-                &storage_info_.file_indexer_,
-                user_comparator(),
+                &storage_info_.file_indexer_, user_comparator(),
                 internal_comparator());
 
   FdWithKeyRange* f = fp.GetNextFileForRangeQuery();
   while (f != nullptr) {
     std::unique_ptr<InternalIterator> iter(
-      table_cache_->NewIterator(read_options,
-       vset_->env_options_, *internal_comparator(),
-       f->fd, nullptr, nullptr, true, nullptr, -1,
-       false));
+       table_cache_->NewIterator(read_options, vset_->env_options_,
+                                 *internal_comparator(), f->fd, nullptr,
+                                 nullptr, true, nullptr, -1, false));
     *status = iter->status();
     if (!status->ok()) {
       return;
