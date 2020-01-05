@@ -391,7 +391,7 @@ struct Saver {
   Logger* logger;
   Statistics* statistics;
   Env* env_;
-  ReadOptions* read_options; // Quanzhao
+  const ReadOptions* read_options;  // Quanzhao
 };
 }  // namespace
 
@@ -453,9 +453,8 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
 
-  if (!(CompareRangeLimit(s->mem->GetInternalKeyComparator(),
-                         internal_key,
-                         s->range->limit_) <= 0)) {
+  if (CompareRangeLimit(s->mem->GetInternalKeyComparator(), internal_key,
+                        s->range->limit_) > 0) {
     *(s->status) = Status::OK();
     return false;
   }
@@ -471,10 +470,10 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
       if (s->seq <= sequence_num) {
         std::string user_key(internal_key.data(), internal_key.size() - 8);
         std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
-        SeqTypeVal user_val = SeqTypeVal(s->seq, type, val);
+        SeqTypeVal stv = SeqTypeVal(s->seq, type, val);
 
         auto it = s->res->end();
-        it = s->res->emplace_hint(it, user_key, user_val);
+        it = s->res->emplace_hint(it, user_key, stv);
         if (it->second.seq_ < s->seq) {
           it->second.seq_ = s->seq;
           it->second.type_ = type;
@@ -483,15 +482,9 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
 
         CompressResultMap(s->res, s->read_options->batch_capacity);
       }
-      // FIXME: check should fall through?
-      // [[gnu::fallthrough]];
       *(s->status) = Status::OK();
       return true;
     }
-    // case kTypeMerge: {
-    //   *(s->status) = Status::OK();
-    //   return true;
-    // }
     default:
       *(s->status) = Status::Corruption(Slice());
       return false;
@@ -534,7 +527,8 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
 }
 
 /***************************** Shichao *****************************/
-bool MemTable::RangeQuery(ReadOptions& read_options, const LookupRange& range,
+bool MemTable::RangeQuery(const ReadOptions& read_options,
+                          const LookupRange& range,
                           std::map<std::string, SeqTypeVal>& res, Status* s) {
   if (IsEmpty()) {
     *s = Status::NotFound(Slice());

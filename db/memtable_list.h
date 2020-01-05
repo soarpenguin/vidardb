@@ -60,10 +60,8 @@ class MemTableListVersion {
   }
 
   /******************************* Shichao *******************************/
-  bool RangeQuery(ReadOptions& read_options,
-                  const LookupRange& range,
-                  std::map<std::string, SeqTypeVal>& res,
-                  Status* s);
+  bool RangeQuery(const ReadOptions& read_options, const LookupRange& range,
+                  std::map<std::string, SeqTypeVal>& res, Status* s);
   /******************************* Shichao *******************************/
 
   // Similar to Get(), but searches the Memtable history of memtables that

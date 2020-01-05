@@ -357,23 +357,20 @@ struct SeqTypeVal {
 
 /**************************** Quanzhao *****************************/
 inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
-                              size_t max_result_num) {
-  if (max_result_num <= 0) { // infinite
+                              size_t batch_capacity) {
+  if (batch_capacity <= 0) { // infinite
     return;
   }
 
   // reserve the next start key
-  size_t acceptable_size = max_result_num + 1;
-  if (res->size() <= acceptable_size) {
+  size_t ok_size = batch_capacity + 1;
+  if (res->size() <= ok_size) {
     return;
   }
 
-  std::map<std::string, SeqTypeVal>::reverse_iterator it = res->rbegin();
-  for (size_t i = acceptable_size; i < res->size(); i++) {
-    if (it != res->rend()) {
-      it = std::map<std::string, SeqTypeVal>::reverse_iterator(
-        res->erase((++it).base()));
-    }
+  size_t diff_size = res->size() - ok_size;
+  for (size_t i = 0; i < diff_size; i++) {
+    res->erase(--(res->end()));
   }
 }
 

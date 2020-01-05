@@ -3691,7 +3691,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   // Create lookup key range
   LookupKey start_lookup_key(read_options.range_query_meta->next,
                              read_options.range_query_meta->snapshot);
-  LookupKey limit_lookup_key(range.limit, 0); // include limit key
+  LookupKey limit_lookup_key(range.limit, 0);  // include limit key
   LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
 
   // Prepare range query
@@ -3730,9 +3730,8 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
   // Check if have the next range query
   bool next_query = true;
-  // TODO: not clear about 3rd condition, < or <=
   if (map_size == 0 || read_options.batch_capacity == 0 ||
-      map_size <= read_options.batch_capacity) {
+      map_size <= read_options.batch_capacity) {  // map_size includes the extra
     // no extra result
     next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
