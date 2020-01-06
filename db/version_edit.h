@@ -46,6 +46,8 @@ struct FileDescriptor {
         file_size(_file_size),
         file_size_total(_file_size_total) {}  // Shichao
 
+  FileDescriptor(const FileDescriptor& fd) { *this = fd; }
+
   FileDescriptor& operator=(const FileDescriptor& fd) {
     table_reader = fd.table_reader;
     packed_number_and_path_id = fd.packed_number_and_path_id;
