@@ -1,6 +1,8 @@
+.project
+.cproject
 *.code-workspace
-.vscode
-.settings
+*.vscode
+.settings/
 *.d
 *.o
 shared-objects
