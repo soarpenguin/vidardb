@@ -49,6 +49,10 @@ int main(int argc, char* argv[]) {
   assert(s.ok());
   s = db->Put(write_options, "6", "lian666|30|changsha");
   assert(s.ok());
+  s = db->Put(write_options, "1", "chen1111|33|hangzhou");
+  assert(s.ok());
+  s = db->Delete(write_options, "3");
+  assert(s.ok());
 
   // force flush to disk
   s = db->Flush(FlushOptions());
@@ -60,7 +64,8 @@ int main(int argc, char* argv[]) {
 
   // Range range; // full search // ok
   // Range range("2", "5"); // [2, 5] // ok
-  Range range("1", kRangeQueryMax); // [1, max] // ok
+  Range range("1", "6"); // [1, 6] // ok
+  // Range range("1", kRangeQueryMax); // [1, max] // ok
 
   vector<string> res;
   bool next = true;

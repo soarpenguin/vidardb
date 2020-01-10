@@ -41,6 +41,10 @@ int main(int argc, char* argv[]) {
   assert(s.ok());
   s = db->Put(write_options, "6", "data666");
   assert(s.ok());
+  s = db->Put(write_options, "1", "data1111");
+  assert(s.ok());
+  s = db->Delete(write_options, "3");
+  assert(s.ok());
 
   // test sstable or memtable
   s = db->Flush(FlushOptions());

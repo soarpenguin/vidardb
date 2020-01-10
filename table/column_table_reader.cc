@@ -2,6 +2,7 @@
 
 #include <string>
 #include <utility>
+#include <bitset>
 
 #include "db/dbformat.h"
 #include "db/filename.h"
@@ -982,39 +983,99 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
-    if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
-      SeekToFirst(); // Full search
-    } else {
-      Seek(range.start_->internal_key());
-    }
+    // TODO support dynamic size ???
+    std::bitset<64> sub_key_set;
+    std::map<std::string, uint64_t> user_keys;
+    std::map<uint64_t, SeqTypeVal> user_vals;
 
     SequenceNumber sequence_num = range.SequenceNum();
-    for ( ; Valid(); Next()) {  // Composite iterator
-      if (CompareRangeLimit(internal_comparator_, key(), range.limit_) > 0) {
-        break;
-      }
+    // Range query one by one to improve performance
+    for (size_t i = 0; i < columns_.size(); i++) {
+      InternalIterator* iter = columns_[i];
 
-      ParsedInternalKey parsed_key;
-      if (!ParseInternalKey(key(), &parsed_key)) {
-        return Status::Corruption("corrupted internal key in Table::Iter");
-      }
-
-      if (parsed_key.sequence <= sequence_num) {
-        std::string user_key(key().data(), key().size() - 8);
-        std::string val(value().data(), value().size());
-        SeqTypeVal user_val = SeqTypeVal(parsed_key.sequence,
-                                         parsed_key.type, val);
-
-        auto it = res.end();
-        it = res.emplace_hint(it, user_key, user_val);
-        if (it->second.seq_ < parsed_key.sequence) {
-          it->second.seq_ = parsed_key.sequence;
-          it->second.type_ = parsed_key.type;
-          it->second.val_ = val;
+      if (i == 0) { // query sub keys from main column
+        if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
+          iter->SeekToFirst(); // Full search
+        } else {
+          iter->Seek(range.start_->internal_key());
         }
 
-        CompressResultMap(&res, read_options.batch_capacity);
+        for (; iter->Valid(); iter->Next()) { // main iterator
+          if (CompareRangeLimit(internal_comparator_, iter->key(),
+                                range.limit_) > 0) {
+            break;
+          }
+
+          ParsedInternalKey parsed_key;
+          if (!ParseInternalKey(iter->key(), &parsed_key)) {
+            return Status::Corruption("corrupted internal key in Table::Iter");
+          }
+
+          if (parsed_key.sequence <= sequence_num) {
+            std::string user_key(iter->key().data(), iter->key().size() - 8);
+            std::string val(iter->value().data(), iter->value().size());
+            SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type, "");
+
+            uint64_t sub_key;
+            GetFixed64BigEndian(new Slice(val), &sub_key);
+
+            sub_key_set.set(sub_key);
+            auto it_val = user_vals.end();
+            it_val = user_vals.emplace_hint(it_val, sub_key, std::move(stv));
+            if (it_val->second.seq_ < parsed_key.sequence) {
+              it_val->second.seq_ = parsed_key.sequence;
+              it_val->second.type_ = parsed_key.type;
+              it_val->second.val_ = "";
+            }
+
+            auto it_key = user_keys.end();
+            it_key = user_keys.emplace_hint(it_key, std::move(user_key), sub_key);
+            // TODO duplicated sub_key after compaction ???
+            if (it_key->second < sub_key) {
+              sub_key_set.reset(it_key->second);
+              user_vals.erase(it_key->second);
+              it_key->second = sub_key;
+            }
+          }
+        }
+      } else { // loop query all sub column values
+        uint64_t sub_key_pos = 0; // sub key index
+        for (iter->SeekToFirst(); iter->Valid() && sub_key_pos < num_entries_;
+             iter->Next(), sub_key_pos++) {
+          if (!sub_key_set.test(sub_key_pos)) {
+            continue;
+          }
+
+          auto it = user_vals.find(sub_key_pos);
+          if (it == user_vals.end()) {
+            continue; // not found
+          }
+
+          it->second.val_.append(iter->value().ToString());
+          if (i < (columns_.size() - 1)) {
+            it->second.val_.append(1, delim_);
+          }
+        }
       }
+    }
+
+    for (auto it = user_keys.begin(); it != user_keys.end(); ++it) {
+      std::string user_key = it->first;
+      auto user_val = user_vals.find(it->second);
+      if (user_val == user_vals.end()) {
+        continue; // not found
+      }
+
+      SeqTypeVal stv = user_val->second;
+      auto res_it = res.end();
+      res_it = res.emplace_hint(res_it, std::move(user_key), stv);
+      if (res_it->second.seq_ < stv.seq_) {
+        res_it->second.seq_ = stv.seq_;
+        res_it->second.type_ = stv.type_;
+        res_it->second.val_ = stv.val_;
+      }
+
+      CompressResultMap(&res, read_options.batch_capacity);
     }
 
     return Status();
