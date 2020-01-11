@@ -2,7 +2,6 @@
 
 #include <string>
 #include <utility>
-#include <bitset>
 
 #include "db/dbformat.h"
 #include "db/filename.h"
@@ -983,12 +982,6 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
-<<<<<<< HEAD
-    // TODO support dynamic size ???
-    std::bitset<64> sub_key_set;
-    std::map<std::string, uint64_t> user_keys;
-    std::map<uint64_t, SeqTypeVal> user_vals;
-=======
     std::vector<std::string> user_keys;
     std::vector<SeqTypeVal> user_vals;
     std::vector<bool> sub_key_bs;
@@ -997,31 +990,25 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       user_vals.reserve(num_entries_);
       sub_key_bs.reserve(num_entries_);
     }
->>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
 
-    Slice start_sub_key; // track start sub key
+    std::string start_sub_key; // track start sub key
     SequenceNumber sequence_num = range.SequenceNum();
     // Range query one by one to improve performance
-    for (size_t i = 0; i < columns_.size(); i++) {
+    for (size_t i = 0u; i < columns_.size(); i++) {
       InternalIterator* iter = columns_[i];
 
-      if (i == 0) { // query sub keys from main column
+      if (i == 0) {  // query sub keys from main column
         if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
           iter->SeekToFirst(); // Full search
         } else {
           iter->Seek(range.start_->internal_key());
         }
 
-        for (; iter->Valid(); iter->Next()) { // main iterator
-<<<<<<< HEAD
-          if (CompareRangeLimit(internal_comparator_, iter->key(),
-                                range.limit_) > 0) {
-=======
-          LookupKey* limit_ = reinterpret_cast<LookupKey*>(
-            read_options.range_query_meta->current_limit_key);
+        for (; iter->Valid(); iter->Next()) {  // main iterator
+          LookupKey* limit_ = static_cast<LookupKey*>(
+              read_options.range_query_meta->current_limit_key);
           if (CompareRangeLimit(internal_comparator_, iter->key(),
                                 limit_) > 0) {
->>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
             break;
           }
 
@@ -1031,100 +1018,36 @@ class ColumnTable::ColumnIterator : public InternalIterator {
           }
 
           if (parsed_key.sequence <= sequence_num) {
-            std::string user_key(iter->key().data(), iter->key().size() - 8);
-<<<<<<< HEAD
-            std::string val(iter->value().data(), iter->value().size());
-            SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type, "");
-
-            uint64_t sub_key;
-            GetFixed64BigEndian(new Slice(val), &sub_key);
-
-            sub_key_set.set(sub_key);
-            auto it_val = user_vals.end();
-            it_val = user_vals.emplace_hint(it_val, sub_key, std::move(stv));
-            if (it_val->second.seq_ < parsed_key.sequence) {
-              it_val->second.seq_ = parsed_key.sequence;
-              it_val->second.type_ = parsed_key.type;
-              it_val->second.val_ = "";
-            }
-
-            auto it_key = user_keys.end();
-            it_key = user_keys.emplace_hint(it_key, std::move(user_key), sub_key);
-            // TODO duplicated sub_key after compaction ???
-            if (it_key->second < sub_key) {
-              sub_key_set.reset(it_key->second);
-              user_vals.erase(it_key->second);
-              it_key->second = sub_key;
-            }
-          }
-        }
-      } else { // loop query all sub column values
-        uint64_t sub_key_pos = 0; // sub key index
-        for (iter->SeekToFirst(); iter->Valid() && sub_key_pos < num_entries_;
-             iter->Next(), sub_key_pos++) {
-          if (!sub_key_set.test(sub_key_pos)) {
-            continue;
-          }
-
-          auto it = user_vals.find(sub_key_pos);
-          if (it == user_vals.end()) {
-            continue; // not found
-          }
-
-          it->second.val_.append(iter->value().ToString());
-          if (i < (columns_.size() - 1)) {
-            it->second.val_.append(1, delim_);
-          }
-        }
-      }
-    }
-
-    for (auto it = user_keys.begin(); it != user_keys.end(); ++it) {
-      std::string user_key = it->first;
-      auto user_val = user_vals.find(it->second);
-      if (user_val == user_vals.end()) {
-        continue; // not found
-      }
-
-      SeqTypeVal stv = user_val->second;
-      auto res_it = res.end();
-      res_it = res.emplace_hint(res_it, std::move(user_key), stv);
-      if (res_it->second.seq_ < stv.seq_) {
-        res_it->second.seq_ = stv.seq_;
-        res_it->second.type_ = stv.type_;
-        res_it->second.val_ = stv.val_;
-      }
-
-      CompressResultMap(&res, read_options.batch_capacity);
-=======
-            SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type,
-                                        ""); // follow sub_key's order
             if (start_sub_key.empty()) {
-              start_sub_key = iter->value();
+              start_sub_key = iter->value().ToString();
             }
 
-            user_keys.push_back(std::move(user_key));
-            user_vals.push_back(std::move(stv));
             sub_key_bs.push_back(true);
+
+            std::string user_key(iter->key().data(), iter->key().size() - 8);
+            user_keys.emplace_back(std::move(user_key));
+
+            SeqTypeVal stv(parsed_key.sequence, parsed_key.type, "");
+            user_vals.emplace_back(std::move(stv));
           } else {
             sub_key_bs.push_back(false);
           }
         }
-      } else { // loop query all sub column values
+      } else {  // loop query all sub column values
         if (!start_sub_key.empty()) {
           iter->Seek(start_sub_key);
-        } else { // not found valid keys
+        } else {  // not found valid keys
           break;
         }
 
         size_t sub_key_idx = 0, user_val_idx = 0;
         for (; iter->Valid() && sub_key_idx < sub_key_bs.size(); iter->Next()) {
-          if (!sub_key_bs[sub_key_idx++]) { // follow sub_key's order
+          if (!sub_key_bs[sub_key_idx++]) {  // follow sub_key's order
             continue;
           }
 
           user_vals[user_val_idx].val_.append(iter->value().ToString());
-          if (i < (columns_.size() - 1)) {
+          if (i + 1 < columns_.size()) {
             user_vals[user_val_idx].val_.append(1, delim_);
           }
 
@@ -1133,19 +1056,16 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       }
     }
 
-    for (size_t i = 0; i < user_keys.size(); i++) {
-      SeqTypeVal stv = user_vals[i];
+    for (size_t i = 0u; i < user_keys.size(); i++) {
+      SeqTypeVal& stv = user_vals[i];
 
       auto it = res.end();
       it = res.emplace_hint(it, std::move(user_keys[i]), stv);
       if (it->second.seq_ < stv.seq_) {
-        it->second.seq_ = stv.seq_;
-        it->second.type_ = stv.type_;
-        it->second.val_ = stv.val_;
+        it->second = std::move(stv);
       }
 
       CompressResultMap(&res, read_options);
->>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
     }
 
     return Status();

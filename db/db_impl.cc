@@ -3670,8 +3670,9 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
                         std::vector<std::string>& res, Status* s) {
   res.clear();
 
+  RangeQueryMeta*& meta = read_options.range_query_meta;
   // Create range query metadata at first
-  if (read_options.range_query_meta == nullptr) {
+  if (meta == nullptr) {
     SequenceNumber snapshot;
     if (read_options.snapshot != nullptr) {
       snapshot = reinterpret_cast<const SnapshotImpl*>(
@@ -3684,25 +3685,22 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     auto cfd = cfh->cfd();
 
     SuperVersion* sv = GetAndRefSuperVersion(cfd);
-    read_options.range_query_meta = new RangeQueryMeta(cfd, sv, snapshot);
-    read_options.range_query_meta->next_start_key = range.start;
+    meta = new RangeQueryMeta(cfd, sv, snapshot);
+    meta->next_start_key = range.start.ToString();
   }
 
   // Create lookup key range
-  read_options.range_query_meta->limit_seq = 0; // include limit key
-  LookupKey start_lookup_key(read_options.range_query_meta->next_start_key,
-                             read_options.range_query_meta->snapshot);
-  LookupKey limit_lookup_key(range.limit,
-                             read_options.range_query_meta->limit_seq);
+  LookupKey start_lookup_key(meta->next_start_key, meta->snapshot);
+  meta->limit_sequence = 0;  // include limit key
+  LookupKey limit_lookup_key(range.limit, meta->limit_sequence);
   LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
-  read_options.range_query_meta->current_limit_key = &limit_lookup_key;
+  meta->current_limit_key = &limit_lookup_key;
 
   // Prepare range query
   std::map<std::string, SeqTypeVal> map_res;
   ColumnFamilyData* cfd = reinterpret_cast<ColumnFamilyData*>(
-                          read_options.range_query_meta->column_family_data);
-  SuperVersion* sv = reinterpret_cast<SuperVersion*>(
-                     read_options.range_query_meta->super_version);
+                          meta->column_family_data);
+  SuperVersion* sv = reinterpret_cast<SuperVersion*>(meta->super_version);
   bool skip_memtable =
       (read_options.read_tier == kPersistedTier && has_unpersisted_data_);
   // First look in the memtable, then in the immutable memtable (if any).
@@ -3722,12 +3720,18 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     return false;
   }
 
-  // Update the next range query start key
+  // Update the next range query
+  if (meta->current_limit_key) {
+    if (meta->current_limit_key != &limit_lookup_key) {
+      delete static_cast<LookupKey*>(meta->current_limit_key);
+    }
+    meta->current_limit_key = nullptr;
+  }
   size_t map_size = map_res.size();
   if (read_options.batch_capacity > 0 &&
       map_size > read_options.batch_capacity) {
     auto it = --(map_res.end());
-    read_options.range_query_meta->next_start_key = Slice(it->first);
+    meta->next_start_key = std::move(Slice(it->first).ToString());
     map_res.erase(it);  // Not include the next start key
   }
 
@@ -3738,8 +3742,8 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     // no extra result
     next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
-    delete read_options.range_query_meta;
-    read_options.range_query_meta = nullptr;
+    delete meta;
+    meta = nullptr;
   }
 
   // Copy to return the valid result list

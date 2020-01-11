@@ -369,15 +369,17 @@ inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
   }
 
   size_t diff_size = res->size() - ok_size;
-  for (size_t i = 0; i < diff_size; i++) {
+  for (size_t i = 0u; i < diff_size; i++) {
     res->erase(--(res->end()));
   }
 
   // update the current range limit key
-  Slice limit_key_((--(res->end()))->first);
-  LookupKey current_limit_(limit_key_,
-                           read_options.range_query_meta->limit_seq);
-  read_options.range_query_meta->current_limit_key = &current_limit_;
+  RangeQueryMeta* meta = read_options.range_query_meta;
+  if (meta->current_limit_key) {
+    delete static_cast<LookupKey*>(meta->current_limit_key);
+  }
+  Slice limit_key((--(res->end()))->first);
+  meta->current_limit_key = new LookupKey(limit_key, meta->limit_sequence);
 }
 
 inline int CompareRangeLimit(const InternalKeyComparator& comparator,

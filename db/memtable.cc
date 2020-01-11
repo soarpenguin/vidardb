@@ -453,10 +453,10 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
 
-  LookupKey* limit_ = reinterpret_cast<LookupKey*>(
-    s->read_options->range_query_meta->current_limit_key);
+  LookupKey* limit = static_cast<LookupKey*>(
+      s->read_options->range_query_meta->current_limit_key);
   if (CompareRangeLimit(s->mem->GetInternalKeyComparator(), internal_key,
-                        limit_) > 0) {
+                        limit) > 0) {
     *(s->status) = Status::OK();
     return false;
   }

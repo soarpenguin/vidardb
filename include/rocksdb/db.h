@@ -95,15 +95,17 @@ struct Range {
 
 /***************************** Quanzhao *****************************/
 struct RangeQueryMeta {
-  Slice next_start_key;             // Next start key
-  void* current_limit_key;          // Current limit key
   void* column_family_data;         // Column family data
   void* super_version;              // Super version
   SequenceNumber snapshot;          // Current snapshot
-  SequenceNumber limit_seq;         // Limit sequence
+  void* current_limit_key;          // Current limit key, should maintain it
+  SequenceNumber limit_sequence;    // Limit sequence
+  std::string next_start_key;       // Next start key
 
-  RangeQueryMeta(void* cfd, void* sv, SequenceNumber s) :
-    column_family_data(cfd), super_version(sv), snapshot(s) {}
+  RangeQueryMeta(void* cfd, void* sv, SequenceNumber s,
+                 void* limit_key = nullptr, SequenceNumber limit_seq = 0) :
+    column_family_data(cfd), super_version(sv), snapshot(s),
+    current_limit_key(limit_key), limit_sequence(limit_seq) {}
 };
 /***************************** Quanzhao *****************************/
 
