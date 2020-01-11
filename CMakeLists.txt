@@ -127,9 +127,9 @@ set(SOURCES
         db/log_reader.cc
         db/log_writer.cc
         db/managed_iterator.cc
-        db/memtable.cc
-        db/memtable_allocator.cc
-        db/memtable_list.cc
+        memtable/memtable.cc
+        memtable/memtable_allocator.cc
+        memtable/memtable_list.cc
         db/merge_helper.cc
         db/merge_operator.cc
         db/repair.cc
@@ -314,7 +314,7 @@ endif()
 
 set(APPS
         tools/db_bench.cc
-        db/memtablerep_bench.cc
+        memtable/memtablerep_bench.cc
         table/table_reader_bench.cc
         tools/db_stress.cc
         tools/write_stress.cc
@@ -367,7 +367,7 @@ set(TESTS
         db/listener_test.cc
         db/log_test.cc
         db/manual_compaction_test.cc
-        db/memtable_list_test.cc
+        memtable/memtable_list_test.cc
         db/merge_test.cc
         db/merge_helper_test.cc
         db/options_file_test.cc

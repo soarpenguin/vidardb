@@ -24,9 +24,9 @@ LIB_SOURCES =                                                   \
   db/internal_stats.cc                                          \
   db/log_reader.cc                                              \
   db/log_writer.cc                                              \
-  db/memtable_allocator.cc                                      \
-  db/memtable.cc                                                \
-  db/memtable_list.cc                                           \
+  memtable/memtable_allocator.cc                                \
+  memtable/memtable.cc                                          \
+  memtable/memtable_list.cc                                     \
   db/repair.cc                                                  \
   db/slice.cc                                                   \
   db/snapshot_impl.cc                                           \
@@ -151,7 +151,7 @@ TEST_BENCH_SOURCES =                                                    \
   db/listener_test.cc                                                   \
   db/log_test.cc                                                        \
   db/manual_compaction_test.cc                                          \
-  db/memtablerep_bench.cc                                               \
+  memtable/memtablerep_bench.cc                                         \
   db/options_file_test.cc                                               \
   db/perf_context_test.cc                                               \
   db/skiplist_test.cc                                                   \

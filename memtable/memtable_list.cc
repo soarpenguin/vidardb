@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "db/memtable_list.h"
+#include "memtable/memtable_list.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -12,7 +12,7 @@
 #include <inttypes.h>
 #include <string>
 #include "rocksdb/db.h"
-#include "db/memtable.h"
+#include "memtable/memtable.h"
 #include "db/version_set.h"
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"

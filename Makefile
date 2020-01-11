@@ -780,7 +780,7 @@ db_bench: tools/db_bench.o $(BENCHTOOLOBJECTS)
 cache_bench: util/cache_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
-memtablerep_bench: db/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
+memtablerep_bench: memtable/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
 db_stress: tools/db_stress.o $(LIBOBJECTS) $(TESTUTIL)
@@ -1005,7 +1005,7 @@ filelock_test: util/filelock_test.o $(LIBOBJECTS) $(TESTHARNESS)
 auto_roll_logger_test: db/auto_roll_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-memtable_list_test: db/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
+memtable_list_test: memtable/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 heap_test: util/heap_test.o $(GTEST)

@@ -4,7 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #include "db/inlineskiplist.h"
-#include "db/memtable.h"
+#include "memtable/memtable.h"
 #include "rocksdb/memtablerep.h"
 #include "util/arena.h"
 

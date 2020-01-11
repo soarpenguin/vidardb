@@ -10,7 +10,7 @@
 #include "rocksdb/db.h"
 
 #include <memory>
-#include "db/memtable.h"
+#include "memtable/memtable.h"
 #include "db/column_family.h"
 #include "db/write_batch_internal.h"
 #include "db/writebuffer.h"

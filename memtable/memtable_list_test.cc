@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "db/memtable_list.h"
+#include "memtable/memtable_list.h"
 #include "db/version_set.h"
 #include "db/write_controller.h"
 #include "db/writebuffer.h"
