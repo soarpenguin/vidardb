@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   s = db->Delete(write_options, "3");
   assert(s.ok());
 
-  // test sstable or memtable
+  // test blocked sstable or memtable
   s = db->Flush(FlushOptions());
   assert(s.ok());
 

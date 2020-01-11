@@ -983,11 +983,23 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
+<<<<<<< HEAD
     // TODO support dynamic size ???
     std::bitset<64> sub_key_set;
     std::map<std::string, uint64_t> user_keys;
     std::map<uint64_t, SeqTypeVal> user_vals;
+=======
+    std::vector<std::string> user_keys;
+    std::vector<SeqTypeVal> user_vals;
+    std::vector<bool> sub_key_bs;
+    if (num_entries_ > 0) {
+      user_keys.reserve(num_entries_);
+      user_vals.reserve(num_entries_);
+      sub_key_bs.reserve(num_entries_);
+    }
+>>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
 
+    Slice start_sub_key; // track start sub key
     SequenceNumber sequence_num = range.SequenceNum();
     // Range query one by one to improve performance
     for (size_t i = 0; i < columns_.size(); i++) {
@@ -1001,8 +1013,15 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         }
 
         for (; iter->Valid(); iter->Next()) { // main iterator
+<<<<<<< HEAD
           if (CompareRangeLimit(internal_comparator_, iter->key(),
                                 range.limit_) > 0) {
+=======
+          LookupKey* limit_ = reinterpret_cast<LookupKey*>(
+            read_options.range_query_meta->current_limit_key);
+          if (CompareRangeLimit(internal_comparator_, iter->key(),
+                                limit_) > 0) {
+>>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
             break;
           }
 
@@ -1013,6 +1032,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
           if (parsed_key.sequence <= sequence_num) {
             std::string user_key(iter->key().data(), iter->key().size() - 8);
+<<<<<<< HEAD
             std::string val(iter->value().data(), iter->value().size());
             SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type, "");
 
@@ -1076,6 +1096,56 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       }
 
       CompressResultMap(&res, read_options.batch_capacity);
+=======
+            SeqTypeVal stv = SeqTypeVal(parsed_key.sequence, parsed_key.type,
+                                        ""); // follow sub_key's order
+            if (start_sub_key.empty()) {
+              start_sub_key = iter->value();
+            }
+
+            user_keys.push_back(std::move(user_key));
+            user_vals.push_back(std::move(stv));
+            sub_key_bs.push_back(true);
+          } else {
+            sub_key_bs.push_back(false);
+          }
+        }
+      } else { // loop query all sub column values
+        if (!start_sub_key.empty()) {
+          iter->Seek(start_sub_key);
+        } else { // not found valid keys
+          break;
+        }
+
+        size_t sub_key_idx = 0, user_val_idx = 0;
+        for (; iter->Valid() && sub_key_idx < sub_key_bs.size(); iter->Next()) {
+          if (!sub_key_bs[sub_key_idx++]) { // follow sub_key's order
+            continue;
+          }
+
+          user_vals[user_val_idx].val_.append(iter->value().ToString());
+          if (i < (columns_.size() - 1)) {
+            user_vals[user_val_idx].val_.append(1, delim_);
+          }
+
+          user_val_idx++;
+        }
+      }
+    }
+
+    for (size_t i = 0; i < user_keys.size(); i++) {
+      SeqTypeVal stv = user_vals[i];
+
+      auto it = res.end();
+      it = res.emplace_hint(it, std::move(user_keys[i]), stv);
+      if (it->second.seq_ < stv.seq_) {
+        it->second.seq_ = stv.seq_;
+        it->second.type_ = stv.type_;
+        it->second.val_ = stv.val_;
+      }
+
+      CompressResultMap(&res, read_options);
+>>>>>>> c74c7a359e798e35e663a03e86a61ca068625e8d
     }
 
     return Status();

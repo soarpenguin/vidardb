@@ -3685,14 +3685,17 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
     SuperVersion* sv = GetAndRefSuperVersion(cfd);
     read_options.range_query_meta = new RangeQueryMeta(cfd, sv, snapshot);
-    read_options.range_query_meta->next = range.start;
+    read_options.range_query_meta->next_start_key = range.start;
   }
 
   // Create lookup key range
-  LookupKey start_lookup_key(read_options.range_query_meta->next,
+  read_options.range_query_meta->limit_seq = 0; // include limit key
+  LookupKey start_lookup_key(read_options.range_query_meta->next_start_key,
                              read_options.range_query_meta->snapshot);
-  LookupKey limit_lookup_key(range.limit, 0);  // include limit key
+  LookupKey limit_lookup_key(range.limit,
+                             read_options.range_query_meta->limit_seq);
   LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
+  read_options.range_query_meta->current_limit_key = &limit_lookup_key;
 
   // Prepare range query
   std::map<std::string, SeqTypeVal> map_res;
@@ -3724,7 +3727,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   if (read_options.batch_capacity > 0 &&
       map_size > read_options.batch_capacity) {
     auto it = --(map_res.end());
-    read_options.range_query_meta->next = Slice(it->first);
+    read_options.range_query_meta->next_start_key = Slice(it->first);
     map_res.erase(it);  // Not include the next start key
   }
 
