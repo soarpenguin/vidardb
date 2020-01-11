@@ -1005,8 +1005,10 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         }
 
         for (; iter->Valid(); iter->Next()) { // main iterator
+          LookupKey* limit_ = reinterpret_cast<LookupKey*>(
+            read_options.range_query_meta->current_limit_key);
           if (CompareRangeLimit(internal_comparator_, iter->key(),
-                                range.limit_) > 0) {
+                                limit_) > 0) {
             break;
           }
 
@@ -1064,7 +1066,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         it->second.val_ = stv.val_;
       }
 
-      CompressResultMap(&res, read_options.batch_capacity);
+      CompressResultMap(&res, read_options);
     }
 
     return Status();

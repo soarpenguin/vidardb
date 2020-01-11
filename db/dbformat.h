@@ -357,13 +357,13 @@ struct SeqTypeVal {
 
 /**************************** Quanzhao *****************************/
 inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
-                              size_t batch_capacity) {
-  if (batch_capacity <= 0) { // infinite
+                              const ReadOptions& read_options) {
+  if (read_options.batch_capacity <= 0) { // infinite
     return;
   }
 
-  // reserve the next start key
-  size_t ok_size = batch_capacity + 1;
+  // reserve the next start key which is also the current limit key
+  size_t ok_size = read_options.batch_capacity + 1;
   if (res->size() <= ok_size) {
     return;
   }
@@ -372,6 +372,12 @@ inline void CompressResultMap(std::map<std::string, SeqTypeVal>* res,
   for (size_t i = 0; i < diff_size; i++) {
     res->erase(--(res->end()));
   }
+
+  // update the current range limit key
+  Slice limit_key_((--(res->end()))->first);
+  LookupKey current_limit_(limit_key_,
+                           read_options.range_query_meta->limit_seq);
+  read_options.range_query_meta->current_limit_key = &current_limit_;
 }
 
 inline int CompareRangeLimit(const InternalKeyComparator& comparator,

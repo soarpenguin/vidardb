@@ -885,8 +885,9 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
 
     SequenceNumber sequence_num = range.SequenceNum();
     for (; iter_->Valid(); iter_->Next()) {
-      if (CompareRangeLimit(internal_comparator_, iter_->key(),
-                            range.limit_) > 0) {
+      LookupKey* limit_ = reinterpret_cast<LookupKey*>(
+        read_options.range_query_meta->current_limit_key);
+      if (CompareRangeLimit(internal_comparator_, iter_->key(), limit_) > 0) {
         break;
       }
 
@@ -908,7 +909,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
           it->second.val_ = val;
         }
 
-        CompressResultMap(&res, read_options.batch_capacity);
+        CompressResultMap(&res, read_options);
       }
     }
 

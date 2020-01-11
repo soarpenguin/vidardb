@@ -95,10 +95,12 @@ struct Range {
 
 /***************************** Quanzhao *****************************/
 struct RangeQueryMeta {
-  Slice next;                       // Next included key
+  Slice next_start_key;             // Next start key
+  void* current_limit_key;          // Current limit key
   void* column_family_data;         // Column family data
   void* super_version;              // Super version
   SequenceNumber snapshot;          // Current snapshot
+  SequenceNumber limit_seq;         // Limit sequence
 
   RangeQueryMeta(void* cfd, void* sv, SequenceNumber s) :
     column_family_data(cfd), super_version(sv), snapshot(s) {}
