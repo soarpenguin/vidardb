@@ -12,7 +12,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class GenerateLevelFilesBriefTest : public testing::Test {
  public:
@@ -450,7 +450,7 @@ TEST_F(FindLevelFileTest, LevelOverlappingFiles) {
   ASSERT_TRUE(Overlaps("600", "700"));
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

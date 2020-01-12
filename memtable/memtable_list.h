@@ -15,14 +15,14 @@
 #include "db/filename.h"
 #include "memtable/memtable.h"
 #include "db/skiplist.h"
-#include "rocksdb/db.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/types.h"
+#include "vidardb/db.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
+#include "vidardb/types.h"
 #include "util/instrumented_mutex.h"
 #include "util/log_buffer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class ColumnFamilyData;
 class InternalKeyComparator;
@@ -239,4 +239,4 @@ class MemTableList {
   size_t current_memory_usage_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

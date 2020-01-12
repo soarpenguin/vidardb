@@ -23,7 +23,7 @@
 #include <cstdlib>
 #include "util/logging.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 static int PthreadCall(const char* label, int result) {
@@ -35,7 +35,7 @@ static int PthreadCall(const char* label, int result) {
 }
 
 Mutex::Mutex(bool adaptive) {
-#ifdef ROCKSDB_PTHREAD_ADAPTIVE_MUTEX
+#ifdef VIDARDB_PTHREAD_ADAPTIVE_MUTEX
   if (!adaptive) {
     PthreadCall("init mutex", pthread_mutex_init(&mu_, nullptr));
   } else {
@@ -50,7 +50,7 @@ Mutex::Mutex(bool adaptive) {
   }
 #else
   PthreadCall("init mutex", pthread_mutex_init(&mu_, nullptr));
-#endif // ROCKSDB_PTHREAD_ADAPTIVE_MUTEX
+#endif // VIDARDB_PTHREAD_ADAPTIVE_MUTEX
 }
 
 Mutex::~Mutex() { PthreadCall("destroy mutex", pthread_mutex_destroy(&mu_)); }
@@ -175,4 +175,4 @@ int GetMaxOpenFiles() {
 }
 
 }  // namespace port
-}  // namespace rocksdb
+}  // namespace vidardb

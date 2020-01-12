@@ -7,12 +7,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/iterator.h"
+#include "vidardb/iterator.h"
 #include "table/internal_iterator.h"
 #include "table/iterator_wrapper.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Cleanable::Cleanable() {
   cleanup_.function = nullptr;
@@ -50,7 +50,7 @@ Status Iterator::GetProperty(std::string prop_name, std::string* prop) {
   if (prop == nullptr) {
     return Status::InvalidArgument("prop is nullptr");
   }
-  if (prop_name == "rocksdb.iterator.is-key-pinned") {
+  if (prop_name == "vidardb.iterator.is-key-pinned") {
     *prop = "0";
     return Status::OK();
   }
@@ -139,4 +139,4 @@ InternalIterator* NewErrorInternalIterator(const Status& status, Arena* arena) {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

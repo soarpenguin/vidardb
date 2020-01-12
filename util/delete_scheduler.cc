@@ -9,12 +9,12 @@
 #include <vector>
 
 #include "port/port.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/sst_file_manager_impl.h"
 #include "util/mutexlock.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 DeleteScheduler::DeleteScheduler(Env* env, const std::string& trash_dir,
                                  int64_t rate_bytes_per_sec, Logger* info_log,
@@ -210,4 +210,4 @@ void DeleteScheduler::WaitForEmptyTrash() {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

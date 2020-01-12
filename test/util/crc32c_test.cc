@@ -10,7 +10,7 @@
 #include "util/crc32c.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace crc32c {
 
 class CRC { };
@@ -70,7 +70,7 @@ TEST(CRC, Mask) {
 }
 
 }  // namespace crc32c
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

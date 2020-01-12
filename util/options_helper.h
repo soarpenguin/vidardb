@@ -9,13 +9,13 @@
 #include <stdexcept>
 #include <vector>
 
-#include "rocksdb/options.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/status.h"
+#include "vidardb/table.h"
 #include "util/mutable_cf_options.h"
 
-#ifndef ROCKSDB_LITE
-namespace rocksdb {
+#ifndef VIDARDB_LITE
+namespace vidardb {
 
 // Returns true if the input char "c" is considered as a special character
 // that will be escaped when EscapeOptionString() is called.
@@ -98,7 +98,7 @@ enum class OptionVerificationType {
                      // based on it's name.
   kByNameAllowNull,  // Same as kByName, but it also allows the case
                      // where one of them is a nullptr.
-  kDeprecated        // The option is no longer used in rocksdb. The RocksDB
+  kDeprecated        // The option is no longer used in vidardb. The VidarDB
                      // OptionsParser will still accept this option if it
                      // happen to exists in some Options file.  However, the
                      // parser will not include it in serialization and
@@ -118,7 +118,7 @@ struct OptionTypeInfo {
 bool SerializeSingleOptionHelper(const char* opt_address,
                                  const OptionType opt_type, std::string* value);
 
-// In addition to its public version defined in rocksdb/convenience.h,
+// In addition to its public version defined in vidardb/convenience.h,
 // this further takes an optional output vector "unsupported_options_names",
 // which stores the name of all the unsupported options specified in "opts_map".
 Status GetDBOptionsFromMapInternal(
@@ -127,7 +127,7 @@ Status GetDBOptionsFromMapInternal(
     DBOptions* new_options, bool input_strings_escaped,
     std::vector<std::string>* unsupported_options_names = nullptr);
 
-// In addition to its public version defined in rocksdb/convenience.h,
+// In addition to its public version defined in vidardb/convenience.h,
 // this further takes an optional output vector "unsupported_options_names",
 // which stores the name of all the unsupported options specified in "opts_map".
 Status GetColumnFamilyOptionsFromMapInternal(
@@ -520,6 +520,6 @@ static std::unordered_map<std::string, InfoLogLevel> info_log_level_string_map =
      {"FATAL_LEVEL", InfoLogLevel::FATAL_LEVEL},
      {"HEADER_LEVEL", InfoLogLevel::HEADER_LEVEL}};
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

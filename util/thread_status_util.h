@@ -7,12 +7,12 @@
 
 #include <string>
 
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/thread_status.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/thread_status.h"
 #include "util/thread_status_updater.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class ColumnFamilyData;
 
@@ -84,7 +84,7 @@ class ThreadStatusUtil {
   // a non-null pointer.
   static bool MaybeInitThreadLocalUpdater(const Env* env);
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   // A boolean flag indicating whether thread_updater_local_cache_
   // is initialized.  It is set to true when an Env uses any
   // ThreadStatusUtil functions using the current thread other
@@ -125,10 +125,10 @@ class AutoThreadOperationStageUpdater {
       ThreadStatus::OperationStage stage);
   ~AutoThreadOperationStageUpdater();
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
  private:
   ThreadStatus::OperationStage prev_stage_;
 #endif
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

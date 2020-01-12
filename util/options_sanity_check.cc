@@ -3,11 +3,11 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include "util/options_sanity_check.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 OptionsSanityCheckLevel SanityCheckLevelHelper(
@@ -33,6 +33,6 @@ OptionsSanityCheckLevel BBTOptionSanityCheckLevel(
   return SanityCheckLevelHelper(sanity_level_bbt_options, option_name);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

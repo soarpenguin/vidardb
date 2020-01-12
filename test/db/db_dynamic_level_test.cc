@@ -10,12 +10,12 @@
 // Introduction of SyncPoint effectively disabled building and running this test
 // in Release build.
 // which is a pity, it is a good test
-#if !defined(ROCKSDB_LITE)
+#if !defined(VIDARDB_LITE)
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
 
-namespace rocksdb {
+namespace vidardb {
 class DBTestDynamicLevel : public DBTestBase {
  public:
   DBTestDynamicLevel() : DBTestBase("/db_dynamic_level_test") {}
@@ -87,7 +87,7 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase) {
       }
 
       uint64_t int_prop;
-      ASSERT_TRUE(db_->GetIntProperty("rocksdb.background-errors", &int_prop));
+      ASSERT_TRUE(db_->GetIntProperty("vidardb.background-errors", &int_prop));
       ASSERT_EQ(0U, int_prop);
 
       // Verify DB
@@ -151,7 +151,7 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
   std::string str_prop;
 
   // Initial base level is the last level
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(4U, int_prop);
 
   // Put about 28K to L0
@@ -164,7 +164,7 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
   }));
   Flush();
   dbfull()->TEST_WaitForCompact();
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(4U, int_prop);
 
   // Insert extra about 28K to L0. After they are compacted to L4, base level
@@ -182,20 +182,20 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
   }));
   Flush();
   dbfull()->TEST_WaitForCompact();
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(3U, int_prop);
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level1", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level1", &str_prop));
   ASSERT_EQ("0", str_prop);
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level2", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level2", &str_prop));
   ASSERT_EQ("0", str_prop);
 
   // Trigger parallel compaction, and the first one would change the base
   // level.
   // Hold compaction jobs to make sure
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "CompactionJob::Run():Start",
       [&](void* arg) { env_->SleepForMicroseconds(100000); });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   ASSERT_OK(dbfull()->SetOptions({
       {"disable_auto_compactions", "true"},
   }));
@@ -212,9 +212,9 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
   // parallel ones are executed.
   env_->SleepForMicroseconds(200000);
   dbfull()->TEST_WaitForCompact();
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(3U, int_prop);
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 
   // Trigger a condition that the compaction changes base level and L0->Lbase
   // happens at the same time.
@@ -233,22 +233,22 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
   }));
   Flush();
   dbfull()->TEST_WaitForCompact();
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(2U, int_prop);
 
   // A manual compaction will trigger the base level to become L2
   // Keep Writing data until base level changed 2->1. There will be L0->L2
   // compaction going on at the same time.
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"CompactionJob::Run():Start", "DynamicLevelMaxBytesBase2:0"},
       {"DynamicLevelMaxBytesBase2:1", "CompactionJob::Run():End"},
       {"DynamicLevelMaxBytesBase2:compact_range_finish",
        "FlushJob::WriteLevel0Table"},
   });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   std::thread thread([this] {
     TEST_SYNC_POINT("DynamicLevelMaxBytesBase2:compact_range_start");
@@ -267,10 +267,10 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBase2) {
 
   thread.join();
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(1U, int_prop);
 }
 
@@ -308,7 +308,7 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesCompactRange) {
   std::string str_prop;
 
   // Initial base level is the last level
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(4U, int_prop);
 
   // Put about 7K to L0
@@ -325,34 +325,34 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesCompactRange) {
     Flush();
   }
 
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(3U, int_prop);
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level1", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level1", &str_prop));
   ASSERT_EQ("0", str_prop);
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level2", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level2", &str_prop));
   ASSERT_EQ("0", str_prop);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   std::set<int> output_levels;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "CompactionPicker::CompactRange:Return", [&](void* arg) {
         Compaction* compaction = reinterpret_cast<Compaction*>(arg);
         output_levels.insert(compaction->output_level());
       });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr);
   ASSERT_EQ(output_levels.size(), 2);
   ASSERT_TRUE(output_levels.find(3) != output_levels.end());
   ASSERT_TRUE(output_levels.find(4) != output_levels.end());
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level0", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level0", &str_prop));
   ASSERT_EQ("0", str_prop);
-  ASSERT_TRUE(db_->GetProperty("rocksdb.num-files-at-level3", &str_prop));
+  ASSERT_TRUE(db_->GetProperty("vidardb.num-files-at-level3", &str_prop));
   ASSERT_EQ("0", str_prop);
   // Base level is still level 3.
-  ASSERT_TRUE(db_->GetIntProperty("rocksdb.base-level", &int_prop));
+  ASSERT_TRUE(db_->GetIntProperty("vidardb.base-level", &int_prop));
   ASSERT_EQ(3U, int_prop);
 }
 
@@ -376,10 +376,10 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBaseInc) {
   DestroyAndReopen(options);
 
   int non_trivial = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BackgroundCompaction:NonTrivial",
       [&](void* arg) { non_trivial++; });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Random rnd(301);
   const int total_keys = 3000;
@@ -391,7 +391,7 @@ TEST_F(DBTestDynamicLevel, DynamicLevelMaxBytesBaseInc) {
   }
   Flush();
   dbfull()->TEST_WaitForCompact();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 
   ASSERT_EQ(non_trivial, 0);
 
@@ -492,13 +492,13 @@ TEST_F(DBTestDynamicLevel, MigrateToDynamicLevelMaxBytesBase) {
   ASSERT_EQ(NumTableFilesAtLevel(1), 0);
   ASSERT_EQ(NumTableFilesAtLevel(2), 0);
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !defined(ROCKSDB_LITE)
+#endif  // !defined(VIDARDB_LITE)
 
 int main(int argc, char** argv) {
-#if !defined(ROCKSDB_LITE)
-  rocksdb::port::InstallStackTraceHandler();
+#if !defined(VIDARDB_LITE)
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 #else

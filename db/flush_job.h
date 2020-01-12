@@ -23,10 +23,10 @@
 #include "db/snapshot_impl.h"
 #include "db/version_edit.h"
 #include "port/port.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/event_logger.h"
 #include "util/instrumented_mutex.h"
@@ -38,7 +38,7 @@
 #include "db/write_thread.h"
 #include "db/job_context.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTable;
 class TableCache;
@@ -95,4 +95,4 @@ class FlushJob {
   bool measure_io_stats_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -9,13 +9,13 @@
 
 #include "db/skiplist.h"
 #include <set>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/arena.h"
 #include "util/hash.h"
 #include "util/random.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 typedef uint64_t Key;
 
@@ -370,7 +370,7 @@ TEST_F(SkipTest, Concurrent3) { RunConcurrent(3); }
 TEST_F(SkipTest, Concurrent4) { RunConcurrent(4); }
 TEST_F(SkipTest, Concurrent5) { RunConcurrent(5); }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

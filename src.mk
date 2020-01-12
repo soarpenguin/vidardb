@@ -1,4 +1,4 @@
-# These are the sources from which librocksdb.a is built:
+# These are the sources from which libvidardb.a is built:
 LIB_SOURCES =                                                   \
   db/auto_roll_logger.cc                                        \
   db/builder.cc                                                 \

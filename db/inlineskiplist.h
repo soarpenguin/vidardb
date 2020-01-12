@@ -49,7 +49,7 @@
 #include "util/allocator.h"
 #include "util/random.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 template <class Comparator>
 class InlineSkipList {
@@ -654,4 +654,4 @@ bool InlineSkipList<Comparator>::Contains(const char* key) const {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -4,17 +4,17 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 
 #include "table/get_context.h"
-#include "rocksdb/env.h"
-#include "rocksdb/statistics.h"
+#include "vidardb/env.h"
+#include "vidardb/statistics.h"
 #include "util/perf_context_imp.h"
 #include "util/statistics.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
 void appendToReplayLog(std::string* replay_log, ValueType type, Slice value) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (replay_log) {
     if (replay_log->empty()) {
       // Optimization: in the common case of only one operation in the
@@ -24,7 +24,7 @@ void appendToReplayLog(std::string* replay_log, ValueType type, Slice value) {
     replay_log->push_back(type);
     PutLengthPrefixedSlice(replay_log, value);
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
 }  // namespace
@@ -104,7 +104,7 @@ bool GetContext::SaveValue(const ParsedInternalKey& parsed_key,
 
 void replayGetContextLog(const Slice& replay_log, const Slice& user_key,
                          GetContext* get_context) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   Slice s = replay_log;
   while (s.size()) {
     auto type = static_cast<ValueType>(*s.data());
@@ -119,9 +119,9 @@ void replayGetContextLog(const Slice& replay_log, const Slice& user_key,
     get_context->SaveValue(
         ParsedInternalKey(user_key, kMaxSequenceNumber, type), value);
   }
-#else   // ROCKSDB_LITE
+#else   // VIDARDB_LITE
   assert(false);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

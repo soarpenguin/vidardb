@@ -14,7 +14,7 @@
 #include <thread>
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Helper class that locks a mutex on construction and unlocks the mutex when
 // the destructor of the MutexLock object is invoked.
@@ -114,4 +114,4 @@ class SpinMutex {
   std::atomic<bool> locked_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

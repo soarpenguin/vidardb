@@ -16,7 +16,7 @@
 #include <string>
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Slice;
 
@@ -53,4 +53,4 @@ extern std::string EscapeString(const Slice& value);
 // unspecified state.
 extern bool ConsumeDecimalNumber(Slice* in, uint64_t* val);
 
-}  // namespace rocksdb
+}  // namespace vidardb

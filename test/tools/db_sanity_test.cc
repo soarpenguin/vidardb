@@ -8,17 +8,17 @@
 #include <vector>
 #include <memory>
 
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/table.h"
+#include "vidardb/db.h"
+#include "vidardb/options.h"
+#include "vidardb/env.h"
+#include "vidardb/slice.h"
+#include "vidardb/status.h"
+#include "vidardb/comparator.h"
+#include "vidardb/table.h"
 #include "port/port.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class SanityTest {
  public:
@@ -105,7 +105,7 @@ class SanityTestSpecialComparator : public SanityTest {
   class NewComparator : public Comparator {
    public:
     virtual const char* Name() const override {
-      return "rocksdb.NewComparator";
+      return "vidardb.NewComparator";
     }
     virtual int Compare(const Slice& a, const Slice& b) const override {
       return BytewiseComparator()->Compare(a, b);
@@ -243,7 +243,7 @@ bool RunSanityTests(const std::string& command, const std::string& path) {
 }
 }  // namespace
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   std::string path, command;
@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
     path += "/";
   }
 
-  bool sanity_ok = rocksdb::RunSanityTests(command, path);
+  bool sanity_ok = vidardb::RunSanityTests(command, path);
 
   return sanity_ok ? 0 : 1;
 }

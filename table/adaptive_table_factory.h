@@ -4,13 +4,13 @@
 
 #pragma once
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include <string>
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct EnvOptions;
 
@@ -72,5 +72,5 @@ class AdaptiveTableFactory : public TableFactory {
   std::unique_ptr<InstrumentedMutex> mutex_;            // Shichao
 };
 
-}  // namespace rocksdb
-#endif  // ROCKSDB_LITE
+}  // namespace vidardb
+#endif  // VIDARDB_LITE

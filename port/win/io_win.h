@@ -8,8 +8,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 #pragma once
 
-#include <rocksdb/Status.h>
-#include <rocksdb/env.h>
+#include <vidardb/Status.h>
+#include <vidardb/env.h>
 
 #include "util/aligned_buffer.h"
 
@@ -20,7 +20,7 @@
 
 #include <mutex>
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 std::string GetWindowsErrSz(DWORD err);

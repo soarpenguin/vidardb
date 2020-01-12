@@ -24,9 +24,9 @@
 #include "db/log_writer.h"
 #include "db/write_batch_internal.h"
 #include "port/port.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/write_batch.h"
 #include "util/coding.h"
 #include "util/file_reader_writer.h"
 #include "util/logging.h"
@@ -34,9 +34,9 @@
 #include "util/sync_point.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 Status WalManager::GetSortedWalFiles(VectorLogPtr& files) {
   // First get sorted files in db dir, then get sorted files from archived
@@ -473,5 +473,5 @@ Status WalManager::ReadFirstLine(const std::string& fname,
   return status;
 }
 
-#endif  // ROCKSDB_LITE
-}  // namespace rocksdb
+#endif  // VIDARDB_LITE
+}  // namespace vidardb

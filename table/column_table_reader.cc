@@ -6,14 +6,14 @@
 #include "db/dbformat.h"
 #include "db/filename.h"
 
-#include "rocksdb/cache.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/table.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/cache.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
+#include "vidardb/statistics.h"
+#include "vidardb/table.h"
+#include "vidardb/table_properties.h"
 
 #include "table/block.h"
 #include "table/column_table_factory.h"
@@ -29,7 +29,7 @@
 #include "util/stop_watch.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 extern const uint64_t kColumnTableMagicNumber;
 using std::unique_ptr;
@@ -635,7 +635,7 @@ Status ColumnTable::DumpDataBlocks(WritableFile* out_file) {
     }
 
     out_file->Append("Data Block # ");
-    out_file->Append(rocksdb::ToString(block_id));
+    out_file->Append(vidardb::ToString(block_id));
     out_file->Append(" @ ");
     out_file->Append(blockhandles_iter->value().ToString(true).c_str());
     out_file->Append("\n");
@@ -825,9 +825,9 @@ Status ColumnTable::Open(const ImmutableCFOptions& ioptions,
         s.ToString().c_str());
   } else if (found_compression_dict) {
     unique_ptr<BlockContents> compression_dict_block(new BlockContents());
-    s = rocksdb::ReadMetaBlock(rep->file.get(), file_size,
+    s = vidardb::ReadMetaBlock(rep->file.get(), file_size,
                                kColumnTableMagicNumber, rep->ioptions.env,
-                               rocksdb::kCompressionDictBlock,
+                               vidardb::kCompressionDictBlock,
                                compression_dict_block.get());
     if (!s.ok()) {
       Log(InfoLogLevel::WARN_LEVEL, rep->ioptions.info_log,
@@ -1437,11 +1437,11 @@ Status ColumnTable::DumpTable(WritableFile* out_file) {
       if (!s.ok()) {
         return s;
       }
-      if (meta_iter->key() == rocksdb::kPropertiesBlock) {
+      if (meta_iter->key() == vidardb::kPropertiesBlock) {
         out_file->Append("  Properties block handle: ");
         out_file->Append(meta_iter->value().ToString(true).c_str());
         out_file->Append("\n");
-      } else if (meta_iter->key() == rocksdb::kCompressionDictBlock) {
+      } else if (meta_iter->key() == vidardb::kCompressionDictBlock) {
         out_file->Append("  Compression dictionary block handle: ");
         out_file->Append(meta_iter->value().ToString(true).c_str());
         out_file->Append("\n");
@@ -1453,7 +1453,7 @@ Status ColumnTable::DumpTable(WritableFile* out_file) {
   }
 
   // Output TableProperties
-  const rocksdb::TableProperties* table_properties;
+  const vidardb::TableProperties* table_properties;
   table_properties = rep_->table_properties.get();
 
   if (table_properties != nullptr) {
@@ -1500,4 +1500,4 @@ ColumnTable::~ColumnTable() {
   delete rep_;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

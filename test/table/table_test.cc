@@ -21,13 +21,13 @@
 #include "memtable/memtable.h"
 #include "db/write_batch_internal.h"
 #include "db/writebuffer.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/statistics.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/perf_context.h"
+#include "vidardb/statistics.h"
 #include "table/block.h"
 #include "table/block_based_table_builder.h"
 #include "table/block_based_table_factory.h"
@@ -45,7 +45,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 extern const uint64_t kLegacyBlockBasedTableMagicNumber;
 extern const uint64_t kLegacyPlainTableMagicNumber;
@@ -99,7 +99,7 @@ std::string Reverse(const Slice& key) {
 class ReverseKeyComparator : public Comparator {
  public:
   virtual const char* Name() const override {
-    return "rocksdb.ReverseBytewiseComparator";
+    return "vidardb.ReverseBytewiseComparator";
   }
 
   virtual int Compare(const Slice& a, const Slice& b) const override {
@@ -992,7 +992,7 @@ TEST_F(BlockBasedTableTest, BlockBasedTableProperties2) {
 
     auto& props = *c.GetTableReader()->GetTableProperties();
 
-    ASSERT_EQ("rocksdb.ReverseBytewiseComparator", props.comparator_name);
+    ASSERT_EQ("vidardb.ReverseBytewiseComparator", props.comparator_name);
     ASSERT_EQ("[DummyPropertiesCollector1,DummyPropertiesCollector2]",
               props.property_collectors_names);
     c.ResetTableReader();
@@ -1857,7 +1857,7 @@ TEST_F(HarnessTest, Randomized) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(HarnessTest, RandomizedLongDB) {
   Random rnd(test::RandomSeed());
   TestArgs args = {DB_TEST, false, 16, kNoCompression, false};
@@ -1875,13 +1875,13 @@ TEST_F(HarnessTest, RandomizedLongDB) {
   for (int level = 0; level < db()->NumberLevels(); level++) {
     std::string value;
     char name[100];
-    snprintf(name, sizeof(name), "rocksdb.num-files-at-level%d", level);
+    snprintf(name, sizeof(name), "vidardb.num-files-at-level%d", level);
     ASSERT_TRUE(db()->GetProperty(name, &value));
     files += atoi(value.c_str());
   }
   ASSERT_GT(files, 0);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 class MemTableTest : public testing::Test {};
 
@@ -2045,7 +2045,7 @@ TEST_P(IndexBlockRestartIntervalTest, IndexBlockRestartInterval) {
 }
 
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

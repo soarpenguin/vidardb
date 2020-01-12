@@ -38,14 +38,14 @@
 #include "db/version_set.h"
 #include "port/port.h"
 #include "port/stack_trace.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/options.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/options.h"
+#include "vidardb/perf_context.h"
+#include "vidardb/slice.h"
+#include "vidardb/write_batch.h"
 #include "util/compression.h"
 #include "util/crc32c.h"
 #include "util/histogram.h"
@@ -242,19 +242,19 @@ DEFINE_bool(enable_numa, false,
             "CPU and memory of same node. Use \"$numactl --hardware\" command "
             "to see NUMA memory architecture.");
 
-DEFINE_int64(db_write_buffer_size, rocksdb::Options().db_write_buffer_size,
+DEFINE_int64(db_write_buffer_size, vidardb::Options().db_write_buffer_size,
              "Number of bytes to buffer in all memtables before compacting");
 
-DEFINE_int64(write_buffer_size, rocksdb::Options().write_buffer_size,
+DEFINE_int64(write_buffer_size, vidardb::Options().write_buffer_size,
              "Number of bytes to buffer in memtable before compacting");
 
 DEFINE_int32(max_write_buffer_number,
-             rocksdb::Options().max_write_buffer_number,
+             vidardb::Options().max_write_buffer_number,
              "The number of in-memory memtables. Each memtable is of size"
              "write_buffer_size.");
 
 DEFINE_int32(min_write_buffer_number_to_merge,
-             rocksdb::Options().min_write_buffer_number_to_merge,
+             vidardb::Options().min_write_buffer_number_to_merge,
              "The minimum number of write buffers that will be merged together"
              "before writing to storage. This is cheap because it is an"
              "in-memory merge. If this feature is not enabled, then all these"
@@ -265,7 +265,7 @@ DEFINE_int32(min_write_buffer_number_to_merge,
              " in each of these individual write buffers.");
 
 DEFINE_int32(max_write_buffer_number_to_maintain,
-             rocksdb::Options().max_write_buffer_number_to_maintain,
+             vidardb::Options().max_write_buffer_number_to_maintain,
              "The total maximum number of write buffers to maintain in memory "
              "including copies of buffers that have already been flushed. "
              "Unlike max_write_buffer_number, this parameter does not affect "
@@ -279,7 +279,7 @@ DEFINE_int32(max_write_buffer_number_to_maintain,
              "'max_write_buffer_number' will be used.");
 
 DEFINE_int32(max_background_compactions,
-             rocksdb::Options().max_background_compactions,
+             vidardb::Options().max_background_compactions,
              "The maximum number of concurrent background compactions"
              " that can occur in parallel.");
 
@@ -291,16 +291,16 @@ static const bool FLAGS_subcompactions_dummy
                                                     &ValidateUint32Range);
 
 DEFINE_int32(max_background_flushes,
-             rocksdb::Options().max_background_flushes,
+             vidardb::Options().max_background_flushes,
              "The maximum number of concurrent background flushes"
              " that can occur in parallel.");
 
-static rocksdb::CompactionStyle FLAGS_compaction_style_e;
-DEFINE_int32(compaction_style, (int32_t) rocksdb::Options().compaction_style,
+static vidardb::CompactionStyle FLAGS_compaction_style_e;
+DEFINE_int32(compaction_style, (int32_t) vidardb::Options().compaction_style,
              "style of compaction: level-based vs universal");
 
-static rocksdb::CompactionPri FLAGS_compaction_pri_e;
-DEFINE_int32(compaction_pri, (int32_t)rocksdb::Options().compaction_pri,
+static vidardb::CompactionPri FLAGS_compaction_pri_e;
+DEFINE_int32(compaction_pri, (int32_t)vidardb::Options().compaction_pri,
              "priority of files to compaction: by size or by data age");
 
 DEFINE_int32(universal_size_ratio, 0,
@@ -338,16 +338,16 @@ DEFINE_bool(pin_l0_filter_and_index_blocks_in_cache, false,
             "Pin index/filter blocks of L0 files in block cache.");
 
 DEFINE_int32(block_size,
-             static_cast<int32_t>(rocksdb::BlockBasedTableOptions().block_size),
+             static_cast<int32_t>(vidardb::BlockBasedTableOptions().block_size),
              "Number of bytes in a block.");
 
 DEFINE_int32(block_restart_interval,
-             rocksdb::BlockBasedTableOptions().block_restart_interval,
+             vidardb::BlockBasedTableOptions().block_restart_interval,
              "Number of keys between restart points "
              "for delta encoding of keys in data block.");
 
 DEFINE_int32(index_block_restart_interval,
-             rocksdb::BlockBasedTableOptions().index_block_restart_interval,
+             vidardb::BlockBasedTableOptions().index_block_restart_interval,
              "Number of keys between restart points "
              "for delta encoding of keys in index block.");
 
@@ -358,11 +358,11 @@ DEFINE_int64(row_cache_size, 0,
              "Number of bytes to use as a cache of individual rows"
              " (0 = disabled).");
 
-DEFINE_int32(open_files, rocksdb::Options().max_open_files,
+DEFINE_int32(open_files, vidardb::Options().max_open_files,
              "Maximum number of files to keep open at the same time"
              " (use default if == 0)");
 
-DEFINE_int32(file_opening_threads, rocksdb::Options().max_file_opening_threads,
+DEFINE_int32(file_opening_threads, vidardb::Options().max_file_opening_threads,
              "If open_files is set to -1, this option set the number of "
              "threads that will be used to open files during DB::Open()");
 
@@ -412,7 +412,7 @@ DEFINE_bool(verify_checksum, false, "Verify checksum for every block read"
             " from storage");
 
 DEFINE_bool(statistics, false, "Database statistics");
-static class std::shared_ptr<rocksdb::Statistics> dbstats;
+static class std::shared_ptr<vidardb::Statistics> dbstats;
 
 DEFINE_int64(writes, -1, "Number of write operations to do. If negative, do"
              " --num reads.");
@@ -448,17 +448,17 @@ DEFINE_string(max_bytes_for_level_multiplier_additional, "",
               "A vector that specifies additional fanout per level");
 
 DEFINE_int32(level0_stop_writes_trigger,
-             rocksdb::Options().level0_stop_writes_trigger,
+             vidardb::Options().level0_stop_writes_trigger,
              "Number of files in level-0"
              " that will trigger put stop.");
 
 DEFINE_int32(level0_slowdown_writes_trigger,
-             rocksdb::Options().level0_slowdown_writes_trigger,
+             vidardb::Options().level0_slowdown_writes_trigger,
              "Number of files in level-0"
              " that will slow down writes.");
 
 DEFINE_int32(level0_file_num_compaction_trigger,
-             rocksdb::Options().level0_file_num_compaction_trigger,
+             vidardb::Options().level0_file_num_compaction_trigger,
              "Number of files in level-0"
              " when compactions start");
 
@@ -494,7 +494,7 @@ DEFINE_bool(optimize_filters_for_hits, false,
 DEFINE_uint64(delete_obsolete_files_period_micros, 0,
               "Ignored. Left here for backward compatibility");
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 DEFINE_bool(optimistic_transaction_db, false,
             "Open a OptimisticTransactionDB instance. "
             "Required for randomtransaction benchmark.");
@@ -520,12 +520,12 @@ DEFINE_uint64(transaction_lock_timeout, 100,
               " milliseconds before failing a transaction waiting on a lock");
 DEFINE_string(
     options_file, "",
-    "The path to a RocksDB options file.  If specified, then db_bench will "
-    "run with the RocksDB options in the default column family of the "
+    "The path to a VidarDB options file.  If specified, then db_bench will "
+    "run with the VidarDB options in the default column family of the "
     "specified options file. "
     "Note that with this setting, db_bench will ONLY accept the following "
-    "RocksDB options related command-line arguments, all other arguments "
-    "that are related to RocksDB options will be ignored:\n"
+    "VidarDB options related command-line arguments, all other arguments "
+    "that are related to VidarDB options will be ignored:\n"
     "\t--use_existing_db\n"
     "\t--statistics\n"
     "\t--row_cache_size\n"
@@ -535,38 +535,38 @@ DEFINE_string(
     "\t--flashcache_dev\n"
     "\t--dump_malloc_stats\n"
     "\t--num_multi_db\n");
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 DEFINE_bool(report_bg_io_stats, false,
             "Measure times spents on I/Os while in compactions. ");
 
-enum rocksdb::CompressionType StringToCompressionType(const char* ctype) {
+enum vidardb::CompressionType StringToCompressionType(const char* ctype) {
   assert(ctype);
 
   if (!strcasecmp(ctype, "none"))
-    return rocksdb::kNoCompression;
+    return vidardb::kNoCompression;
   else if (!strcasecmp(ctype, "snappy"))
-    return rocksdb::kSnappyCompression;
+    return vidardb::kSnappyCompression;
   else if (!strcasecmp(ctype, "zlib"))
-    return rocksdb::kZlibCompression;
+    return vidardb::kZlibCompression;
   else if (!strcasecmp(ctype, "bzip2"))
-    return rocksdb::kBZip2Compression;
+    return vidardb::kBZip2Compression;
   else if (!strcasecmp(ctype, "lz4"))
-    return rocksdb::kLZ4Compression;
+    return vidardb::kLZ4Compression;
   else if (!strcasecmp(ctype, "lz4hc"))
-    return rocksdb::kLZ4HCCompression;
+    return vidardb::kLZ4HCCompression;
   else if (!strcasecmp(ctype, "xpress"))
-    return rocksdb::kXpressCompression;
+    return vidardb::kXpressCompression;
   else if (!strcasecmp(ctype, "zstd"))
-    return rocksdb::kZSTDNotFinalCompression;
+    return vidardb::kZSTDNotFinalCompression;
 
   fprintf(stdout, "Cannot parse compression type '%s'\n", ctype);
-  return rocksdb::kSnappyCompression;  // default value
+  return vidardb::kSnappyCompression;  // default value
 }
 
 std::string ColumnFamilyName(size_t i) {
   if (i == 0) {
-    return rocksdb::kDefaultColumnFamilyName;
+    return vidardb::kDefaultColumnFamilyName;
   } else {
     char name[100];
     snprintf(name, sizeof(name), "column_family_name_%06zu", i);
@@ -576,8 +576,8 @@ std::string ColumnFamilyName(size_t i) {
 
 DEFINE_string(compression_type, "snappy",
               "Algorithm to use to compress the database");
-static enum rocksdb::CompressionType FLAGS_compression_type_e =
-    rocksdb::kSnappyCompression;
+static enum vidardb::CompressionType FLAGS_compression_type_e =
+    vidardb::kSnappyCompression;
 
 DEFINE_int32(compression_level, -1,
              "Compression level. For zlib this should be -1 for the "
@@ -615,13 +615,13 @@ static bool ValidateTableCacheNumshardbits(const char* flagname,
 }
 DEFINE_int32(table_cache_numshardbits, 4, "");
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 DEFINE_string(env_uri, "", "URI for registry Env lookup. Mutually exclusive"
               " with --hdfs.");
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 DEFINE_string(hdfs, "", "Name of hdfs environment. Mutually exclusive with"
               " --env_uri.");
-static rocksdb::Env* FLAGS_env = rocksdb::Env::Default();
+static vidardb::Env* FLAGS_env = vidardb::Env::Default();
 
 DEFINE_int64(stats_interval, 0, "Stats are reported every N operations when "
              "this is greater than zero. When 0 the interval grows over time.");
@@ -691,16 +691,16 @@ DEFINE_uint64(rate_limiter_bytes_per_sec, 0, "Set options.rate_limiter value.");
 
 DEFINE_uint64(
     benchmark_write_rate_limit, 0,
-    "If non-zero, db_bench will rate-limit the writes going into RocksDB. This "
+    "If non-zero, db_bench will rate-limit the writes going into VidarDB. This "
     "is the global rate in bytes/second.");
 
 DEFINE_int32(max_grandparent_overlap_factor, 10, "Control maximum bytes of "
              "overlaps in grandparent (i.e., level+2) before we stop building a"
              " single file in a level->level+1 compaction.");
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 DEFINE_bool(readonly, false, "Run read only benchmarks.");
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 DEFINE_bool(disable_auto_compactions, false, "Do not auto trigger compactions");
 
@@ -713,22 +713,22 @@ DEFINE_uint64(wal_size_limit_MB, 0, "Set the size limit for the WAL Files"
               " in MB.");
 DEFINE_uint64(max_total_wal_size, 0, "Set total max WAL size");
 
-DEFINE_bool(bufferedio, rocksdb::EnvOptions().use_os_buffer,
+DEFINE_bool(bufferedio, vidardb::EnvOptions().use_os_buffer,
             "Allow buffered io using OS buffers");
 
-DEFINE_bool(mmap_read, rocksdb::EnvOptions().use_mmap_reads,
+DEFINE_bool(mmap_read, vidardb::EnvOptions().use_mmap_reads,
             "Allow reads to occur via mmap-ing files");
 
-DEFINE_bool(mmap_write, rocksdb::EnvOptions().use_mmap_writes,
+DEFINE_bool(mmap_write, vidardb::EnvOptions().use_mmap_writes,
             "Allow writes to occur via mmap-ing files");
 
-DEFINE_bool(advise_random_on_open, rocksdb::Options().advise_random_on_open,
+DEFINE_bool(advise_random_on_open, vidardb::Options().advise_random_on_open,
             "Advise random access on table file open");
 
 DEFINE_string(compaction_fadvice, "NORMAL",
               "Access pattern advice when a file is compacted");
 static auto FLAGS_compaction_fadvice_e =
-  rocksdb::Options().access_hint_on_compaction_start;
+  vidardb::Options().access_hint_on_compaction_start;
 
 DEFINE_bool(disable_flashcache_for_background_threads, false,
             "Disable flashcache for background threads");
@@ -738,15 +738,15 @@ DEFINE_string(flashcache_dev, "", "Path to flashcache device");
 DEFINE_bool(use_tailing_iterator, false,
             "Use tailing iterator to access a series of keys instead of get");
 
-DEFINE_bool(use_adaptive_mutex, rocksdb::Options().use_adaptive_mutex,
+DEFINE_bool(use_adaptive_mutex, vidardb::Options().use_adaptive_mutex,
             "Use adaptive mutex");
 
-DEFINE_uint64(bytes_per_sync,  rocksdb::Options().bytes_per_sync,
+DEFINE_uint64(bytes_per_sync,  vidardb::Options().bytes_per_sync,
               "Allows OS to incrementally sync SST files to disk while they are"
               " being written, in the background. Issue one request for every"
               " bytes_per_sync written. 0 turns it off.");
 
-DEFINE_uint64(wal_bytes_per_sync,  rocksdb::Options().wal_bytes_per_sync,
+DEFINE_uint64(wal_bytes_per_sync,  vidardb::Options().wal_bytes_per_sync,
               "Allows OS to incrementally sync WAL files to disk while they are"
               " being written, in the background. Issue one request for every"
               " wal_bytes_per_sync written. 0 turns it off.");
@@ -853,7 +853,7 @@ static const bool FLAGS_table_cache_numshardbits_dummy __attribute__((unused)) =
                           &ValidateTableCacheNumshardbits);
 }  // namespace
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 struct ReportFileOpCounters {
@@ -1377,14 +1377,14 @@ class Stats {
 
             if (db_with_cfh && db_with_cfh->num_created.load()) {
               for (size_t i = 0; i < db_with_cfh->num_created.load(); ++i) {
-                if (db->GetProperty(db_with_cfh->cfh[i], "rocksdb.cfstats",
+                if (db->GetProperty(db_with_cfh->cfh[i], "vidardb.cfstats",
                                     &stats))
                   fprintf(stderr, "%s\n", stats.c_str());
                 if (FLAGS_show_table_properties) {
                   for (int level = 0; level < FLAGS_num_levels; ++level) {
                     if (db->GetProperty(
                             db_with_cfh->cfh[i],
-                            "rocksdb.aggregated-table-properties-at-level" +
+                            "vidardb.aggregated-table-properties-at-level" +
                                 ToString(level),
                             &stats)) {
                       if (stats.find("# entries=0") == std::string::npos) {
@@ -1396,13 +1396,13 @@ class Stats {
                 }
               }
             } else if (db) {
-              if (db->GetProperty("rocksdb.stats", &stats)) {
+              if (db->GetProperty("vidardb.stats", &stats)) {
                 fprintf(stderr, "%s\n", stats.c_str());
               }
               if (FLAGS_show_table_properties) {
                 for (int level = 0; level < FLAGS_num_levels; ++level) {
                   if (db->GetProperty(
-                          "rocksdb.aggregated-table-properties-at-level" +
+                          "vidardb.aggregated-table-properties-at-level" +
                               ToString(level),
                           &stats)) {
                     if (stats.find("# entries=0") == std::string::npos) {
@@ -1585,31 +1585,31 @@ class Benchmark {
   inline bool CompressSlice(const Slice& input, std::string* compressed) {
     bool ok = true;
     switch (FLAGS_compression_type_e) {
-      case rocksdb::kSnappyCompression:
+      case vidardb::kSnappyCompression:
         ok = Snappy_Compress(Options().compression_opts, input.data(),
                              input.size(), compressed);
         break;
-      case rocksdb::kZlibCompression:
+      case vidardb::kZlibCompression:
         ok = Zlib_Compress(Options().compression_opts, 2, input.data(),
                            input.size(), compressed);
         break;
-      case rocksdb::kBZip2Compression:
+      case vidardb::kBZip2Compression:
         ok = BZip2_Compress(Options().compression_opts, 2, input.data(),
                             input.size(), compressed);
         break;
-      case rocksdb::kLZ4Compression:
+      case vidardb::kLZ4Compression:
         ok = LZ4_Compress(Options().compression_opts, 2, input.data(),
                           input.size(), compressed);
         break;
-      case rocksdb::kLZ4HCCompression:
+      case vidardb::kLZ4HCCompression:
         ok = LZ4HC_Compress(Options().compression_opts, 2, input.data(),
                             input.size(), compressed);
         break;
-      case rocksdb::kXpressCompression:
+      case vidardb::kXpressCompression:
         ok = XPRESS_Compress(input.data(),
           input.size(), compressed);
         break;
-      case rocksdb::kZSTDNotFinalCompression:
+      case vidardb::kZSTDNotFinalCompression:
         ok = ZSTD_Compress(Options().compression_opts, input.data(),
                            input.size(), compressed);
         break;
@@ -1677,7 +1677,7 @@ class Benchmark {
     fprintf(stdout,
             "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
 #endif
-    if (FLAGS_compression_type_e != rocksdb::kNoCompression) {
+    if (FLAGS_compression_type_e != vidardb::kNoCompression) {
       // The test string should not be too small.
       const int len = FLAGS_block_size;
       std::string input_str(len, 'y');
@@ -1710,7 +1710,7 @@ class Benchmark {
 #endif
 
   void PrintEnvironment() {
-    fprintf(stderr, "RocksDB:    version %d.%d\n",
+    fprintf(stderr, "VidarDB:    version %d.%d\n",
             kMajorVersion, kMinorVersion);
 
 #if defined(__linux)
@@ -1786,7 +1786,7 @@ class Benchmark {
                 "at the same time");
         exit(1);
       }
-      FLAGS_env = new ReportFileOpEnv(rocksdb::Env::Default());
+      FLAGS_env = new ReportFileOpEnv(vidardb::Env::Default());
     }
 
     if (FLAGS_prefix_size > FLAGS_key_size) {
@@ -2000,11 +2000,11 @@ class Benchmark {
         fresh_db = true;
         method = &Benchmark::RandomReplaceKeys;
       } else if (name == "stats") {
-        PrintStats("rocksdb.stats");
+        PrintStats("vidardb.stats");
       } else if (name == "levelstats") {
-        PrintStats("rocksdb.levelstats");
+        PrintStats("vidardb.levelstats");
       } else if (name == "sstables") {
-        PrintStats("rocksdb.sstables");
+        PrintStats("vidardb.sstables");
       } else if (!name.empty()) {  // No error message for empty name
         fprintf(stderr, "unknown benchmark '%s'\n", name.c_str());
         exit(1);
@@ -2223,7 +2223,7 @@ class Benchmark {
     while (ok && bytes < 1024 * 1048576) {
       char *uncompressed = nullptr;
       switch (FLAGS_compression_type_e) {
-        case rocksdb::kSnappyCompression: {
+        case vidardb::kSnappyCompression: {
           // get size and allocate here to make comparison fair
           size_t ulength = 0;
           if (!Snappy_GetUncompressedLength(compressed.data(),
@@ -2236,32 +2236,32 @@ class Benchmark {
                                  uncompressed);
           break;
         }
-      case rocksdb::kZlibCompression:
+      case vidardb::kZlibCompression:
         uncompressed = Zlib_Uncompress(compressed.data(), compressed.size(),
                                        &decompress_size, 2);
         ok = uncompressed != nullptr;
         break;
-      case rocksdb::kBZip2Compression:
+      case vidardb::kBZip2Compression:
         uncompressed = BZip2_Uncompress(compressed.data(), compressed.size(),
                                         &decompress_size, 2);
         ok = uncompressed != nullptr;
         break;
-      case rocksdb::kLZ4Compression:
+      case vidardb::kLZ4Compression:
         uncompressed = LZ4_Uncompress(compressed.data(), compressed.size(),
                                       &decompress_size, 2);
         ok = uncompressed != nullptr;
         break;
-      case rocksdb::kLZ4HCCompression:
+      case vidardb::kLZ4HCCompression:
         uncompressed = LZ4_Uncompress(compressed.data(), compressed.size(),
                                       &decompress_size, 2);
         ok = uncompressed != nullptr;
         break;
-      case rocksdb::kXpressCompression:
+      case vidardb::kXpressCompression:
         uncompressed = XPRESS_Uncompress(compressed.data(), compressed.size(),
           &decompress_size);
         ok = uncompressed != nullptr;
         break;
-      case rocksdb::kZSTDNotFinalCompression:
+      case vidardb::kZSTDNotFinalCompression:
         uncompressed = ZSTD_Uncompress(compressed.data(), compressed.size(),
                                        &decompress_size);
         ok = uncompressed != nullptr;
@@ -2288,7 +2288,7 @@ class Benchmark {
   }
 
   void InitializeOptionsFromFlags(Options* opts) {
-    printf("Initializing RocksDB Options from command-line flags\n");
+    printf("Initializing VidarDB Options from command-line flags\n");
     Options& options = *opts;
 
     assert(db_.db == nullptr);
@@ -2453,12 +2453,12 @@ class Benchmark {
       options.enable_thread_tracking = true;
     }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     if (FLAGS_readonly && FLAGS_transaction_db) {
       fprintf(stderr, "Cannot use readonly flag with transaction_db\n");
       exit(1);
     }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
     if (FLAGS_min_level_to_compress >= 0) {
       options.compression_per_level.clear();
@@ -2525,7 +2525,7 @@ class Benchmark {
         column_families.push_back(ColumnFamilyDescriptor(
               ColumnFamilyName(i), ColumnFamilyOptions(options)));
       }
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
       if (FLAGS_readonly) {
         s = DB::OpenForReadOnly(options, db_name, column_families,
             &db->cfh, &db->db);
@@ -2534,14 +2534,14 @@ class Benchmark {
       }
 #else
       s = DB::Open(options, db_name, column_families, &db->cfh, &db->db);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
       db->cfh.resize(FLAGS_num_column_families);
       db->num_created = num_hot;
       db->num_hot = num_hot;
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     } else if (FLAGS_readonly) {
       s = DB::OpenForReadOnly(options, db_name, &db->db);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
     } else {
       s = DB::Open(options, db_name, &db->db);
     }
@@ -3404,7 +3404,7 @@ class Benchmark {
 
   // Writes and deletes random keys without overwriting keys.
   //
-  // This benchmark is intended to partially replicate the behavior of MyRocks
+  // This benchmark is intended to partially replicate the behavior of MyVidars
   // secondary indices: All data is stored in keys and updates happen by
   // deleting the old version of the key and inserting the new version.
   void RandomReplaceKeys(ThreadState* thread) {
@@ -3488,7 +3488,7 @@ class Benchmark {
 };
 
 int db_bench_tool(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   static bool initialized = false;
   if (!initialized) {
     SetUsageMessage(std::string("\nUSAGE:\n") + std::string(argv[0]) +
@@ -3497,13 +3497,13 @@ int db_bench_tool(int argc, char** argv) {
   }
   ParseCommandLineFlags(&argc, &argv, true);
 
-  FLAGS_compaction_style_e = (rocksdb::CompactionStyle) FLAGS_compaction_style;
+  FLAGS_compaction_style_e = (vidardb::CompactionStyle) FLAGS_compaction_style;
   if (FLAGS_statistics) {
-    dbstats = rocksdb::CreateDBStatistics();
+    dbstats = vidardb::CreateDBStatistics();
   }
-  FLAGS_compaction_pri_e = (rocksdb::CompactionPri)FLAGS_compaction_pri;
+  FLAGS_compaction_pri_e = (vidardb::CompactionPri)FLAGS_compaction_pri;
 
-  std::vector<std::string> fanout = rocksdb::StringSplit(
+  std::vector<std::string> fanout = vidardb::StringSplit(
       FLAGS_max_bytes_for_level_multiplier_additional, ',');
   for (size_t j = 0; j < fanout.size(); j++) {
     FLAGS_max_bytes_for_level_multiplier_additional_v.push_back(
@@ -3517,22 +3517,22 @@ int db_bench_tool(int argc, char** argv) {
   FLAGS_compression_type_e =
     StringToCompressionType(FLAGS_compression_type.c_str());
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   std::unique_ptr<Env> custom_env_guard;
   if (!FLAGS_hdfs.empty() && !FLAGS_env_uri.empty()) {
     fprintf(stderr, "Cannot provide both --hdfs and --env_uri.\n");
     exit(1);
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   if (!strcasecmp(FLAGS_compaction_fadvice.c_str(), "NONE"))
-    FLAGS_compaction_fadvice_e = rocksdb::Options::NONE;
+    FLAGS_compaction_fadvice_e = vidardb::Options::NONE;
   else if (!strcasecmp(FLAGS_compaction_fadvice.c_str(), "NORMAL"))
-    FLAGS_compaction_fadvice_e = rocksdb::Options::NORMAL;
+    FLAGS_compaction_fadvice_e = vidardb::Options::NORMAL;
   else if (!strcasecmp(FLAGS_compaction_fadvice.c_str(), "SEQUENTIAL"))
-    FLAGS_compaction_fadvice_e = rocksdb::Options::SEQUENTIAL;
+    FLAGS_compaction_fadvice_e = vidardb::Options::SEQUENTIAL;
   else if (!strcasecmp(FLAGS_compaction_fadvice.c_str(), "WILLNEED"))
-    FLAGS_compaction_fadvice_e = rocksdb::Options::WILLNEED;
+    FLAGS_compaction_fadvice_e = vidardb::Options::WILLNEED;
   else {
     fprintf(stdout, "Unknown compaction fadvice:%s\n",
             FLAGS_compaction_fadvice.c_str());
@@ -3544,12 +3544,12 @@ int db_bench_tool(int argc, char** argv) {
   // max number of concurrent compactions.
   FLAGS_env->SetBackgroundThreads(FLAGS_max_background_compactions);
   FLAGS_env->SetBackgroundThreads(FLAGS_max_background_flushes,
-                                  rocksdb::Env::Priority::HIGH);
+                                  vidardb::Env::Priority::HIGH);
 
   // Choose a location for the test database if none given with --db=<path>
   if (FLAGS_db.empty()) {
     std::string default_db_path;
-    rocksdb::Env::Default()->GetTestDirectory(&default_db_path);
+    vidardb::Env::Default()->GetTestDirectory(&default_db_path);
     default_db_path += "/dbbench";
     FLAGS_db = default_db_path;
   }
@@ -3560,9 +3560,9 @@ int db_bench_tool(int argc, char** argv) {
     FLAGS_stats_interval = 1000;
   }
 
-  rocksdb::Benchmark benchmark;
+  vidardb::Benchmark benchmark;
   benchmark.Run();
   return 0;
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 #endif

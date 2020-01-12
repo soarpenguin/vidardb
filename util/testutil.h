@@ -13,17 +13,17 @@
 #include <string>
 #include <vector>
 
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/table.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
+#include "vidardb/table.h"
 #include "table/block_based_table_factory.h"
 #include "table/internal_iterator.h"
 #include "util/mutexlock.h"
 #include "util/random.h"
 
-namespace rocksdb {
+namespace vidardb {
 class SequentialFile;
 class SequentialFileReader;
 
@@ -585,4 +585,4 @@ TableFactory* RandomTableFactory(Random* rnd, int pre_defined = -1);
 std::string RandomName(Random* rnd, const size_t len);
 
 }  // namespace test
-}  // namespace rocksdb
+}  // namespace vidardb

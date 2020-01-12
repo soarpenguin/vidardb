@@ -14,16 +14,16 @@
 #include <utility>
 #include <string>
 
-#include "rocksdb/options.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/statistics.h"
+#include "vidardb/status.h"
+#include "vidardb/table.h"
 #include "table/table_properties_internal.h"
 #include "table/table_reader.h"
 #include "util/coding.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Block;
 class BlockIter;
@@ -195,4 +195,4 @@ class BlockBasedTable : public TableReader {
   void operator=(const TableReader&) = delete;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

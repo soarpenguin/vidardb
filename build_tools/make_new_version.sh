@@ -16,7 +16,7 @@ function title() {
   echo -e "\033[1;32m$*\033[0m"
 }
 
-usage="Create new RocksDB version and prepare it for the release process\n"
+usage="Create new VidarDB version and prepare it for the release process\n"
 usage+="USAGE: ./make_new_version.sh <version>"
 
 # -- Pre-check
@@ -25,7 +25,7 @@ if [[ $# < 1 ]]; then
   exit 1
 fi
 
-ROCKSDB_VERSION=$1
+VIDARDB_VERSION=$1
 
 GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
 echo $GIT_BRANCH
@@ -36,7 +36,7 @@ if [ $GIT_BRANCH != "master" ]; then
 fi
 
 title "Adding new tag for this release ..."
-BRANCH="$ROCKSDB_VERSION.fb"
+BRANCH="$VIDARDB_VERSION.fb"
 $GIT checkout -b $BRANCH
 
 # Setting up the proxy for remote repo access

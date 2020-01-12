@@ -12,9 +12,9 @@
 
 #include "port/port.h"
 
-#include "rocksdb/status.h"
+#include "vidardb/status.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 class Logger;
@@ -86,4 +86,4 @@ class DeleteScheduler {
   static const uint64_t kMicrosInSecond = 1000 * 1000LL;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -17,9 +17,9 @@
 #include "db/filename.h"
 #include "db/pinned_iterators_manager.h"
 #include "port/port.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
 #include "table/internal_iterator.h"
 #include "util/arena.h"
 #include "util/logging.h"
@@ -27,7 +27,7 @@
 #include "util/perf_context_imp.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #if 0
 static void DumpInternalIter(Iterator* iter) {
@@ -168,13 +168,13 @@ class DBIter: public Iterator {
     if (prop == nullptr) {
       return Status::InvalidArgument("prop is nullptr");
     }
-    if (prop_name == "rocksdb.iterator.super-version-number") {
+    if (prop_name == "vidardb.iterator.super-version-number") {
       // First try to pass the value returned from inner iterator.
       if (!iter_->GetProperty(prop_name, prop).ok()) {
         *prop = ToString(version_number_);
       }
       return Status::OK();
-    } else if (prop_name == "rocksdb.iterator.is-key-pinned") {
+    } else if (prop_name == "vidardb.iterator.is-key-pinned") {
       if (valid_) {
         *prop = (pin_thru_lifetime_ && saved_key_.IsKeyPinned()) ? "1" : "0";
       } else {
@@ -767,4 +767,4 @@ ArenaWrappedDBIter* NewArenaWrappedDbIterator(
   return iter;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

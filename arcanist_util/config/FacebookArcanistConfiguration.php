@@ -123,9 +123,9 @@ class FacebookArcanistConfiguration extends ArcanistConfiguration {
       return;
     }
 
-    if (strcmp(getenv("ROCKSDB_CHECK_ALL"), 1) == 0) {
+    if (strcmp(getenv("VIDARDB_CHECK_ALL"), 1) == 0) {
       // extract all tests from the CI definition
-      $output = file_get_contents("build_tools/rocksdb-lego-determinator");
+      $output = file_get_contents("build_tools/vidardb-lego-determinator");
       preg_match_all('/[ ]{2}([a-zA-Z0-9_]+)[\)]{1}/', $output, $matches);
       $tests = $matches[1];
     } else {
@@ -138,7 +138,7 @@ class FacebookArcanistConfiguration extends ArcanistConfiguration {
     // construct a job definition for each test and add it to the master plan
     foreach ($tests as $test) {
       $arg[] = array(
-        "name" => "RocksDB diff " . $diffID . " test " . $test,
+        "name" => "VidarDB diff " . $diffID . " test " . $test,
         "steps" => $this->getSteps($diffID, $username, $test)
       );
     }
@@ -168,8 +168,8 @@ class FacebookArcanistConfiguration extends ArcanistConfiguration {
     // submit to sandcastle
     $url = 'https://interngraph.intern.facebook.com/sandcastle/generate?'
             .'command=SandcastleUniversalCommand'
-            .'&vcs=rocksdb-git&revision=origin%2Fmaster&type=lego'
-            .'&user=krad&alias=rocksdb-precommit'
+            .'&vcs=vidardb-git&revision=origin%2Fmaster&type=lego'
+            .'&user=krad&alias=vidardb-precommit'
             .'&command-args=' . urlencode(json_encode($command));
 
     $cmd = 'https_proxy= HTTPS_PROXY= curl -s -k -F app=659387027470559 '
@@ -199,7 +199,7 @@ class FacebookArcanistConfiguration extends ArcanistConfiguration {
       return;
     }
 
-    $url = "https://ci-builds.fb.com/view/rocksdb/job/rocksdb_diff_check/"
+    $url = "https://ci-builds.fb.com/view/vidardb/job/vidardb_diff_check/"
                ."buildWithParameters?token=AUTH&DIFF_ID=$diffID";
     system("curl --noproxy '*' \"$url\" > /dev/null 2>&1");
   }

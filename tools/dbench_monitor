@@ -78,7 +78,7 @@ DEBUG=1    #Set to 0 to remove chattiness
 
 if [ "x$DEBUG" != "x" ]; then
   #
-  #NOTE: under some circumstances, --use_existing_db may leave LOCK files under ${TMPDIR}/rocksdb/*
+  #NOTE: under some circumstances, --use_existing_db may leave LOCK files under ${TMPDIR}/vidardb/*
   #cleanup the dir and re-run
   #
   echo DEBUG: Will run $DB_BENCH --block_size=$bs --compression_type=$ztype --benchmarks="$benches" --reads="$reads" --threads="$threads" --cache_size=$cs  --value_size=$vsize --compression_ratio=$comp --num=$num --use_existing_db 

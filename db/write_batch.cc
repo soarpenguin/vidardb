@@ -29,7 +29,7 @@
 //    len: varint32
 //    data: uint8[len]
 
-#include "rocksdb/write_batch.h"
+#include "vidardb/write_batch.h"
 
 #include <stack>
 #include <stdexcept>
@@ -46,7 +46,7 @@
 #include "util/perf_context_imp.h"
 #include "util/statistics.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // anon namespace for file-local types
 namespace {
@@ -890,4 +890,4 @@ size_t WriteBatchInternal::AppendedByteSize(size_t leftByteSize,
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

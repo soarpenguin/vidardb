@@ -12,11 +12,11 @@
 #include <stdint.h>
 
 #include "db/log_format.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h"
+#include "vidardb/slice.h"
+#include "vidardb/status.h"
+#include "vidardb/options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class SequentialFileReader;
 class Logger;
@@ -157,4 +157,4 @@ class Reader {
 };
 
 }  // namespace log
-}  // namespace rocksdb
+}  // namespace vidardb

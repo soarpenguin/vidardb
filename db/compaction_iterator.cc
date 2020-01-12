@@ -8,7 +8,7 @@
 #include "db/compaction_iterator.h"
 #include "table/internal_iterator.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 CompactionIterator::CompactionIterator(
     InternalIterator* input, const Comparator* cmp,
@@ -336,4 +336,4 @@ inline SequenceNumber CompactionIterator::findEarliestVisibleSnapshot(
   return kMaxSequenceNumber;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

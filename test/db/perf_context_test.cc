@@ -8,9 +8,9 @@
 #include <thread>
 #include <vector>
 
-#include "rocksdb/db.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/perf_context.h"
+#include "vidardb/db.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/perf_context.h"
 #include "util/histogram.h"
 #include "util/instrumented_mutex.h"
 #include "util/stop_watch.h"
@@ -27,9 +27,9 @@ int FLAGS_min_write_buffer_number_to_merge = 7;
 bool FLAGS_verbose = false;
 
 // Path to the database on file system
-const std::string kDbName = rocksdb::test::TmpDir() + "/perf_context_test";
+const std::string kDbName = vidardb::test::TmpDir() + "/perf_context_test";
 
-namespace rocksdb {
+namespace vidardb {
 
 std::shared_ptr<DB> OpenDb(bool read_only = false) {
     DB* db;
@@ -448,7 +448,7 @@ void ProfileQueries(bool enabled_time = false) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(PerfContextTest, KeyComparisonCount) {
   SetPerfLevel(kEnableCount);
   ProfileQueries();
@@ -459,10 +459,10 @@ TEST_F(PerfContextTest, KeyComparisonCount) {
   SetPerfLevel(kEnableTime);
   ProfileQueries(true);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // make perf_context_test
-// export ROCKSDB_TESTS=PerfContextTest.SeekKeyComparison
+// export VIDARDB_TESTS=PerfContextTest.SeekKeyComparison
 // For one memtable:
 // ./perf_context_test --write_buffer_size=500000 --total_keys=10000
 // For two memtables:

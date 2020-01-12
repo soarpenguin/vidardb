@@ -15,7 +15,7 @@
 #include "port/port.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Comparator;
 struct FileMetaData;
@@ -59,7 +59,7 @@ class FileIndexer {
 
   enum {
     // MSVC version 1800 still does not have constexpr for ::max()
-    kLevelMaxIndex = rocksdb::port::kMaxInt32
+    kLevelMaxIndex = vidardb::port::kMaxInt32
   };
 
  private:
@@ -138,4 +138,4 @@ class FileIndexer {
   int32_t* level_rb_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

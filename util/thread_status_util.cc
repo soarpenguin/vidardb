@@ -5,13 +5,13 @@
 
 #include "util/thread_status_util.h"
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/thread_status_updater.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 __thread ThreadStatusUpdater*
     ThreadStatusUtil::thread_updater_local_cache_ = nullptr;
 __thread bool ThreadStatusUtil::thread_updater_initialized_ = false;
@@ -216,6 +216,6 @@ AutoThreadOperationStageUpdater::AutoThreadOperationStageUpdater(
 AutoThreadOperationStageUpdater::~AutoThreadOperationStageUpdater() {
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 
-}  // namespace rocksdb
+}  // namespace vidardb

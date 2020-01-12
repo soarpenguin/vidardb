@@ -12,8 +12,8 @@
 #include "db/db_impl.h"
 #include "db/dbformat.h"
 #include "db/table_properties_collector.h"
-#include "rocksdb/immutable_options.h"
-#include "rocksdb/table.h"
+#include "vidardb/immutable_options.h"
+#include "vidardb/table.h"
 #include "table/block_based_table_factory.h"
 #include "table/meta_blocks.h"
 #include "table/table_builder.h"
@@ -22,7 +22,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class TablePropertiesTest : public testing::Test,
                             public testing::WithParamInterface<bool> {
@@ -107,7 +107,7 @@ class RegularKeysStartWithA: public TablePropertiesCollector {
   }
 
  private:
-  std::string message_ = "Rocksdb";
+  std::string message_ = "VidarDB";
   uint32_t count_ = 0;
   uint32_t num_puts_ = 0;
   uint32_t num_deletes_ = 0;
@@ -126,7 +126,7 @@ class RegularKeysStartWithABackwardCompatible
   Status Finish(UserCollectedProperties* properties) override {
     std::string encoded;
     PutVarint32(&encoded, count_);
-    *properties = UserCollectedProperties{{"TablePropertiesTest", "Rocksdb"},
+    *properties = UserCollectedProperties{{"TablePropertiesTest", "VidarDB"},
                                           {"Count", encoded}};
     return Status::OK();
   }
@@ -154,7 +154,7 @@ class RegularKeysStartWithAInternal : public IntTblPropCollector {
   Status Finish(UserCollectedProperties* properties) override {
     std::string encoded;
     PutVarint32(&encoded, count_);
-    *properties = UserCollectedProperties{{"TablePropertiesTest", "Rocksdb"},
+    *properties = UserCollectedProperties{{"TablePropertiesTest", "VidarDB"},
                                           {"Count", encoded}};
     return Status::OK();
   }
@@ -248,7 +248,7 @@ void TestCustomizedTablePropertiesCollector(
       {{"Love    ", kTypeDeletion}, ""},
       {{"Cancel  ", kTypeValue}, "val4"},
       {{"Find    ", kTypeValue}, "val6"},
-      {{"Rocks   ", kTypeDeletion}, ""},
+      {{"Vidar   ", kTypeDeletion}, ""},
       {{"Foo     ", kTypeSingleDeletion}, ""},
   };
 
@@ -290,7 +290,7 @@ void TestCustomizedTablePropertiesCollector(
   auto user_collected = props->user_collected_properties;
 
   ASSERT_NE(user_collected.find("TablePropertiesTest"), user_collected.end());
-  ASSERT_EQ("Rocksdb", user_collected.at("TablePropertiesTest"));
+  ASSERT_EQ("VidarDB", user_collected.at("TablePropertiesTest"));
 
   uint32_t starts_with_A = 0;
   ASSERT_NE(user_collected.find("Count"), user_collected.end());
@@ -470,7 +470,7 @@ INSTANTIATE_TEST_CASE_P(InternalKeyPropertiesCollector, TablePropertiesTest,
 INSTANTIATE_TEST_CASE_P(CustomizedTablePropertiesCollector, TablePropertiesTest,
                         ::testing::Bool());
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifdef ROCKSDB_LIB_IO_POSIX
+#ifdef VIDARDB_LIB_IO_POSIX
 
 #include "util/io_posix.h"
 #include <errno.h>
@@ -28,14 +28,14 @@
 #include <sys/syscall.h>
 #endif
 #include "port/port.h"
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 #include "util/coding.h"
 #include "util/iostats_context_imp.h"
 #include "util/posix_logger.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // A wrapper for fadvise, if the platform doesn't support fadvise,
 // it will simply return Status::NotSupport.
@@ -409,7 +409,7 @@ PosixMmapReadableFile::PosixMmapReadableFile(const int fd,
 PosixMmapReadableFile::~PosixMmapReadableFile() {
   int ret = munmap(mmapped_region_, length_);
   if (ret != 0) {
-    fprintf(stdout, "failed to munmap %p length %" ROCKSDB_PRIszt " \n",
+    fprintf(stdout, "failed to munmap %p length %" VIDARDB_PRIszt " \n",
             mmapped_region_, length_);
   }
 }
@@ -449,7 +449,7 @@ Status PosixMmapReadableFile::InvalidateCache(size_t offset, size_t length) {
  * knows enough to skip zero suffixes.
  */
 Status PosixMmapFile::UnmapCurrentRegion() {
-  TEST_KILL_RANDOM("PosixMmapFile::UnmapCurrentRegion:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::UnmapCurrentRegion:0", vidardb_kill_odds);
   if (base_ != nullptr) {
     int munmap_status = munmap(base_, limit_ - base_);
     if (munmap_status != 0) {
@@ -470,10 +470,10 @@ Status PosixMmapFile::UnmapCurrentRegion() {
 }
 
 Status PosixMmapFile::MapNewRegion() {
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   assert(base_ == nullptr);
 
-  TEST_KILL_RANDOM("PosixMmapFile::UnmapCurrentRegion:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::UnmapCurrentRegion:0", vidardb_kill_odds);
   // we can't fallocate with FALLOC_FL_KEEP_SIZE here
   if (allow_fallocate_) {
     IOSTATS_TIMER_GUARD(allocate_nanos);
@@ -488,13 +488,13 @@ Status PosixMmapFile::MapNewRegion() {
     }
   }
 
-  TEST_KILL_RANDOM("PosixMmapFile::Append:1", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::Append:1", vidardb_kill_odds);
   void* ptr = mmap(nullptr, map_size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_,
                    file_offset_);
   if (ptr == MAP_FAILED) {
     return Status::IOError("MMap failed on " + filename_);
   }
-  TEST_KILL_RANDOM("PosixMmapFile::Append:2", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::Append:2", vidardb_kill_odds);
 
   base_ = reinterpret_cast<char*>(ptr);
   limit_ = base_ + map_size_;
@@ -515,7 +515,7 @@ Status PosixMmapFile::Msync() {
   size_t p1 = TruncateToPageBoundary(last_sync_ - base_);
   size_t p2 = TruncateToPageBoundary(dst_ - base_ - 1);
   last_sync_ = dst_;
-  TEST_KILL_RANDOM("PosixMmapFile::Msync:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::Msync:0", vidardb_kill_odds);
   if (msync(base_ + p1, p2 - p1 + page_size_, MS_SYNC) < 0) {
     return IOError(filename_, errno);
   }
@@ -534,7 +534,7 @@ PosixMmapFile::PosixMmapFile(const std::string& fname, int fd, size_t page_size,
       dst_(nullptr),
       last_sync_(nullptr),
       file_offset_(0) {
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   allow_fallocate_ = options.allow_fallocate;
   fallocate_with_keep_size_ = options.fallocate_with_keep_size;
 #endif
@@ -564,7 +564,7 @@ Status PosixMmapFile::Append(const Slice& data) {
       if (!s.ok()) {
         return s;
       }
-      TEST_KILL_RANDOM("PosixMmapFile::Append:0", rocksdb_kill_odds);
+      TEST_KILL_RANDOM("PosixMmapFile::Append:0", vidardb_kill_odds);
     }
 
     size_t n = (left <= avail) ? left : avail;
@@ -646,11 +646,11 @@ Status PosixMmapFile::InvalidateCache(size_t offset, size_t length) {
 #endif
 }
 
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
 Status PosixMmapFile::Allocate(uint64_t offset, uint64_t len) {
   assert(offset <= static_cast<uint64_t>(std::numeric_limits<off_t>::max()));
   assert(len <= static_cast<uint64_t>(std::numeric_limits<off_t>::max()));
-  TEST_KILL_RANDOM("PosixMmapFile::Allocate:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixMmapFile::Allocate:0", vidardb_kill_odds);
   int alloc_status = 0;
   if (allow_fallocate_) {
     alloc_status = fallocate(
@@ -674,7 +674,7 @@ PosixWritableFile::PosixWritableFile(const std::string& fname, int fd,
                                      const EnvOptions& options)
 //    : filename_(fname),  //Shichao
     : WritableFile(fname), fd_(fd), filesize_(0) {
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   allow_fallocate_ = options.allow_fallocate;
   fallocate_with_keep_size_ = options.fallocate_with_keep_size;
 #endif
@@ -717,7 +717,7 @@ Status PosixWritableFile::Close() {
     // but it will be nice to log these errors.
     int dummy __attribute__((unused));
     dummy = ftruncate(fd_, filesize_);
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
     // in some file systems, ftruncate only trims trailing space if the
     // new file size is smaller than the current size. Calling fallocate
     // with FALLOC_FL_PUNCH_HOLE flag to explicitly release these unused
@@ -778,11 +778,11 @@ Status PosixWritableFile::InvalidateCache(size_t offset, size_t length) {
 #endif
 }
 
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
 Status PosixWritableFile::Allocate(uint64_t offset, uint64_t len) {
   assert(offset <= static_cast<uint64_t>(std::numeric_limits<off_t>::max()));
   assert(len <= static_cast<uint64_t>(std::numeric_limits<off_t>::max()));
-  TEST_KILL_RANDOM("PosixWritableFile::Allocate:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("PosixWritableFile::Allocate:0", vidardb_kill_odds);
   IOSTATS_TIMER_GUARD(allocate_nanos);
   int alloc_status = 0;
   if (allow_fallocate_) {
@@ -848,5 +848,5 @@ Status PosixDirectory::Fsync() {
   }
   return Status::OK();
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 #endif

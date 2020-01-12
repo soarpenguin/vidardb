@@ -6,11 +6,11 @@
 #pragma once
 
 #include <vector>
-#include "rocksdb/immutable_options.h"
-#include "rocksdb/options.h"
+#include "vidardb/immutable_options.h"
+#include "vidardb/options.h"
 #include "util/compression.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct MutableCFOptions {
   MutableCFOptions(const Options& options, const ImmutableCFOptions& ioptions)
@@ -138,4 +138,4 @@ struct MutableCFOptions {
 
 uint64_t MultiplyCheckOverflow(uint64_t op1, int op2);
 
-}  // namespace rocksdb
+}  // namespace vidardb

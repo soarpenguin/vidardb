@@ -10,13 +10,13 @@
 #include "table/two_level_iterator.h"
 
 #include "db/pinned_iterators_manager.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 #include "table/block.h"
 #include "table/format.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
@@ -233,4 +233,4 @@ InternalIterator* NewTwoLevelIterator(TwoLevelIteratorState* state,
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

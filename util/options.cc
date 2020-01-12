@@ -7,8 +7,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/options.h"
-#include "rocksdb/immutable_options.h"
+#include "vidardb/options.h"
+#include "vidardb/immutable_options.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -17,20 +17,20 @@
 #include <inttypes.h>
 #include <limits>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/sst_file_manager.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/table.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/wal_filter.h"
+#include "vidardb/cache.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/sst_file_manager.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/slice.h"
+#include "vidardb/table.h"
+#include "vidardb/table_properties.h"
+#include "vidardb/wal_filter.h"
 #include "table/block_based_table_factory.h"
 #include "util/compression.h"
 #include "util/statistics.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 ImmutableCFOptions::ImmutableCFOptions(const Options& options)
     : compaction_style(options.compaction_style),
@@ -235,9 +235,9 @@ DBOptions::DBOptions()
       skip_stats_update_on_db_open(false),
       wal_recovery_mode(WALRecoveryMode::kPointInTimeRecovery),
       row_cache(nullptr),
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
       wal_filter(nullptr),
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
       fail_if_options_file_error(false),
       dump_malloc_stats(false),
       show_key_fun(nullptr),  // Shichao
@@ -306,9 +306,9 @@ DBOptions::DBOptions(const Options& options)
       skip_stats_update_on_db_open(options.skip_stats_update_on_db_open),
       wal_recovery_mode(options.wal_recovery_mode),
       row_cache(options.row_cache),
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
       wal_filter(options.wal_filter),
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
       fail_if_options_file_error(options.fail_if_options_file_error),
       dump_malloc_stats(options.dump_malloc_stats),
       show_key_fun(options.show_key_fun),  // Shichao
@@ -332,15 +332,15 @@ void DBOptions::Dump(Logger* log) const {
         "      Options.max_total_wal_size: %" PRIu64, max_total_wal_size);
     Header(log, "       Options.disableDataSync: %d", disableDataSync);
     Header(log, "             Options.use_fsync: %d", use_fsync);
-    Header(log, "     Options.max_log_file_size: %" ROCKSDB_PRIszt,
+    Header(log, "     Options.max_log_file_size: %" VIDARDB_PRIszt,
          max_log_file_size);
     Header(log, "Options.max_manifest_file_size: %" PRIu64,
          max_manifest_file_size);
-    Header(log, "     Options.log_file_time_to_roll: %" ROCKSDB_PRIszt,
+    Header(log, "     Options.log_file_time_to_roll: %" VIDARDB_PRIszt,
          log_file_time_to_roll);
-    Header(log, "     Options.keep_log_file_num: %" ROCKSDB_PRIszt,
+    Header(log, "     Options.keep_log_file_num: %" VIDARDB_PRIszt,
          keep_log_file_num);
-    Header(log, "  Options.recycle_log_file_num: %" ROCKSDB_PRIszt,
+    Header(log, "  Options.recycle_log_file_num: %" VIDARDB_PRIszt,
            recycle_log_file_num);
     Header(log, "       Options.allow_os_buffer: %d", allow_os_buffer);
     Header(log, "      Options.allow_mmap_reads: %d", allow_mmap_reads);
@@ -369,7 +369,7 @@ void DBOptions::Dump(Logger* log) const {
     Header(log, "                      Options.WAL_size_limit_MB: %" PRIu64,
         WAL_size_limit_MB);
     Header(log,
-         "            Options.manifest_preallocation_size: %" ROCKSDB_PRIszt,
+         "            Options.manifest_preallocation_size: %" VIDARDB_PRIszt,
          manifest_preallocation_size);
     Header(log, "                         Options.allow_os_buffer: %d",
         allow_os_buffer);
@@ -384,7 +384,7 @@ void DBOptions::Dump(Logger* log) const {
     Header(log, "                   Options.advise_random_on_open: %d",
         advise_random_on_open);
     Header(log,
-         "                    Options.db_write_buffer_size: %" ROCKSDB_PRIszt
+         "                    Options.db_write_buffer_size: %" VIDARDB_PRIszt
          "d",
          db_write_buffer_size);
     Header(log, "         Options.access_hint_on_compaction_start: %s",
@@ -392,16 +392,16 @@ void DBOptions::Dump(Logger* log) const {
     Header(log, "  Options.new_table_reader_for_compaction_inputs: %d",
          new_table_reader_for_compaction_inputs);
     Header(log,
-         "               Options.compaction_readahead_size: %" ROCKSDB_PRIszt
+         "               Options.compaction_readahead_size: %" VIDARDB_PRIszt
          "d",
          compaction_readahead_size);
     Header(
         log,
-        "               Options.random_access_max_buffer_size: %" ROCKSDB_PRIszt
+        "               Options.random_access_max_buffer_size: %" VIDARDB_PRIszt
         "d",
         random_access_max_buffer_size);
     Header(log,
-         "              Options.writable_file_max_buffer_size: %" ROCKSDB_PRIszt
+         "              Options.writable_file_max_buffer_size: %" VIDARDB_PRIszt
          "d",
          writable_file_max_buffer_size);
     Header(log, "                      Options.use_adaptive_mutex: %d",
@@ -431,10 +431,10 @@ void DBOptions::Dump(Logger* log) const {
     } else {
       Header(log, "                               Options.row_cache: None");
     }
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     Header(log, "       Options.wal_filter: %s",
            wal_filter ? wal_filter->Name() : "None");
-#endif  // ROCKDB_LITE
+#endif  // VIDARDB_LITE
 }  // DBOptions::Dump
 
 void ColumnFamilyOptions::Dump(Logger* log) const {
@@ -443,7 +443,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
   Header(log, "           Options.table_factory: %s", table_factory->Name());
   Header(log, "           table_factory options: %s",
       table_factory->GetPrintableTableOptions().c_str());
-  Header(log, "       Options.write_buffer_size: %" ROCKSDB_PRIszt,
+  Header(log, "       Options.write_buffer_size: %" VIDARDB_PRIszt,
        write_buffer_size);
   Header(log, " Options.max_write_buffer_number: %d", max_write_buffer_number);
     if (!compression_per_level.empty()) {
@@ -471,7 +471,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
     Header(log, "              Options.compression_opts.strategy: %d",
         compression_opts.strategy);
     Header(log,
-        "        Options.compression_opts.max_dict_bytes: %" ROCKSDB_PRIszt,
+        "        Options.compression_opts.max_dict_bytes: %" VIDARDB_PRIszt,
         compression_opts.max_dict_bytes);
     Header(log, "     Options.level0_file_num_compaction_trigger: %d",
         level0_file_num_compaction_trigger);
@@ -492,7 +492,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
     for (size_t i = 0; i < max_bytes_for_level_multiplier_additional.size();
          i++) {
       Header(log,
-          "Options.max_bytes_for_level_multiplier_addtl[%" ROCKSDB_PRIszt
+          "Options.max_bytes_for_level_multiplier_addtl[%" VIDARDB_PRIszt
                 "]: %d",
            i, max_bytes_for_level_multiplier_additional[i]);
     }
@@ -506,7 +506,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
         max_grandparent_overlap_factor);
 
     Header(log,
-         "                       Options.arena_block_size: %" ROCKSDB_PRIszt,
+         "                       Options.arena_block_size: %" VIDARDB_PRIszt,
          arena_block_size);
     Header(log, "  Options.soft_pending_compaction_bytes_limit: %" PRIu64,
            soft_pending_compaction_bytes_limit);
@@ -550,7 +550,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
         min_partial_merge_operands);
 
     Header(log,
-         "                   Options.max_successive_merges: %" ROCKSDB_PRIszt,
+         "                   Options.max_successive_merges: %" VIDARDB_PRIszt,
          max_successive_merges);
     Header(log, "               Options.optimize_filters_for_hits: %d",
         optimize_filters_for_hits);
@@ -621,18 +621,18 @@ Options* Options::OptimizeForSmallDb() {
   return this;
 }
 
-Options* Options::OldDefaults(int rocksdb_major_version,
-                              int rocksdb_minor_version) {
-  ColumnFamilyOptions::OldDefaults(rocksdb_major_version,
-                                   rocksdb_minor_version);
-  DBOptions::OldDefaults(rocksdb_major_version, rocksdb_minor_version);
+Options* Options::OldDefaults(int vidardb_major_version,
+                              int vidardb_minor_version) {
+  ColumnFamilyOptions::OldDefaults(vidardb_major_version,
+                                   vidardb_minor_version);
+  DBOptions::OldDefaults(vidardb_major_version, vidardb_minor_version);
   return this;
 }
 
-DBOptions* DBOptions::OldDefaults(int rocksdb_major_version,
-                                  int rocksdb_minor_version) {
-  if (rocksdb_major_version < 4 ||
-      (rocksdb_major_version == 4 && rocksdb_minor_version < 7)) {
+DBOptions* DBOptions::OldDefaults(int vidardb_major_version,
+                                  int vidardb_minor_version) {
+  if (vidardb_major_version < 4 ||
+      (vidardb_major_version == 4 && vidardb_minor_version < 7)) {
     max_file_opening_threads = 1;
     table_cache_numshardbits = 4;
   }
@@ -643,9 +643,9 @@ DBOptions* DBOptions::OldDefaults(int rocksdb_major_version,
 }
 
 ColumnFamilyOptions* ColumnFamilyOptions::OldDefaults(
-    int rocksdb_major_version, int rocksdb_minor_version) {
-  if (rocksdb_major_version < 4 ||
-      (rocksdb_major_version == 4 && rocksdb_minor_version < 7)) {
+    int vidardb_major_version, int vidardb_minor_version) {
+  if (vidardb_major_version < 4 ||
+      (vidardb_major_version == 4 && vidardb_minor_version < 7)) {
     write_buffer_size = 4 << 20;
     target_file_size_base = 2 * 1048576;
     max_bytes_for_level_base = 10 * 1048576;
@@ -673,7 +673,7 @@ ColumnFamilyOptions* ColumnFamilyOptions::OptimizeForSmallDb() {
   return this;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 ColumnFamilyOptions* ColumnFamilyOptions::OptimizeLevelStyleCompaction(
     uint64_t memtable_memory_budget) {
   write_buffer_size = static_cast<size_t>(memtable_memory_budget / 4);
@@ -752,7 +752,7 @@ DBOptions* DBOptions::IncreaseParallelism(int total_threads) {
   return this;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 ReadOptions::ReadOptions()
     : verify_checksums(true),
@@ -778,4 +778,4 @@ ReadOptions::ReadOptions(bool cksum, bool cache)
       readahead_size(0) {
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

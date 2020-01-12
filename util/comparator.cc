@@ -10,12 +10,12 @@
 #include <algorithm>
 #include <memory>
 #include <stdint.h>
-#include "rocksdb/comparator.h"
-#include "rocksdb/slice.h"
+#include "vidardb/comparator.h"
+#include "vidardb/slice.h"
 #include "port/port.h"
 #include "util/logging.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Comparator::~Comparator() { }
 
@@ -107,7 +107,7 @@ class ReverseBytewiseComparatorImpl : public BytewiseComparatorImpl {
   ReverseBytewiseComparatorImpl() { }
 
   virtual const char* Name() const override {
-    return "rocksdb.ReverseBytewiseComparator";
+    return "vidardb.ReverseBytewiseComparator";
   }
 
   virtual int Compare(const Slice& a, const Slice& b) const override {
@@ -127,4 +127,4 @@ const Comparator* ReverseBytewiseComparator() {
   return &rbytewise;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

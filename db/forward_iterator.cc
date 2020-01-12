@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #include "db/forward_iterator.h"
 
 #include <limits>
@@ -15,13 +15,13 @@
 #include "db/db_iter.h"
 #include "db/dbformat.h"
 #include "db/job_context.h"
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
+#include "vidardb/env.h"
+#include "vidardb/slice.h"
 #include "table/merger.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Usage:
 //     LevelIterator iter;
@@ -464,7 +464,7 @@ Status ForwardIterator::status() const {
 
 Status ForwardIterator::GetProperty(std::string prop_name, std::string* prop) {
   assert(prop != nullptr);
-  if (prop_name == "rocksdb.iterator.super-version-number") {
+  if (prop_name == "vidardb.iterator.super-version-number") {
     *prop = ToString(sv_->version_number);
     return Status::OK();
   }
@@ -759,6 +759,6 @@ uint32_t ForwardIterator::FindFileInRange(
   return right;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

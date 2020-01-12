@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -21,14 +21,14 @@
 #include "db/filename.h"
 #include "db/job_context.h"
 #include "db/version_set.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
 #include "port/port.h"
 #include "util/mutexlock.h"
 #include "util/sync_point.h"
 #include "util/file_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Status DBImpl::DisableFileDeletions() {
   InstrumentedMutexLock l(&mutex_);
@@ -150,4 +150,4 @@ Status DBImpl::GetSortedWalFiles(VectorLogPtr& files) {
 
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

@@ -3,17 +3,17 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/utilities/transaction.h"
-#include "rocksdb/utilities/transaction_db.h"
+#include "vidardb/db.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
+#include "vidardb/utilities/transaction.h"
+#include "vidardb/utilities/transaction_db.h"
 
-using namespace rocksdb;
+using namespace vidardb;
 
-std::string kDBPath = "/tmp/rocksdb_transaction_example";
+std::string kDBPath = "/tmp/vidardb_transaction_example";
 
 int main() {
   // open DB
@@ -141,4 +141,4 @@ int main() {
   return 0;
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

@@ -9,18 +9,18 @@
 #include <cstdlib>
 #include <unordered_set>
 #include <vector>
-#include "rocksdb/cache.h"
-#include "rocksdb/convenience.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/cache.h"
+#include "vidardb/convenience.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 #include "table/block_based_table_factory.h"
 #include "util/logging.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 bool isSpecialChar(const char c) {
   if (c == '\\' || c == '#' || c == ':' || c == '\r' || c == '\n') {
     return true;
@@ -751,7 +751,7 @@ Status GetStringFromDBOptions(std::string* opt_string,
   for (auto iter = db_options_type_info.begin();
        iter != db_options_type_info.end(); ++iter) {
     if (iter->second.verification == OptionVerificationType::kDeprecated) {
-      // If the option is no longer used in rocksdb and marked as deprecated,
+      // If the option is no longer used in vidardb and marked as deprecated,
       // we skip it in the serialization.
       continue;
     }
@@ -793,7 +793,7 @@ Status GetStringFromColumnFamilyOptions(std::string* opt_string,
   for (auto iter = cf_options_type_info.begin();
        iter != cf_options_type_info.end(); ++iter) {
     if (iter->second.verification == OptionVerificationType::kDeprecated) {
-      // If the option is no longer used in rocksdb and marked as deprecated,
+      // If the option is no longer used in vidardb and marked as deprecated,
       // we skip it in the serialization.
       continue;
     }
@@ -848,7 +848,7 @@ Status GetStringFromBlockBasedTableOptions(
   for (auto iter = block_based_table_type_info.begin();
        iter != block_based_table_type_info.end(); ++iter) {
     if (iter->second.verification == OptionVerificationType::kDeprecated) {
-      // If the option is no longer used in rocksdb and marked as deprecated,
+      // If the option is no longer used in vidardb and marked as deprecated,
       // we skip it in the serialization.
       continue;
     }
@@ -1042,7 +1042,7 @@ Status GetColumnFamilyOptionsFromMapInternal(
         }
         // Note that we still return Status::OK in such case to maintain
         // the backward compatibility in the old public API defined in
-        // rocksdb/convenience.h
+        // vidardb/convenience.h
       } else {
         return s;
       }
@@ -1094,7 +1094,7 @@ Status GetDBOptionsFromMapInternal(
         }
         // Note that we still return Status::OK in such case to maintain
         // the backward compatibility in the old public API defined in
-        // rocksdb/convenience.h
+        // vidardb/convenience.h
       } else {
         return s;
       }
@@ -1213,5 +1213,5 @@ ColumnFamilyOptions BuildColumnFamilyOptions(
   return cf_opts;
 }
 
-#endif  // !ROCKSDB_LITE
-}  // namespace rocksdb
+#endif  // !VIDARDB_LITE
+}  // namespace vidardb

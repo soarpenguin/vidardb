@@ -36,18 +36,18 @@
 #include <unordered_set>
 #include <vector>
 
-#include "rocksdb/status.h"
-#include "rocksdb/thread_status.h"
+#include "vidardb/status.h"
+#include "vidardb/thread_status.h"
 #include "port/port.h"
 #include "util/thread_operation.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class ColumnFamilyHandle;
 
 // The structure that keeps constant information about a column family.
 struct ConstantColumnFamilyInfo {
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
  public:
   ConstantColumnFamilyInfo(
       const void* _db_key,
@@ -57,13 +57,13 @@ struct ConstantColumnFamilyInfo {
   const void* db_key;
   const std::string db_name;
   const std::string cf_name;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 };
 
 // the internal data-structure that is used to reflect the current
 // status of a thread using a set of atomic pointers.
 struct ThreadStatusData {
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   explicit ThreadStatusData() : enable_tracking(false) {
     thread_id.store(0);
     thread_type.store(ThreadStatus::USER);
@@ -90,7 +90,7 @@ struct ThreadStatusData {
   std::atomic<ThreadStatus::OperationStage> operation_stage;
   std::atomic<uint64_t> op_properties[ThreadStatus::kNumOperationProperties];
   std::atomic<ThreadStatus::StateType> state_type;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 };
 
 // The class that stores and updates the status of the current thread
@@ -194,7 +194,7 @@ class ThreadStatusUpdater {
       bool check_exist);
 
  protected:
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   // The thread-local variable for storing thread status.
   static __thread ThreadStatusData* thread_status_data_;
 
@@ -228,7 +228,7 @@ class ThreadStatusUpdater {
 
 #else
   static ThreadStatusData* thread_status_data_;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

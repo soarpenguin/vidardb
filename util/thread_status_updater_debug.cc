@@ -8,10 +8,10 @@
 #include "util/thread_status_updater.h"
 #include "db/column_family.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #ifndef NDEBUG
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 void ThreadStatusUpdater::TEST_VerifyColumnFamilyInfoMap(
     const std::vector<ColumnFamilyHandle*>& handles,
     bool check_exist) {
@@ -39,8 +39,8 @@ void ThreadStatusUpdater::TEST_VerifyColumnFamilyInfoMap(
     bool check_exist) {
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 #endif  // !NDEBUG
 
 
-}  // namespace rocksdb
+}  // namespace vidardb

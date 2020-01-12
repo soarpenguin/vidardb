@@ -10,21 +10,21 @@
 
 #include "db/column_family.h"
 #include "db/version_edit.h"
-#include "rocksdb/listener.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/listener.h"
+#include "vidardb/table_properties.h"
 #include "util/event_logger.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class EventHelpers {
  public:
   static void AppendCurrentTime(JSONWriter* json_writer);
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   static void NotifyTableFileCreationStarted(
       const std::vector<std::shared_ptr<EventListener>>& listeners,
       const std::string& db_name, const std::string& cf_name,
       const std::string& file_path, int job_id, TableFileCreationReason reason);
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
   static void LogAndNotifyTableFileCreationFinished(
       EventLogger* event_logger,
       const std::vector<std::shared_ptr<EventListener>>& listeners,
@@ -45,4 +45,4 @@ class EventHelpers {
       const FileDescriptor& fd, const TableFileCreationInfo& info);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

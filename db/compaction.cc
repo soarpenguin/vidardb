@@ -21,7 +21,7 @@
 #include "util/sync_point.h"
 #include "table/adaptive_table_factory.h"  // Shichao
 
-namespace rocksdb {
+namespace vidardb {
 
 uint64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
   uint64_t sum = 0;
@@ -327,7 +327,7 @@ const char* Compaction::InputLevelSummary(
       is_first = false;
     }
     len += snprintf(scratch->buffer + len, sizeof(scratch->buffer) - len,
-                    "%" ROCKSDB_PRIszt "@%d", input_level.size(),
+                    "%" VIDARDB_PRIszt "@%d", input_level.size(),
                     input_level.level);
   }
   snprintf(scratch->buffer + len, sizeof(scratch->buffer) - len,
@@ -436,4 +436,4 @@ bool Compaction::ShouldFormSubcompactions() const {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

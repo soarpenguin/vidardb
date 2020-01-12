@@ -1,5 +1,5 @@
 FROM buildpack-deps:wheezy
 
-ADD ./ldb /rocksdb/tools/ldb
+ADD ./ldb /vidardb/tools/ldb
 
-CMD /rocksdb/tools/ldb
+CMD /vidardb/tools/ldb

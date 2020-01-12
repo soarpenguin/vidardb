@@ -14,10 +14,10 @@
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
-#include <rocksdb/db_bench_tool.h>
-int main(int argc, char** argv) { return rocksdb::db_bench_tool(argc, argv); }
+#include <vidardb/db_bench_tool.h>
+int main(int argc, char** argv) { return vidardb::db_bench_tool(argc, argv); }
 #endif  // GFLAGS

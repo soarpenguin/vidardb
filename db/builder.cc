@@ -20,11 +20,11 @@
 #include "db/internal_stats.h"
 #include "db/table_cache.h"
 #include "db/version_edit.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 #include "table/block_based_table_builder.h"
 #include "table/internal_iterator.h"
 #include "util/file_reader_writer.h"
@@ -32,7 +32,7 @@
 #include "util/stop_watch.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class TableFactory;
 
@@ -82,10 +82,10 @@ Status BuildTable(
 
   std::string fname = TableFileName(ioptions.db_paths, meta->fd.GetNumber(),
                                     meta->fd.GetPathId());
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   EventHelpers::NotifyTableFileCreationStarted(
       ioptions.listeners, dbname, column_family_name, fname, job_id, reason);
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
   TableProperties tp;
 
   if (iter->Valid()) {
@@ -194,4 +194,4 @@ Status BuildTable(
   return s;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

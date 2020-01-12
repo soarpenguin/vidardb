@@ -10,7 +10,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MergerTest : public testing::Test {
  public:
@@ -161,7 +161,7 @@ TEST_F(MergerTest, SeekToLastTest) {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

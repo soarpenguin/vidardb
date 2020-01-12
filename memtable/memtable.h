@@ -17,16 +17,16 @@
 #include "db/dbformat.h"
 #include "db/skiplist.h"
 #include "db/version_edit.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/immutable_options.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/immutable_options.h"
 #include "memtable/memtable_allocator.h"
 #include "util/concurrent_arena.h"
 #include "util/instrumented_mutex.h"
 #include "util/mutable_cf_options.h"
 
-namespace rocksdb {
+namespace vidardb {
 class Mutex;
 class MemTableIterator;
 class MergeContext;
@@ -355,4 +355,4 @@ class MemTable {
 
 extern const char* EncodeKey(std::string* scratch, const Slice& target);
 
-}  // namespace rocksdb
+}  // namespace vidardb

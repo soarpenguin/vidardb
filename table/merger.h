@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "rocksdb/types.h"
+#include "vidardb/types.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Comparator;
 class InternalIterator;
@@ -57,4 +57,4 @@ class MergeIteratorBuilder {
   Arena* arena;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -19,17 +19,17 @@
 
 #include "port/port.h"
 
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/types.h"
-#include "rocksdb/transaction_log.h"
-#include "rocksdb/status.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/types.h"
+#include "vidardb/transaction_log.h"
+#include "vidardb/status.h"
 
 #include "db/version_set.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 class WalManager {
  public:
   WalManager(const DBOptions& db_options, const EnvOptions& env_options)
@@ -91,5 +91,5 @@ class WalManager {
   static const uint64_t kDefaultIntervalToDeleteObsoleteWAL = 600;
 };
 
-#endif  // ROCKSDB_LITE
-}  // namespace rocksdb
+#endif  // VIDARDB_LITE
+}  // namespace vidardb

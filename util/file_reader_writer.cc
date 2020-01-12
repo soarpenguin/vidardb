@@ -18,7 +18,7 @@
 #include "util/random.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Status SequentialFileReader::Read(size_t n, Slice* result, char* scratch) {
   Status s = file_->Read(n, result, scratch);
@@ -53,7 +53,7 @@ Status WritableFileWriter::Append(const Slice& data) {
   pending_fsync_ = true;
 
   TEST_KILL_RANDOM("WritableFileWriter::Append:0",
-                   rocksdb_kill_odds * REDUCE_ODDS2);
+                   vidardb_kill_odds * REDUCE_ODDS2);
 
   {
     IOSTATS_TIMER_GUARD(prepare_write_nanos);
@@ -110,7 +110,7 @@ Status WritableFileWriter::Append(const Slice& data) {
     s = WriteBuffered(src, left);
   }
 
-  TEST_KILL_RANDOM("WritableFileWriter::Append:1", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WritableFileWriter::Append:1", vidardb_kill_odds);
   if (s.ok()) {
     filesize_ += data.size();
   }
@@ -138,14 +138,14 @@ Status WritableFileWriter::Close() {
     s = interim;
   }
 
-  TEST_KILL_RANDOM("WritableFileWriter::Close:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WritableFileWriter::Close:0", vidardb_kill_odds);
   interim = writable_file_->Close();
   if (!interim.ok() && s.ok()) {
     s = interim;
   }
 
   writable_file_.reset();
-  TEST_KILL_RANDOM("WritableFileWriter::Close:1", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WritableFileWriter::Close:1", vidardb_kill_odds);
   return s;
 }
 
@@ -153,7 +153,7 @@ Status WritableFileWriter::Close() {
 Status WritableFileWriter::Flush() {
   Status s;
   TEST_KILL_RANDOM("WritableFileWriter::Flush:0",
-                   rocksdb_kill_odds * REDUCE_ODDS2);
+                   vidardb_kill_odds * REDUCE_ODDS2);
 
   if (buf_.CurrentSize() > 0) {
     if (use_os_buffer_) {
@@ -206,14 +206,14 @@ Status WritableFileWriter::Sync(bool use_fsync) {
   if (!s.ok()) {
     return s;
   }
-  TEST_KILL_RANDOM("WritableFileWriter::Sync:0", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WritableFileWriter::Sync:0", vidardb_kill_odds);
   if (!direct_io_ && pending_sync_) {
     s = SyncInternal(use_fsync);
     if (!s.ok()) {
       return s;
     }
   }
-  TEST_KILL_RANDOM("WritableFileWriter::Sync:1", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WritableFileWriter::Sync:1", vidardb_kill_odds);
   pending_sync_ = false;
   if (use_fsync) {
     pending_fsync_ = false;
@@ -276,7 +276,7 @@ Status WritableFileWriter::WriteBuffered(const char* data, size_t size) {
     }
 
     IOSTATS_ADD(bytes_written, allowed);
-    TEST_KILL_RANDOM("WritableFileWriter::WriteBuffered:0", rocksdb_kill_odds);
+    TEST_KILL_RANDOM("WritableFileWriter::WriteBuffered:0", vidardb_kill_odds);
 
     left -= allowed;
     src += allowed;
@@ -466,8 +466,8 @@ Status NewWritableFile(Env* env, const std::string& fname,
                        unique_ptr<WritableFile>* result,
                        const EnvOptions& options) {
   Status s = env->NewWritableFile(fname, result, options);
-  TEST_KILL_RANDOM("NewWritableFile:0", rocksdb_kill_odds * REDUCE_ODDS2);
+  TEST_KILL_RANDOM("NewWritableFile:0", vidardb_kill_odds * REDUCE_ODDS2);
   return s;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

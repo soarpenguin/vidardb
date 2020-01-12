@@ -15,13 +15,13 @@
 #include <stdint.h>
 
 #include "port/port.h"
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/cache.h"
+#include "vidardb/flush_block_policy.h"
+#include "vidardb/cache.h"
 #include "table/block_based_table_builder.h"
 #include "table/block_based_table_reader.h"
 #include "table/format.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 BlockBasedTableFactory::BlockBasedTableFactory(
     const BlockBasedTableOptions& table_options)
@@ -102,11 +102,11 @@ std::string BlockBasedTableFactory::GetPrintableTableOptions() const {
            static_cast<void*>(table_options_.block_cache.get()));
   ret.append(buffer);
   if (table_options_.block_cache) {
-    snprintf(buffer, kBufferSize, "  block_cache_size: %" ROCKSDB_PRIszt "\n",
+    snprintf(buffer, kBufferSize, "  block_cache_size: %" VIDARDB_PRIszt "\n",
              table_options_.block_cache->GetCapacity());
     ret.append(buffer);
   }
-  snprintf(buffer, kBufferSize, "  block_size: %" ROCKSDB_PRIszt "\n",
+  snprintf(buffer, kBufferSize, "  block_size: %" VIDARDB_PRIszt "\n",
            table_options_.block_size);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  block_size_deviation: %d\n",
@@ -130,4 +130,4 @@ TableFactory* NewBlockBasedTableFactory(
   return new BlockBasedTableFactory(table_options);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

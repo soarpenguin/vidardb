@@ -7,19 +7,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 
 #include <inttypes.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "rocksdb/cache.h"
-#include "rocksdb/env.h"
-#include "rocksdb/table.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/cache.h"
+#include "vidardb/env.h"
+#include "vidardb/table.h"
+#include "vidardb/write_batch.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/log_format.h"
@@ -28,7 +28,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 static const int kValueSize = 1000;
 
@@ -86,7 +86,7 @@ class CorruptionTest : public testing::Test {
   void RepairDB() {
     delete db_;
     db_ = nullptr;
-    ASSERT_OK(::rocksdb::RepairDB(dbname_, options_));
+    ASSERT_OK(::vidardb::RepairDB(dbname_, options_));
   }
 
   void Build(int n, int flush_every = 0) {
@@ -382,7 +382,7 @@ TEST_F(CorruptionTest, CompactionInputError) {
   dbi->TEST_FlushMemTable();
   dbi->TEST_CompactRange(0, nullptr, nullptr);
   dbi->TEST_CompactRange(1, nullptr, nullptr);
-  ASSERT_EQ(1, Property("rocksdb.num-files-at-level2"));
+  ASSERT_EQ(1, Property("vidardb.num-files-at-level2"));
 
   Corrupt(kTableFile, 100, 1);
   Check(9, 9);
@@ -417,7 +417,7 @@ TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
   Build(10);
   dbi->TEST_FlushMemTable();
   dbi->TEST_WaitForCompact();
-  ASSERT_EQ(1, Property("rocksdb.num-files-at-level0"));
+  ASSERT_EQ(1, Property("vidardb.num-files-at-level0"));
 
   CorruptTableFileAtLevel(0, 100, 1);
   Check(9, 9);
@@ -486,7 +486,7 @@ TEST_F(CorruptionTest, FileSystemStateCorrupted) {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -497,8 +497,8 @@ int main(int argc, char** argv) {
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-  fprintf(stderr, "SKIPPED as RepairDB() is not supported in ROCKSDB_LITE\n");
+  fprintf(stderr, "SKIPPED as RepairDB() is not supported in VIDARDB_LITE\n");
   return 0;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

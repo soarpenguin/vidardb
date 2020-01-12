@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "port/port.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/mutexlock.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 SstFileManagerImpl::SstFileManagerImpl(Env* env, std::shared_ptr<Logger> logger,
                                        const std::string& trash_dir,
@@ -154,4 +154,4 @@ SstFileManager* NewSstFileManager(Env* env, std::shared_ptr<Logger> info_log,
   return res;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

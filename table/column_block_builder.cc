@@ -20,13 +20,13 @@
 
 #include <algorithm>
 #include <assert.h>
-#include "rocksdb/comparator.h"
+#include "vidardb/comparator.h"
 
 #include "column_block_builder.h"
 #include "db/dbformat.h"
 #include "util/coding.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 size_t ColumnBlockBuilder::EstimateSizeAfterKV(const Slice& key,
                                                const Slice& value) const {
@@ -63,4 +63,4 @@ void ColumnBlockBuilder::Add(const Slice& key, const Slice& value) {
   counter_++;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

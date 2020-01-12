@@ -3,11 +3,11 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/snapshot.h"
+#include "vidardb/snapshot.h"
 
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 ManagedSnapshot::ManagedSnapshot(DB* db) : db_(db),
                                            snapshot_(db->GetSnapshot()) {}
@@ -23,4 +23,4 @@ ManagedSnapshot::~ManagedSnapshot() {
 
 const Snapshot* ManagedSnapshot::snapshot() { return snapshot_;}
 
-}  // namespace rocksdb
+}  // namespace vidardb

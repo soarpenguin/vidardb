@@ -10,7 +10,7 @@
 #pragma once
 
 // Xpress on Windows is implemeted using Win API
-#if defined(ROCKSDB_PLATFORM_POSIX)
+#if defined(VIDARDB_PLATFORM_POSIX)
 #error "Xpress compression not implemented"
 #elif defined(OS_WIN)
 #include "port/win/xpress_win.h"

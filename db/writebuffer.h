@@ -13,7 +13,7 @@
 
 #include <atomic>
 
-namespace rocksdb {
+namespace vidardb {
 
 class WriteBuffer {
  public:
@@ -49,4 +49,4 @@ class WriteBuffer {
   void operator=(const WriteBuffer&);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

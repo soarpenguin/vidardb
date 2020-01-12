@@ -10,13 +10,13 @@
 #include "db/version_set.h"
 #include "db/write_controller.h"
 #include "db/writebuffer.h"
-#include "rocksdb/db.h"
-#include "rocksdb/status.h"
+#include "vidardb/db.h"
+#include "vidardb/status.h"
 #include "util/testutil.h"
 #include "util/string_util.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTableListTest : public testing::Test {
  public:
@@ -557,7 +557,7 @@ TEST_F(MemTableListTest, FlushPendingTest) {
   to_delete.clear();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

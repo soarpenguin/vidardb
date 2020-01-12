@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -13,7 +13,7 @@
 #include "db/write_batch_internal.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 TransactionLogIteratorImpl::TransactionLogIteratorImpl(
     const std::string& dir, const DBOptions* options,
@@ -267,5 +267,5 @@ Status TransactionLogIteratorImpl::OpenLogReader(const LogFile* logFile) {
       read_options_.verify_checksums_, 0, logFile->LogNumber()));
   return Status::OK();
 }
-}  //  namespace rocksdb
-#endif  // ROCKSDB_LITE
+}  //  namespace vidardb
+#endif  // VIDARDB_LITE

@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace std;
 
-#include "rocksdb/db.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h"
-using namespace rocksdb;
+#include "vidardb/db.h"
+#include "vidardb/status.h"
+#include "vidardb/options.h"
+using namespace vidardb;
 
 string kDBPath = "/tmp/range_query_example";
 

@@ -29,17 +29,17 @@
 #include "db/write_controller.h"
 #include "db/write_thread.h"
 #include "port/port.h"
-#include "rocksdb/compaction_job_stats.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/compaction_job_stats.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/event_logger.h"
 #include "util/stop_watch.h"
 #include "util/thread_local.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTable;
 class TableCache;
@@ -154,4 +154,4 @@ class CompactionJob {
   std::vector<uint64_t> sizes_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

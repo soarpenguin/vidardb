@@ -58,7 +58,7 @@
 //   Store per-table metadata (smallest, largest, largest-seq#, ...)
 //   in the table's meta section to speed up ScanTable.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -76,15 +76,15 @@
 #include "db/version_edit.h"
 #include "db/writebuffer.h"
 #include "db/write_batch_internal.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/immutable_options.h"
+#include "vidardb/comparator.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/immutable_options.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
@@ -127,8 +127,8 @@ class Repairer {
         bytes += tables_[i].meta.fd.GetFileSize();
       }
       Log(InfoLogLevel::WARN_LEVEL, options_.info_log,
-          "**** Repaired rocksdb %s; "
-          "recovered %" ROCKSDB_PRIszt " files; %" PRIu64
+          "**** Repaired vidardb %s; "
+          "recovered %" VIDARDB_PRIszt " files; %" PRIu64
           "bytes. "
           "Some data may have been lost. "
           "****",
@@ -472,6 +472,6 @@ Status RepairDB(const std::string& dbname, const Options& options) {
   return repairer.Run();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

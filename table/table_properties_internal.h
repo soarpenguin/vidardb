@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "rocksdb/status.h"
-#include "rocksdb/iterator.h"
+#include "vidardb/status.h"
+#include "vidardb/iterator.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class InternalIterator;
 
@@ -27,4 +27,4 @@ Status SeekToCompressionDictBlock(InternalIterator* meta_iter, bool* is_found);
 // Return true if it successfully seeks to that block.
 Status SeekToColumnBlock(InternalIterator* meta_iter, bool* is_found);
 /****************************** Shichao *****************************/
-}  // namespace rocksdb
+}  // namespace vidardb

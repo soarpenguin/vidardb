@@ -10,12 +10,12 @@
 #include "db/log_writer.h"
 
 #include <stdint.h>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace log {
 
 Writer::Writer(unique_ptr<WritableFileWriter>&& dest,
@@ -135,4 +135,4 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr, size_t n) {
 }
 
 }  // namespace log
-}  // namespace rocksdb
+}  // namespace vidardb

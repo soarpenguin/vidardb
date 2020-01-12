@@ -5,13 +5,13 @@
 
 #include "util/thread_status_updater.h"
 #include <memory>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "port/likely.h"
 #include "util/mutexlock.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 
 __thread ThreadStatusData* ThreadStatusUpdater::thread_status_data_ = nullptr;
 
@@ -345,5 +345,5 @@ void ThreadStatusUpdater::IncreaseThreadOperationProperty(
     int i, uint64_t delta) {
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
-}  // namespace rocksdb
+#endif  // VIDARDB_USING_THREAD_STATUS
+}  // namespace vidardb

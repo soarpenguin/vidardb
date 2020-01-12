@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <functional>
 
-namespace rocksdb {
+namespace vidardb {
 
 // Binary heap implementation optimized for use in multi-way merge sort.
 // Comparison to std::priority_queue:
@@ -27,7 +27,7 @@ namespace rocksdb {
 // The last property can yield an order-of-magnitude performance improvement
 // when merge-sorting real-world non-random data.  If the merge operation is
 // likely to take chunks of elements from the same input stream, only 1
-// comparison per element is needed.  In RocksDB-land, this happens when
+// comparison per element is needed.  In VidarDB-land, this happens when
 // compacting a database where keys are not randomly distributed across L0
 // files but nearby keys are likely to be in the same L0 file.
 //
@@ -136,4 +136,4 @@ class BinaryHeap {
   std::vector<T> data_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

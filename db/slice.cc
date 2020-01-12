@@ -3,9 +3,9 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Slice::Slice(const SliceParts& parts, std::string* buf) {
   size_t length = 0;
@@ -21,4 +21,4 @@ Slice::Slice(const SliceParts& parts, std::string* buf) {
   size_ = buf->size();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

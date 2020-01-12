@@ -9,7 +9,7 @@
 #include "util/coding.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Status InternalKeyPropertiesCollector::InternalAdd(const Slice& key,
                                                    const Slice& value,
@@ -107,9 +107,9 @@ UserKeyTablePropertiesCollector::GetReadableProperties() const {
 
 
 const std::string InternalKeyTablePropertiesNames::kDeletedKeys
-  = "rocksdb.deleted.keys";
+  = "vidardb.deleted.keys";
 const std::string InternalKeyTablePropertiesNames::kMergeOperands =
-    "rocksdb.merge.operands";
+    "vidardb.merge.operands";
 
 uint64_t GetDeletedKeys(
     const UserCollectedProperties& props) {
@@ -124,4 +124,4 @@ uint64_t GetMergeOperands(const UserCollectedProperties& props,
       props, InternalKeyTablePropertiesNames::kMergeOperands, property_present);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

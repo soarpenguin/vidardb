@@ -16,7 +16,7 @@
 #include "util/sync_point.h"
 #include "util/mutexlock.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Rolls the log file by size and/or time
 class AutoRollLogger : public Logger {
@@ -126,4 +126,4 @@ Status CreateLoggerFromOptions(const std::string& dbname,
                                const DBOptions& options,
                                std::shared_ptr<Logger>* logger);
 
-}  // namespace rocksdb
+}  // namespace vidardb

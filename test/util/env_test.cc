@@ -11,7 +11,7 @@
 #include <sys/ioctl.h>
 #endif
 
-#ifdef ROCKSDB_MALLOC_USABLE_SIZE
+#ifdef VIDARDB_MALLOC_USABLE_SIZE
 #include <malloc.h>
 #endif
 #include <sys/types.h>
@@ -29,12 +29,12 @@
 #include <unistd.h>
 #endif
 
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
 #include <errno.h>
 #endif
 
 #include "port/port.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/coding.h"
 #include "util/log_buffer.h"
 #include "util/mutexlock.h"
@@ -43,7 +43,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 static const int kDelayMicros = 100000;
 
@@ -535,9 +535,9 @@ class IoctlFriendlyTmpdir {
     char dir_buf[100];
     std::list<std::string> candidate_dir_list = {"/var/tmp", "/tmp"};
 
-    const char *fmt = "%s/rocksdb.XXXXXX";
+    const char *fmt = "%s/vidardb.XXXXXX";
     const char *tmp = getenv("TEST_IOCTL_FRIENDLY_TMPDIR");
-    // If $TEST_IOCTL_FRIENDLY_TMPDIR/rocksdb.XXXXXX fits, use
+    // If $TEST_IOCTL_FRIENDLY_TMPDIR/vidardb.XXXXXX fits, use
     // $TEST_IOCTL_FRIENDLY_TMPDIR; subtract 2 for the "%s", and
     // add 1 for the trailing NUL byte.
     if (tmp && strlen(tmp) + strlen(fmt) - 2 + 1 <= sizeof dir_buf) {
@@ -629,7 +629,7 @@ TEST_F(EnvPosixTest, RandomAccessUniqueID) {
 }
 
 // only works in linux platforms
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
 TEST_F(EnvPosixTest, AllocateTest) {
   for (bool directio : {true, false}) {
     IoctlFriendlyTmpdir ift;
@@ -700,7 +700,7 @@ TEST_F(EnvPosixTest, AllocateTest) {
               (unsigned int)f_stat.st_blocks);
   }
 }
-#endif  // ROCKSDB_FALLOCATE_PRESENT
+#endif  // VIDARDB_FALLOCATE_PRESENT
 
 // Returns true if any of the strings in ss are the prefix of another string.
 bool HasPrefix(const std::unordered_set<std::string>& ss) {
@@ -802,7 +802,7 @@ TEST_F(EnvPosixTest, RandomAccessUniqueIDDeletes) {
 
 // Only works in linux platforms
 TEST_P(EnvPosixTestWithParam, InvalidateCache) {
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   for (bool directio : {true, false}) {
     EnvOptions soptions;
     soptions.use_direct_reads = soptions.use_direct_writes = directio;
@@ -817,7 +817,7 @@ TEST_P(EnvPosixTestWithParam, InvalidateCache) {
       unique_ptr<WritableFile> wfile;
 #if !defined(OS_MACOSX) && !defined(OS_WIN)
       if (soptions.use_direct_writes) {
-        rocksdb::SyncPoint::GetInstance()->SetCallBack(
+        vidardb::SyncPoint::GetInstance()->SetCallBack(
             "NewWritableFile:O_DIRECT", [&](void* arg) {
               int* val = static_cast<int*>(arg);
               *val &= ~O_DIRECT;
@@ -837,7 +837,7 @@ TEST_P(EnvPosixTestWithParam, InvalidateCache) {
       Slice result;
 #if !defined(OS_MACOSX) && !defined(OS_WIN)
       if (soptions.use_direct_reads) {
-        rocksdb::SyncPoint::GetInstance()->SetCallBack(
+        vidardb::SyncPoint::GetInstance()->SetCallBack(
             "NewRandomAccessFile:O_DIRECT", [&](void* arg) {
               int* val = static_cast<int*>(arg);
               *val &= ~O_DIRECT;
@@ -858,7 +858,7 @@ TEST_P(EnvPosixTestWithParam, InvalidateCache) {
       Slice result;
 #if !defined(OS_MACOSX) && !defined(OS_WIN)
       if (soptions.use_direct_reads) {
-        rocksdb::SyncPoint::GetInstance()->SetCallBack(
+        vidardb::SyncPoint::GetInstance()->SetCallBack(
             "NewSequentialFile:O_DIRECT", [&](void* arg) {
               int* val = static_cast<int*>(arg);
               *val &= ~O_DIRECT;
@@ -874,7 +874,7 @@ TEST_P(EnvPosixTestWithParam, InvalidateCache) {
     // Delete the file
     ASSERT_OK(env_->DeleteFile(fname));
   }
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
 }
 #endif  // not TRAVIS
 #endif  // OS_LINUX
@@ -996,7 +996,7 @@ TEST_P(EnvPosixTestWithParam, LogBufferMaxSizeTest) {
 }
 
 TEST_P(EnvPosixTestWithParam, Preallocation) {
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   for (bool directio : {true, false}) {
     const std::string src = test::TmpDir(env_) + "/" + "testfile";
     unique_ptr<WritableFile> srcfile;
@@ -1004,7 +1004,7 @@ TEST_P(EnvPosixTestWithParam, Preallocation) {
     soptions.use_direct_reads = soptions.use_direct_writes = directio;
 #if !defined(OS_MACOSX) && !defined(OS_WIN)
     if (soptions.use_direct_writes) {
-      rocksdb::SyncPoint::GetInstance()->SetCallBack(
+      vidardb::SyncPoint::GetInstance()->SetCallBack(
           "NewWritableFile:O_DIRECT", [&](void* arg) {
             int* val = static_cast<int*>(arg);
             *val &= ~O_DIRECT;
@@ -1048,13 +1048,13 @@ TEST_P(EnvPosixTestWithParam, Preallocation) {
       ASSERT_EQ(last_allocated_block, 7UL);
     }
   }
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
 }
 
 // Test that the two ways to get children file attributes (in bulk or
 // individually) behave consistently.
 TEST_P(EnvPosixTestWithParam, ConsistentChildrenAttributes) {
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   for (bool directio : {true, false}) {
     EnvOptions soptions;
     soptions.use_direct_reads = soptions.use_direct_writes = directio;
@@ -1068,7 +1068,7 @@ TEST_P(EnvPosixTestWithParam, ConsistentChildrenAttributes) {
       unique_ptr<WritableFile> file;
 #if !defined(OS_MACOSX) && !defined(OS_WIN)
       if (soptions.use_direct_writes) {
-        rocksdb::SyncPoint::GetInstance()->SetCallBack(
+        vidardb::SyncPoint::GetInstance()->SetCallBack(
             "NewWritableFile:O_DIRECT", [&](void* arg) {
               int* val = static_cast<int*>(arg);
               *val &= ~O_DIRECT;
@@ -1100,7 +1100,7 @@ TEST_P(EnvPosixTestWithParam, ConsistentChildrenAttributes) {
       ASSERT_EQ(size, file_attrs_iter->size_bytes);
     }
   }
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
 }
 
 // Test that all WritableFileWrapper forwards all calls to WritableFile.
@@ -1189,7 +1189,7 @@ INSTANTIATE_TEST_CASE_P(DefaultEnv, EnvPosixTestWithParam,
                         ::testing::Values(Env::Default()));
 
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

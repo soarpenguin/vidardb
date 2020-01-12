@@ -8,13 +8,13 @@
 #include <string>
 #include <unordered_map>
 
-#ifndef ROCKSDB_LITE
-namespace rocksdb {
-// This enum defines the RocksDB options sanity level.
+#ifndef VIDARDB_LITE
+namespace vidardb {
+// This enum defines the VidarDB options sanity level.
 enum OptionsSanityCheckLevel : unsigned char {
   // Performs no sanity check at all.
   kSanityLevelNone = 0x00,
-  // Performs minimum check to ensure the RocksDB instance can be
+  // Performs minimum check to ensure the VidarDB instance can be
   // opened without corrupting / mis-interpreting the data.
   kSanityLevelLooselyCompatible = 0x01,
   // Perform exact match sanity check.
@@ -44,6 +44,6 @@ OptionsSanityCheckLevel CFOptionSanityCheckLevel(
 OptionsSanityCheckLevel BBTOptionSanityCheckLevel(
     const std::string& options_name);
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

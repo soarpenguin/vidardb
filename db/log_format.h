@@ -11,7 +11,7 @@
 // See ../doc/log_format.txt for more detail.
 
 #pragma once
-namespace rocksdb {
+namespace vidardb {
 namespace log {
 
 enum RecordType {
@@ -42,4 +42,4 @@ static const int kHeaderSize = 4 + 1 + 2;
 static const int kRecyclableHeaderSize = 4 + 1 + 4 + 2;
 
 }  // namespace log
-}  // namespace rocksdb
+}  // namespace vidardb

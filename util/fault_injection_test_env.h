@@ -20,12 +20,12 @@
 
 #include "db/filename.h"
 #include "db/version_set.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
 #include "util/mock_env.h"
 #include "util/mutexlock.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class TestWritableFile;
 class FaultInjectionTestEnv;
@@ -153,6 +153,6 @@ class FaultInjectionTestEnv : public EnvWrapper {
   bool filesystem_active_;  // Record flushes, syncs, writes
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #endif  // UTIL_FAULT_INJECTION_TEST_ENV_H_

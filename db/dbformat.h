@@ -10,15 +10,15 @@
 #pragma once
 #include <stdio.h>
 #include <string>
-#include "rocksdb/comparator.h"
-#include "rocksdb/db.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/table.h"
-#include "rocksdb/types.h"
+#include "vidardb/comparator.h"
+#include "vidardb/db.h"
+#include "vidardb/slice.h"
+#include "vidardb/table.h"
+#include "vidardb/types.h"
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class InternalKey;
 
@@ -117,7 +117,7 @@ class InternalKeyComparator : public Comparator {
   std::string name_;
  public:
   explicit InternalKeyComparator(const Comparator* c) : user_comparator_(c),
-    name_("rocksdb.InternalKeyComparator:" +
+    name_("vidardb.InternalKeyComparator:" +
           (c != nullptr ? std::string(user_comparator_->Name()): "")) {
   }
   virtual ~InternalKeyComparator() {}
@@ -577,4 +577,4 @@ extern bool ReadKeyFromWriteBatchEntry(Slice* input, Slice* key,
 extern Status ReadRecordFromWriteBatch(Slice* input, char* tag,
                                        uint32_t* column_family, Slice* key,
                                        Slice* value, Slice* blob, Slice* xid);
-}  // namespace rocksdb
+}  // namespace vidardb

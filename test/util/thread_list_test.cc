@@ -8,11 +8,11 @@
 
 #include "util/thread_status_updater.h"
 #include "util/testharness.h"
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 
-namespace rocksdb {
+namespace vidardb {
 
 class SimulatedBackgroundTask {
  public:
@@ -335,7 +335,7 @@ TEST_F(ThreadListTest, SimpleEventTest) {
                        ThreadStatus::NUM_OP_TYPES);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -349,4 +349,4 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS

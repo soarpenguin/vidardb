@@ -14,12 +14,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "rocksdb/status.h"
-#include "rocksdb/types.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/status.h"
+#include "vidardb/types.h"
+#include "vidardb/write_batch.h"
 #include "util/instrumented_mutex.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class WriteThread {
  public:
@@ -260,4 +260,4 @@ class WriteThread {
   void CreateMissingNewerLinks(Writer* head);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

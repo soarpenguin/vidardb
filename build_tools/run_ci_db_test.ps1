@@ -1,4 +1,4 @@
-# This script enables you running RocksDB tests by running
+# This script enables you running VidarDB tests by running
 # All the tests in parallel and utilizing all the cores
 # For db_test the script first lists and parses the tests
 # and then fires them up in parallel using async PS Job functionality

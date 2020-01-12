@@ -10,10 +10,10 @@
 #include <string>
 #include <chrono>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/log_buffer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class JSONWriter {
  public:
@@ -193,4 +193,4 @@ class EventLogger {
   Logger* logger_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

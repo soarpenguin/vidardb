@@ -3,13 +3,13 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include <map>
 #include <string>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/cache.h"
+#include "vidardb/write_batch.h"
 
 #include "db/wal_manager.h"
 #include "db/log_writer.h"
@@ -24,7 +24,7 @@
 #include "table/mock_table.h"
 #include "db/db_impl.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // TODO(icanadi) mock out VersionSet
 // TODO(icanadi) move other WalManager-specific tests from db_test here
@@ -289,7 +289,7 @@ TEST_F(WalManagerTest, TransactionLogIteratorJustEmptyFile) {
   ASSERT_TRUE(!iter->Valid());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -300,8 +300,8 @@ int main(int argc, char** argv) {
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-  fprintf(stderr, "SKIPPED as WalManager is not supported in ROCKSDB_LITE\n");
+  fprintf(stderr, "SKIPPED as WalManager is not supported in VIDARDB_LITE\n");
   return 0;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

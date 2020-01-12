@@ -10,13 +10,13 @@
 // Introduction of SyncPoint effectively disabled building and running this test
 // in Release build.
 // which is a pity, it is a good test
-#if !defined(ROCKSDB_LITE)
+#if !defined(VIDARDB_LITE)
 
 #include "db/db_test_util.h"
 #include "db/forward_iterator.h"
 #include "port/stack_trace.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBTestTailingIterator : public DBTestBase {
  public:
@@ -98,8 +98,8 @@ TEST_F(DBTestTailingIterator, TailingIteratorSeekToNext) {
     ASSERT_TRUE(itern->Valid());
     ASSERT_EQ(itern->key().compare(key), 0);
   }
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   for (int i = 2 * num_records; i > 0; --i) {
     char buf1[32];
     char buf2[32];
@@ -142,25 +142,25 @@ TEST_F(DBTestTailingIterator, TailingIteratorTrimSeekToNext) {
   bool file_iters_deleted = false;
   bool file_iters_renewed_null = false;
   bool file_iters_renewed_copy = false;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "ForwardIterator::SeekInternal:Return", [&](void* arg) {
         ForwardIterator* fiter = reinterpret_cast<ForwardIterator*>(arg);
         ASSERT_TRUE(!file_iters_deleted ||
                     fiter->TEST_CheckDeletedIters(&deleted_iters, &num_iters));
       });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "ForwardIterator::Next:Return", [&](void* arg) {
         ForwardIterator* fiter = reinterpret_cast<ForwardIterator*>(arg);
         ASSERT_TRUE(!file_iters_deleted ||
                     fiter->TEST_CheckDeletedIters(&deleted_iters, &num_iters));
       });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "ForwardIterator::RenewIterators:Null",
       [&](void* arg) { file_iters_renewed_null = true; });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "ForwardIterator::RenewIterators:Copy",
       [&](void* arg) { file_iters_renewed_copy = true; });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   const int num_records = 1000;
   for (int i = 1; i < num_records; ++i) {
     char buf1[32];
@@ -379,14 +379,14 @@ TEST_F(DBTestTailingIterator, TailingIteratorUpperBound) {
 
   // This keeps track of the number of times NeedToSeekImmutable() was true.
   int immutable_seeks = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "ForwardIterator::SeekInternal:Immutable",
       [&](void* arg) { ++immutable_seeks; });
 
   // Seek to 13. This should not require any immutable seeks.
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   it->Seek("13");
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 
   ASSERT_FALSE(it->Valid());
   ASSERT_EQ(0, immutable_seeks);
@@ -591,20 +591,20 @@ TEST_F(DBTestTailingIterator, ForwardIteratorVersionProperty) {
     std::unique_ptr<Iterator> iter(db_->NewIterator(read_options));
     iter->Seek("foo");
     std::string prop_value;
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.super-version-number",
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.super-version-number",
                                 &prop_value));
     v1 = static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
     Put("foo1", "bar1");
     Flush();
 
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.super-version-number",
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.super-version-number",
                                 &prop_value));
     v2 = static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
     iter->Seek("f");
 
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.super-version-number",
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.super-version-number",
                                 &prop_value));
     v3 = static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
@@ -616,19 +616,19 @@ TEST_F(DBTestTailingIterator, ForwardIteratorVersionProperty) {
     std::unique_ptr<Iterator> iter(db_->NewIterator(read_options));
     iter->Seek("foo");
     std::string prop_value;
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.super-version-number",
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.super-version-number",
                                 &prop_value));
     v4 = static_cast<uint64_t>(std::atoi(prop_value.c_str()));
   }
   ASSERT_EQ(v3, v4);
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !defined(ROCKSDB_LITE)
+#endif  // !defined(VIDARDB_LITE)
 
 int main(int argc, char** argv) {
-#if !defined(ROCKSDB_LITE)
-  rocksdb::port::InstallStackTraceHandler();
+#if !defined(VIDARDB_LITE)
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 #else

@@ -13,7 +13,7 @@
 #include <limits>
 #include <string>
 
-#include "rocksdb/options.h"
+#include "vidardb/options.h"
 #include "util/coding.h"
 
 #ifdef SNAPPY
@@ -41,7 +41,7 @@
 #include "port/xpress.h"
 #endif
 
-namespace rocksdb {
+namespace vidardb {
 
 inline bool Snappy_Supported() {
 #ifdef SNAPPY
@@ -786,4 +786,4 @@ inline char* ZSTD_Uncompress(const char* input_data, size_t input_length,
   return nullptr;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

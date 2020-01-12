@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/cache.h"
+#include "vidardb/cache.h"
 
 #include <forward_list>
 #include <vector>
@@ -17,7 +17,7 @@
 #include "util/string_util.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Conversions between numeric keys/values and the types expected by Cache.
 static std::string EncodeKey(int k) {
@@ -559,7 +559,7 @@ TEST_F(CacheTest, ApplyToAllCacheEntiresTest) {
   ASSERT_TRUE(inserted == callback_state);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

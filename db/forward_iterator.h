@@ -4,20 +4,20 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 #pragma once
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include <string>
 #include <vector>
 #include <queue>
 
-#include "rocksdb/db.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "vidardb/db.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
 #include "db/dbformat.h"
 #include "table/internal_iterator.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBImpl;
 class Env;
@@ -131,5 +131,5 @@ class ForwardIterator : public InternalIterator {
   Arena arena_;
 };
 
-}  // namespace rocksdb
-#endif  // ROCKSDB_LITE
+}  // namespace vidardb
+#endif  // VIDARDB_LITE

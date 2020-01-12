@@ -5,18 +5,18 @@
 #include <cstdio>
 #include <string>
 #include <iostream>
-#include "rocksdb/db.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/options.h"
+#include "vidardb/db.h"
+#include "vidardb/slice.h"
+#include "vidardb/options.h"
 using namespace std;
-using namespace rocksdb;
+using namespace vidardb;
 
-std::string kDBPath = "/tmp/rocksdb_simple_example";
+std::string kDBPath = "/tmp/vidardb_simple_example";
 
 int main() {
   DB* db;
   Options options;
-  // Optimize RocksDB. This is the easiest way to get RocksDB to perform well
+  // Optimize VidarDB. This is the easiest way to get VidarDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
   // create the DB if it's not already present

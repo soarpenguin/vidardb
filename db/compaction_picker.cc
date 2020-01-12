@@ -27,7 +27,7 @@
 #include "util/string_util.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 uint64_t TotalCompensatedFileSize(const std::vector<FileMetaData*>& files) {
@@ -38,8 +38,8 @@ uint64_t TotalCompensatedFileSize(const std::vector<FileMetaData*>& files) {
   return sum;
 }
 
-// Universal compaction is not supported in ROCKSDB_LITE
-#ifndef ROCKSDB_LITE
+// Universal compaction is not supported in VIDARDB_LITE
+#ifndef VIDARDB_LITE
 
 // Used in universal compaction when trivial move is enabled.
 // This structure is used for the construction of min heap
@@ -101,7 +101,7 @@ SmallestKeyHeap create_level_heap(Compaction* c, const Comparator* ucmp) {
   }
   return smallest_key_priority_q;
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }  // anonymous namespace
 
 // Determine compression type, based on user options, level of the output
@@ -427,8 +427,8 @@ bool CompactionPicker::SetupOtherInputs(
       if (expanded1.size() == output_level_inputs->size() &&
           !FilesInCompaction(expanded1)) {
         Log(InfoLogLevel::INFO_LEVEL, ioptions_.info_log,
-            "[%s] Expanding@%d %" ROCKSDB_PRIszt "+%" ROCKSDB_PRIszt "(%" PRIu64
-            "+%" PRIu64 " bytes) to %" ROCKSDB_PRIszt "+%" ROCKSDB_PRIszt
+            "[%s] Expanding@%d %" VIDARDB_PRIszt "+%" VIDARDB_PRIszt "(%" PRIu64
+            "+%" PRIu64 " bytes) to %" VIDARDB_PRIszt "+%" VIDARDB_PRIszt
             " (%" PRIu64 "+%" PRIu64 "bytes)\n",
             cf_name.c_str(), input_level, inputs->size(),
             output_level_inputs->size(), inputs0_size, inputs1_size,
@@ -631,7 +631,7 @@ Compaction* CompactionPicker::CompactRange(
   return compaction;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 namespace {
 // Test whether two files have overlapping key-ranges.
 bool HaveOverlappingKeyRanges(const Comparator* c, const SstFileMetaData& a,
@@ -854,7 +854,7 @@ Status CompactionPicker::SanitizeCompactionInputFiles(
 
   return Status::OK();
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 bool LevelCompactionPicker::NeedsCompaction(
     const VersionStorageInfo* vstorage) const {
@@ -1138,7 +1138,7 @@ bool LevelCompactionPicker::PickCompactionBySize(VersionStorageInfo* vstorage,
   return inputs->size() > 0;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 bool UniversalCompactionPicker::NeedsCompaction(
     const VersionStorageInfo* vstorage) const {
   const int kLevel0 = 0;
@@ -1168,14 +1168,14 @@ void UniversalCompactionPicker::SortedRun::DumpSizeInfo(
   if (level == 0) {
     assert(file != nullptr);
     snprintf(out_buf, out_buf_size,
-             "file %" PRIu64 "[%" ROCKSDB_PRIszt
+             "file %" PRIu64 "[%" VIDARDB_PRIszt
              "] "
              "with size %" PRIu64 " (compensated size %" PRIu64 ")",
              file->fd.GetNumber(), sorted_run_count, file->fd.GetFileSize(),
              file->compensated_file_size);
   } else {
     snprintf(out_buf, out_buf_size,
-             "level %d[%" ROCKSDB_PRIszt
+             "level %d[%" VIDARDB_PRIszt
              "] "
              "with size %" PRIu64 " (compensated size %" PRIu64 ")",
              level, sorted_run_count, size, compensated_file_size);
@@ -1312,7 +1312,7 @@ Compaction* UniversalCompactionPicker::PickCompaction(
   }
   VersionStorageInfo::LevelSummaryStorage tmp;
   LogToBuffer(log_buffer, 3072,
-              "[%s] Universal: sorted runs files(%" ROCKSDB_PRIszt "): %s\n",
+              "[%s] Universal: sorted runs files(%" VIDARDB_PRIszt "): %s\n",
               cf_name.c_str(), sorted_runs.size(),
               vstorage->LevelSummary(&tmp));
 
@@ -1674,7 +1674,7 @@ Compaction* UniversalCompactionPicker::PickCompactionUniversalSizeAmp(
     char file_num_buf[kFormatFileNumberBufSize];
     sr->Dump(file_num_buf, sizeof(file_num_buf), true);
     LogToBuffer(log_buffer,
-                "[%s] Universal: First candidate %s[%" ROCKSDB_PRIszt "] %s",
+                "[%s] Universal: First candidate %s[%" VIDARDB_PRIszt "] %s",
                 cf_name.c_str(), file_num_buf, start_index,
                 " to reduce size amp.\n");
   }
@@ -1836,6 +1836,6 @@ Compaction* FIFOCompactionPicker::CompactRange(
   return c;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

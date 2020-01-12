@@ -9,7 +9,7 @@
 #pragma once
 #include <unistd.h>
 #include <atomic>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
 // For non linux platform, the following macros are used only as place
 // holder.
@@ -21,7 +21,7 @@
 #define POSIX_FADV_DONTNEED 4   /* [MC1] dont need these pages */
 #endif
 
-namespace rocksdb {
+namespace vidardb {
 
 static Status IOError(const std::string& context, int err_number) {
   return Status::IOError(context, strerror(err_number));
@@ -107,7 +107,7 @@ class PosixWritableFile : public WritableFile {
 //  const std::string filename_;  // Shichao
   int fd_;
   uint64_t filesize_;
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   bool allow_fallocate_;
   bool fallocate_with_keep_size_;
 #endif
@@ -128,7 +128,7 @@ class PosixWritableFile : public WritableFile {
   virtual bool IsSyncThreadSafe() const override;
   virtual uint64_t GetFileSize() override;
   virtual Status InvalidateCache(size_t offset, size_t length) override;
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   virtual Status Allocate(uint64_t offset, uint64_t len) override;
   virtual Status RangeSync(uint64_t offset, uint64_t nbytes) override;
   virtual size_t GetUniqueId(char* id, size_t max_size) const override;
@@ -178,7 +178,7 @@ class PosixMmapFile : public WritableFile {
   char* dst_;             // Where to write next  (in range [base_,limit_])
   char* last_sync_;       // Where have we synced up to
   uint64_t file_offset_;  // Offset of base_ in file
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   bool allow_fallocate_;  // If false, fallocate calls are bypassed
   bool fallocate_with_keep_size_;
 #endif
@@ -211,7 +211,7 @@ class PosixMmapFile : public WritableFile {
   virtual Status Fsync() override;
   virtual uint64_t GetFileSize() override;
   virtual Status InvalidateCache(size_t offset, size_t length) override;
-#ifdef ROCKSDB_FALLOCATE_PRESENT
+#ifdef VIDARDB_FALLOCATE_PRESENT
   virtual Status Allocate(uint64_t offset, uint64_t len) override;
 #endif
 };
@@ -226,4 +226,4 @@ class PosixDirectory : public Directory {
   int fd_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

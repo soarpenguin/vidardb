@@ -7,14 +7,14 @@
 #include <atomic>
 #include <string>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "port/port.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 #include "util/thread_local.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class ThreadLocalTest : public testing::Test {
  public:
@@ -474,7 +474,7 @@ namespace {
 void* AccessThreadLocal(void* arg) {
   TEST_SYNC_POINT("AccessThreadLocal:Start");
   ThreadLocalPtr tlp;
-  tlp.Reset(new std::string("hello RocksDB"));
+  tlp.Reset(new std::string("hello VidarDB"));
   TEST_SYNC_POINT("AccessThreadLocal:End");
   return nullptr;
 }
@@ -489,28 +489,28 @@ void* AccessThreadLocal(void* arg) {
 // this test and only see an ASAN error on SyncPoint, it means you pass the
 // test.
 TEST_F(ThreadLocalTest, DISABLED_MainThreadDiesFirst) {
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+  vidardb::SyncPoint::GetInstance()->LoadDependency(
       {{"AccessThreadLocal:Start", "MainThreadDiesFirst:End"},
        {"PosixEnv::~PosixEnv():End", "AccessThreadLocal:End"}});
 
   // Triggers the initialization of singletons.
   Env::Default();
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   try {
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
     std::thread th(&AccessThreadLocal, nullptr);
     th.detach();
     TEST_SYNC_POINT("MainThreadDiesFirst:End");
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   } catch (const std::system_error& ex) {
     std::cerr << "Start thread: " << ex.code() << std::endl;
     ASSERT_TRUE(false);
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

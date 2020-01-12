@@ -7,21 +7,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 
 #include <memory>
 #include "memtable/memtable.h"
 #include "db/column_family.h"
 #include "db/write_batch_internal.h"
 #include "db/writebuffer.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/logging.h"
 #include "util/string_util.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 static std::string PrintContents(WriteBatch* b) {
   InternalKeyComparator cmp(BytewiseComparator());
@@ -614,7 +614,7 @@ TEST_F(WriteBatchTest, SavePointTest) {
   ASSERT_EQ("", PrintContents(&batch2));
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

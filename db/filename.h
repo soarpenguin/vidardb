@@ -16,12 +16,12 @@
 #include <vector>
 
 #include "port/port.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
+#include "vidardb/status.h"
+#include "vidardb/transaction_log.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 class Directory;
@@ -58,8 +58,8 @@ extern std::string ArchivedLogFileName(const std::string& dbname,
 extern std::string MakeTableFileName(const std::string& name, uint64_t number);
 
 // Return the name of sstable with LevelDB suffix
-// created from RocksDB sstable suffixed name
-extern std::string Rocks2LevelTableFileName(const std::string& fullname);
+// created from VidarDB sstable suffixed name
+extern std::string VidarDB2LevelTableFileName(const std::string& fullname);
 
 // the reverse function of MakeTableFileName
 // TODO(yhchiang): could merge this function with ParseFileName()
@@ -141,7 +141,7 @@ extern std::string MetaDatabaseName(const std::string& dbname,
 // either from a backup-image or empty
 extern std::string IdentityFileName(const std::string& dbname);
 
-// If filename is a rocksdb file, store the type of the file in *type.
+// If filename is a vidardb file, store the type of the file in *type.
 // The number encoded in the filename is stored in *number.  If the
 // filename was successfully parsed, returns true.  Else return false.
 // info_log_name_prefix is the path of info logs.
@@ -165,4 +165,4 @@ extern Status SetIdentityFile(Env* env, const std::string& dbname);
 extern Status SyncManifest(Env* env, const DBOptions* db_options,
                            WritableFileWriter* file);
 
-}  // namespace rocksdb
+}  // namespace vidardb

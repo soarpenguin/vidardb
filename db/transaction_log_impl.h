@@ -3,20 +3,20 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #pragma once
 #include <vector>
 
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/types.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/types.h"
+#include "vidardb/transaction_log.h"
 #include "db/version_set.h"
 #include "db/log_reader.h"
 #include "db/filename.h"
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class LogFileImpl : public LogFile {
  public:
@@ -92,7 +92,7 @@ class TransactionLogIteratorImpl : public TransactionLogIterator {
     Logger* info_log;
     virtual void Corruption(size_t bytes, const Status& s) override {
       Log(InfoLogLevel::ERROR_LEVEL, info_log,
-          "dropping %" ROCKSDB_PRIszt " bytes; %s", bytes,
+          "dropping %" VIDARDB_PRIszt " bytes; %s", bytes,
           s.ToString().c_str());
     }
     virtual void Info(const char* s) {
@@ -122,5 +122,5 @@ class TransactionLogIteratorImpl : public TransactionLogIterator {
   void UpdateCurrentWriteBatch(const Slice& record);
   Status OpenLogReader(const LogFile* file);
 };
-}  //  namespace rocksdb
-#endif  // ROCKSDB_LITE
+}  //  namespace vidardb
+#endif  // VIDARDB_LITE

@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 class WriteControllerToken;
@@ -112,4 +112,4 @@ class CompactionPressureToken : public WriteControllerToken {
   virtual ~CompactionPressureToken();
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

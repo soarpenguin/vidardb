@@ -58,9 +58,9 @@ function gem_install() {
 
 function main() {
   if [[ $# -ne 1 ]]; then
-    fatal "Usage: $0 <rocksdb_version>"
+    fatal "Usage: $0 <vidardb_version>"
   else
-    log "using rocksdb version: $1"
+    log "using vidardb version: $1"
   fi
 
   if [[ -d /vagrant ]]; then
@@ -102,14 +102,14 @@ function main() {
   fpm \
     -s dir \
     -t $FPM_OUTPUT \
-    -n rocksdb \
+    -n vidardb \
     -v $1 \
     --prefix /usr \
-    --url http://rocksdb.org/ \
-    -m rocksdb@fb.com \
+    --url http://vidardb.org/ \
+    -m vidardb@fb.com \
     --license BSD \
     --vendor Facebook \
-    --description "RocksDB is an embeddable persistent key-value store for fast storage." \
+    --description "VidarDB is an embeddable persistent key-value store for fast storage." \
     package
 }
 

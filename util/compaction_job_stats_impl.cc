@@ -3,11 +3,11 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/compaction_job_stats.h"
+#include "vidardb/compaction_job_stats.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 void CompactionJobStats::Reset() {
   elapsed_micros = 0;
@@ -75,6 +75,6 @@ void CompactionJobStats::Reset() {}
 
 void CompactionJobStats::Add(const CompactionJobStats& stats) {}
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

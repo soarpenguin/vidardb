@@ -6,7 +6,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 //
-// An Env is an interface used by the rocksdb implementation to access
+// An Env is an interface used by the vidardb implementation to access
 // operating system functionality like the filesystem etc.  Callers
 // may wish to provide a custom Env object when opening a database to
 // get fine gain control; e.g., to rate limit file system operations.
@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <rocksdb/env.h>
+#include <vidardb/env.h>
 #include "util/threadpool.h"
 
 #include <mutex>
 #include <vector>
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 // Currently not designed for inheritance but rather a replacement

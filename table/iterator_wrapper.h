@@ -13,7 +13,7 @@
 
 #include "table/internal_iterator.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // A internal wrapper class with an interface similar to Iterator that caches
 // the valid(), key() and IsKeyPinned() results for an underlying iterator.
@@ -93,4 +93,4 @@ extern InternalIterator* NewEmptyInternalIterator(Arena* arena);
 extern InternalIterator* NewErrorInternalIterator(const Status& status,
                                                   Arena* arena);
 
-}  // namespace rocksdb
+}  // namespace vidardb

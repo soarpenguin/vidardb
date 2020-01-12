@@ -10,9 +10,9 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/wal_filter.h"
+#include "vidardb/wal_filter.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBTest2 : public DBTestBase {
  public:
@@ -33,7 +33,7 @@ TEST_P(PrefixFullBloomWithReverseComparator,
        PrefixFullBloomWithReverseComparator) {
   Options options = last_options_;
   options.comparator = ReverseBytewiseComparator();
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   BlockBasedTableOptions bbto;
   if (if_cache_filter_) {
     bbto.no_block_cache = false;
@@ -82,7 +82,7 @@ TEST_F(DBTest2, IteratorPropertyVersionNumber) {
   Iterator* iter1 = db_->NewIterator(ReadOptions());
   std::string prop_value;
   ASSERT_OK(
-      iter1->GetProperty("rocksdb.iterator.super-version-number", &prop_value));
+      iter1->GetProperty("vidardb.iterator.super-version-number", &prop_value));
   uint64_t version_number1 =
       static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
@@ -91,7 +91,7 @@ TEST_F(DBTest2, IteratorPropertyVersionNumber) {
 
   Iterator* iter2 = db_->NewIterator(ReadOptions());
   ASSERT_OK(
-      iter2->GetProperty("rocksdb.iterator.super-version-number", &prop_value));
+      iter2->GetProperty("vidardb.iterator.super-version-number", &prop_value));
   uint64_t version_number2 =
       static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
@@ -101,7 +101,7 @@ TEST_F(DBTest2, IteratorPropertyVersionNumber) {
 
   Iterator* iter3 = db_->NewIterator(ReadOptions());
   ASSERT_OK(
-      iter3->GetProperty("rocksdb.iterator.super-version-number", &prop_value));
+      iter3->GetProperty("vidardb.iterator.super-version-number", &prop_value));
   uint64_t version_number3 =
       static_cast<uint64_t>(std::atoi(prop_value.c_str()));
 
@@ -109,7 +109,7 @@ TEST_F(DBTest2, IteratorPropertyVersionNumber) {
 
   iter1->SeekToFirst();
   ASSERT_OK(
-      iter1->GetProperty("rocksdb.iterator.super-version-number", &prop_value));
+      iter1->GetProperty("vidardb.iterator.super-version-number", &prop_value));
   uint64_t version_number1_new =
       static_cast<uint64_t>(std::atoi(prop_value.c_str()));
   ASSERT_EQ(version_number1, version_number1_new);
@@ -122,7 +122,7 @@ TEST_F(DBTest2, IteratorPropertyVersionNumber) {
 TEST_F(DBTest2, CacheIndexAndFilterWithDBRestart) {
   Options options = CurrentOptions();
   options.create_if_missing = true;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   CreateAndReopenWithCF({"pikachu"}, options);
@@ -136,7 +136,7 @@ TEST_F(DBTest2, CacheIndexAndFilterWithDBRestart) {
   value = Get(1, "a");
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 namespace {
   void ValidateKeyExistence(DB* db, const std::vector<Slice>& keys_must_exist,
     const std::vector<Slice>& keys_must_not_exist) {
@@ -193,7 +193,7 @@ TEST_F(DBTest2, WalFilterTest) {
         option_to_return = WalProcessingOption::kContinueProcessing;
       }
 
-      // Filter is passed as a const object for RocksDB to not modify the
+      // Filter is passed as a const object for VidarDB to not modify the
       // object, however we modify it for our own purpose here and hence
       // cast the constness away.
       (const_cast<TestWalFilter*>(this)->current_record_index_)++;
@@ -276,7 +276,7 @@ TEST_F(DBTest2, WalFilterTest) {
     }
     case WalFilter::WalProcessingOption::kIgnoreCurrentRecord: {
       fprintf(stderr,
-        "Testing with ignoring record %" ROCKSDB_PRIszt " only\n",
+        "Testing with ignoring record %" VIDARDB_PRIszt " only\n",
         apply_option_for_record_index);
       // We expect the record with apply_option_for_record_index to be not
       // found.
@@ -294,7 +294,7 @@ TEST_F(DBTest2, WalFilterTest) {
     }
     case WalFilter::WalProcessingOption::kStopReplay: {
       fprintf(stderr,
-        "Testing with stopping replay from record %" ROCKSDB_PRIszt
+        "Testing with stopping replay from record %" VIDARDB_PRIszt
         "\n",
         apply_option_for_record_index);
       // We expect records beyond apply_option_for_record_index to be not
@@ -386,7 +386,7 @@ TEST_F(DBTest2, WalFilterTestWithChangeBatch) {
         *batch_changed = true;
       }
 
-      // Filter is passed as a const object for RocksDB to not modify the
+      // Filter is passed as a const object for VidarDB to not modify the
       // object, however we modify it for our own purpose here and hence
       // cast the constness away.
       (const_cast<TestWalFilterWithChangeBatch*>(this)
@@ -753,7 +753,7 @@ TEST_F(DBTest2, PresetCompressionDict) {
         options.compression_opts.max_dict_bytes = 0;
       }
 
-      options.statistics = rocksdb::CreateDBStatistics();
+      options.statistics = vidardb::CreateDBStatistics();
       options.table_factory.reset(NewBlockBasedTableFactory(table_options));
       CreateAndReopenWithCF({"pikachu"}, options);
       Random rnd(301);
@@ -807,7 +807,7 @@ class CompactionCompressionListener : public EventListener {
     for (int level = 0; level < db->NumberLevels(); level++) {
       std::string files_at_level;
       ASSERT_TRUE(
-          db->GetProperty("rocksdb.num-files-at-level" + NumberToString(level),
+          db->GetProperty("vidardb.num-files-at-level" + NumberToString(level),
                           &files_at_level));
       if (files_at_level != "0") {
         bottommost_level = level;
@@ -905,12 +905,12 @@ class CompactionStallTestListener : public EventListener {
 };
 
 TEST_F(DBTest2, CompactionStall) {
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+  vidardb::SyncPoint::GetInstance()->LoadDependency(
       {{"DBImpl::BGWorkCompaction", "DBTest2::CompactionStall:0"},
        {"DBImpl::BGWorkCompaction", "DBTest2::CompactionStall:1"},
        {"DBTest2::CompactionStall:2",
         "DBImpl::NotifyOnCompactionCompleted::UnlockMutex"}});
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Options options = CurrentOptions();
   options.level0_file_num_compaction_trigger = 4;
@@ -934,7 +934,7 @@ TEST_F(DBTest2, CompactionStall) {
 
   // Clear "DBImpl::BGWorkCompaction" SYNC_POINT since we want to hold it again
   // at DBTest2::CompactionStall::1
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
 
   // Another 6 L0 files to trigger compaction again
   for (int i = 0; i < 6; i++) {
@@ -956,10 +956,10 @@ TEST_F(DBTest2, CompactionStall) {
   ASSERT_GT(listener->compacted_files_cnt_.load(),
             10 - options.level0_file_num_compaction_trigger);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest2, FirstSnapshotTest) {
   Options options;
@@ -976,23 +976,23 @@ TEST_F(DBTest2, FirstSnapshotTest) {
   db_->ReleaseSnapshot(s1);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 static void UniqueIdCallback(void* arg) {
   int* result = reinterpret_cast<int*>(arg);
   if (*result == -1) {
     *result = 0;
   }
 
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "GetUniqueIdFromFile:FS_IOC_GETVERSION", UniqueIdCallback);
 }
 
 #endif
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

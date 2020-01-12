@@ -10,14 +10,14 @@
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBIOFailureTest : public DBTestBase {
  public:
   DBIOFailureTest() : DBTestBase("/db_io_failure_test") {}
 };
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 // Check that number of files does not grow when writes are dropped
 TEST_F(DBIOFailureTest, DropWrites) {
   do {
@@ -50,7 +50,7 @@ TEST_F(DBIOFailureTest, DropWrites) {
     }
 
     std::string property_value;
-    ASSERT_TRUE(db_->GetProperty("rocksdb.background-errors", &property_value));
+    ASSERT_TRUE(db_->GetProperty("vidardb.background-errors", &property_value));
     ASSERT_EQ("5", property_value);
 
     env_->drop_writes_.store(false, std::memory_order_release);
@@ -77,18 +77,18 @@ TEST_F(DBIOFailureTest, DropWritesFlush) {
 
     std::string property_value;
     // Background error count is 0 now.
-    ASSERT_TRUE(db_->GetProperty("rocksdb.background-errors", &property_value));
+    ASSERT_TRUE(db_->GetProperty("vidardb.background-errors", &property_value));
     ASSERT_EQ("0", property_value);
 
     dbfull()->TEST_FlushMemTable(true);
 
-    ASSERT_TRUE(db_->GetProperty("rocksdb.background-errors", &property_value));
+    ASSERT_TRUE(db_->GetProperty("vidardb.background-errors", &property_value));
     ASSERT_EQ("1", property_value);
 
     env_->drop_writes_.store(false, std::memory_order_release);
   } while (ChangeCompactOptions());
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // Check that CompactRange() returns failure if there is not enough space left
 // on device
@@ -138,7 +138,7 @@ TEST_F(DBIOFailureTest, NonWritableFileSystem) {
   } while (ChangeCompactOptions());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBIOFailureTest, ManifestWriteError) {
   // Test for the following problem:
   // (a) Compaction produces file F
@@ -203,7 +203,7 @@ TEST_F(DBIOFailureTest, ManifestWriteError) {
     ASSERT_EQ("bar2", Get("foo2"));
   }
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBIOFailureTest, PutFailsParanoid) {
   // Test the following:
@@ -250,10 +250,10 @@ TEST_F(DBIOFailureTest, PutFailsParanoid) {
   ASSERT_TRUE(s.ok());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

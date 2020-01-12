@@ -3,20 +3,20 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class CompactFilesTest : public testing::Test {
  public:
@@ -76,11 +76,11 @@ TEST_F(CompactFilesTest, L0ConflictsFiles) {
   assert(s.ok());
   assert(db);
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"CompactFilesImpl:0", "BackgroundCallCompaction:0"},
       {"BackgroundCallCompaction:1", "CompactFilesImpl:1"},
   });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   // create couple files
   // Background compaction starts and waits in BackgroundCallCompaction:0
@@ -90,7 +90,7 @@ TEST_F(CompactFilesTest, L0ConflictsFiles) {
     db->Flush(FlushOptions());
   }
 
-  rocksdb::ColumnFamilyMetaData meta;
+  vidardb::ColumnFamilyMetaData meta;
   db->GetColumnFamilyMetaData(&meta);
   std::string file1;
   for (auto& file : meta.levels[0].files) {
@@ -104,11 +104,11 @@ TEST_F(CompactFilesTest, L0ConflictsFiles) {
       // already in progress and doesn't do an L0 compaction
       // Once the background compaction finishes, the compact files finishes
       ASSERT_OK(
-          db->CompactFiles(rocksdb::CompactionOptions(), {file1, file2}, 0));
+          db->CompactFiles(vidardb::CompactionOptions(), {file1, file2}, 0));
       break;
     }
   }
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   delete db;
 }
 
@@ -117,7 +117,7 @@ TEST_F(CompactFilesTest, ObsoleteFiles) {
   // to trigger compaction more easily
   const int kWriteBufferSize = 10000;
   options.create_if_missing = true;
-  // Disable RocksDB background compaction.
+  // Disable VidarDB background compaction.
   options.compaction_style = kCompactionStyleNone;
   // Small slowdown and stop trigger for experimental purpose.
   options.level0_slowdown_writes_trigger = 20;
@@ -155,7 +155,7 @@ TEST_F(CompactFilesTest, ObsoleteFiles) {
 TEST_F(CompactFilesTest, CapturingPendingFiles) {
   Options options;
   options.create_if_missing = true;
-  // Disable RocksDB background compaction.
+  // Disable VidarDB background compaction.
   options.compaction_style = kCompactionStyleNone;
   // Always do full scans for obsolete files (needed to reproduce the issue).
   options.delete_obsolete_files_period_micros = 0;
@@ -179,11 +179,11 @@ TEST_F(CompactFilesTest, CapturingPendingFiles) {
   auto l0_files = collector->GetFlushedFiles();
   EXPECT_EQ(5, l0_files.size());
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"CompactFilesImpl:2", "CompactFilesTest.CapturingPendingFiles:0"},
       {"CompactFilesTest.CapturingPendingFiles:1", "CompactFilesImpl:3"},
   });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   // Start compacting files.
   std::thread compaction_thread(
@@ -197,7 +197,7 @@ TEST_F(CompactFilesTest, CapturingPendingFiles) {
 
   compaction_thread.join();
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 
   delete db;
 
@@ -208,7 +208,7 @@ TEST_F(CompactFilesTest, CapturingPendingFiles) {
   delete db;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -220,8 +220,8 @@ int main(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   fprintf(stderr,
-          "SKIPPED as DBImpl::CompactFiles is not supported in ROCKSDB_LITE\n");
+          "SKIPPED as DBImpl::CompactFiles is not supported in VIDARDB_LITE\n");
   return 0;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

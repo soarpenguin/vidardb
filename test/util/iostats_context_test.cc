@@ -3,10 +3,10 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/iostats_context.h"
+#include "vidardb/iostats_context.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 TEST(IOStatsContextTest, ToString) {
   iostats_context.Reset();
@@ -21,7 +21,7 @@ TEST(IOStatsContextTest, ToString) {
   ASSERT_NE(std::string::npos, zero_excluded.find("= 12345"));
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

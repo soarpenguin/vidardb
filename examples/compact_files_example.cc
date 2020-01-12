@@ -8,17 +8,17 @@
 
 #include <mutex>
 #include <string>
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
 
-using namespace rocksdb;
-std::string kDBPath = "/tmp/rocksdb_compact_files_example";
+using namespace vidardb;
+std::string kDBPath = "/tmp/vidardb_compact_files_example";
 struct CompactionTask;
 
 // This is an example interface of external-compaction algorithm.
-// Compaction algorithm can be implemented outside the core-RocksDB
-// code by using the pluggable compaction APIs that RocksDb provides.
+// Compaction algorithm can be implemented outside the core-VidarDB
+// code by using the pluggable compaction APIs that VidarDB provides.
 class Compactor : public EventListener {
  public:
   // Picks and returns a compaction task given the specified DB
@@ -135,7 +135,7 @@ class FullCompactor : public Compactor {
 int main() {
   Options options;
   options.create_if_missing = true;
-  // Disable RocksDB background compaction.
+  // Disable VidarDB background compaction.
   options.compaction_style = kCompactionStyleNone;
   // Small slowdown and stop trigger for experimental purpose.
   options.level0_slowdown_writes_trigger = 3;

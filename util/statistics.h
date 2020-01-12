@@ -4,7 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-#include "rocksdb/statistics.h"
+#include "vidardb/statistics.h"
 
 #include <vector>
 #include <atomic>
@@ -15,7 +15,7 @@
 #include "port/likely.h"
 
 
-namespace rocksdb {
+namespace vidardb {
 
 enum TickersInternal : uint32_t {
   INTERNAL_TICKER_ENUM_START = TICKER_ENUM_MAX,

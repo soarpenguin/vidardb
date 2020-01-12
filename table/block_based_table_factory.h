@@ -13,11 +13,11 @@
 #include <memory>
 #include <string>
 
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/table.h"
+#include "vidardb/flush_block_policy.h"
+#include "vidardb/table.h"
 #include "db/dbformat.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct EnvOptions;
 
@@ -64,4 +64,4 @@ class BlockBasedTableFactory : public TableFactory {
   BlockBasedTableOptions table_options_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

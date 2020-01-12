@@ -7,10 +7,10 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#if !defined(GFLAGS) || defined(ROCKSDB_LITE)
+#if !defined(GFLAGS) || defined(VIDARDB_LITE)
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #elif defined(OS_MACOSX) || defined(OS_WIN)
@@ -30,10 +30,10 @@ int main() { return 0; }
 #include <random>
 #include <thread>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/status.h"
+#include "vidardb/table.h"
 #include "util/testharness.h"
 
 const int MAX_SHARDS = 100000;
@@ -82,16 +82,16 @@ struct ShardState {
   Reader* reader;
   char pad2[128] __attribute__((__unused__));
   std::atomic<uint64_t> last_read{0};
-  std::unique_ptr<rocksdb::Iterator> it;
-  std::unique_ptr<rocksdb::Iterator> it_cacheonly;
+  std::unique_ptr<vidardb::Iterator> it;
+  std::unique_ptr<vidardb::Iterator> it_cacheonly;
   Key upper_bound;
-  rocksdb::Slice upper_bound_slice;
+  vidardb::Slice upper_bound_slice;
   char pad3[128] __attribute__((__unused__));
 };
 
 struct Reader {
  public:
-  explicit Reader(std::vector<ShardState>* shard_states, rocksdb::DB* db)
+  explicit Reader(std::vector<ShardState>* shard_states, vidardb::DB* db)
       : shard_states_(shard_states), db_(db) {
     sem_init(&sem_, 0, 0);
     thread_ = std::thread(&Reader::run, this);
@@ -120,11 +120,11 @@ struct Reader {
     ShardState& state = (*shard_states_)[shard];
     if (!state.it) {
       // Initialize iterators
-      rocksdb::ReadOptions options;
+      vidardb::ReadOptions options;
       options.tailing = true;
       if (FLAGS_iterate_upper_bound) {
         state.upper_bound = Key(shard, std::numeric_limits<uint64_t>::max());
-        state.upper_bound_slice = rocksdb::Slice(
+        state.upper_bound_slice = vidardb::Slice(
             (const char*)&state.upper_bound, sizeof(state.upper_bound));
         options.iterate_upper_bound = &state.upper_bound_slice;
       }
@@ -132,13 +132,13 @@ struct Reader {
       state.it.reset(db_->NewIterator(options));
 
       if (FLAGS_cache_only_first) {
-        options.read_tier = rocksdb::ReadTier::kBlockCacheTier;
+        options.read_tier = vidardb::ReadTier::kBlockCacheTier;
         state.it_cacheonly.reset(db_->NewIterator(options));
       }
     }
 
     const uint64_t upto = state.last_written.load();
-    for (rocksdb::Iterator* it : {state.it_cacheonly.get(), state.it.get()}) {
+    for (vidardb::Iterator* it : {state.it_cacheonly.get(), state.it.get()}) {
       if (it == nullptr) {
         continue;
       }
@@ -149,7 +149,7 @@ struct Reader {
       for (uint64_t seq = state.last_read.load() + 1; seq <= upto; ++seq) {
         if (need_seek) {
           Key from(shard, state.last_read.load() + 1);
-          it->Seek(rocksdb::Slice((const char*)&from, sizeof(from)));
+          it->Seek(vidardb::Slice((const char*)&from, sizeof(from)));
           need_seek = false;
         } else {
           it->Next();
@@ -192,7 +192,7 @@ struct Reader {
  private:
   char pad1[128] __attribute__((__unused__));
   std::vector<ShardState>* shard_states_;
-  rocksdb::DB* db_;
+  vidardb::DB* db_;
   std::thread thread_;
   sem_t sem_;
   std::mutex queue_mutex_;
@@ -203,7 +203,7 @@ struct Reader {
 };
 
 struct Writer {
-  explicit Writer(std::vector<ShardState>* shard_states, rocksdb::DB* db)
+  explicit Writer(std::vector<ShardState>* shard_states, vidardb::DB* db)
       : shard_states_(shard_states), db_(db) {}
 
   void start() { thread_ = std::thread(&Writer::run, this); }
@@ -243,10 +243,10 @@ struct Writer {
         uint64_t seqno = state.last_written.load() + 1;
         Key key(shard, seqno);
         // fprintf(stderr, "Writing (%ld, %ld)\n", shard, seqno);
-        rocksdb::Status status =
-            db_->Put(rocksdb::WriteOptions(),
-                     rocksdb::Slice((const char*)&key, sizeof(key)),
-                     rocksdb::Slice(value));
+        vidardb::Status status =
+            db_->Put(vidardb::WriteOptions(),
+                     vidardb::Slice((const char*)&key, sizeof(key)),
+                     vidardb::Slice(value));
         assert(status.ok());
         state.last_written.store(seqno);
         state.reader->onWrite(shard);
@@ -262,13 +262,13 @@ struct Writer {
  private:
   char pad1[128] __attribute__((__unused__));
   std::vector<ShardState>* shard_states_;
-  rocksdb::DB* db_;
+  vidardb::DB* db_;
   std::thread thread_;
   char pad2[128] __attribute__((__unused__));
 };
 
 struct StatsThread {
-  explicit StatsThread(rocksdb::DB* db)
+  explicit StatsThread(vidardb::DB* db)
       : db_(db), thread_(&StatsThread::run, this) {}
 
   void run() {
@@ -310,7 +310,7 @@ struct StatsThread {
   }
 
  private:
-  rocksdb::DB* db_;
+  vidardb::DB* db_;
   std::mutex cvm_;
   std::condition_variable cv_;
   std::thread thread_;
@@ -321,29 +321,29 @@ int main(int argc, char** argv) {
   GFLAGS::ParseCommandLineFlags(&argc, &argv, true);
 
   std::mt19937 rng{std::random_device()()};
-  rocksdb::Status status;
-  std::string path = rocksdb::test::TmpDir() + "/forward_iterator_test";
+  vidardb::Status status;
+  std::string path = vidardb::test::TmpDir() + "/forward_iterator_test";
   fprintf(stderr, "db path is %s\n", path.c_str());
-  rocksdb::Options options;
+  vidardb::Options options;
   options.create_if_missing = true;
-  options.compression = rocksdb::CompressionType::kNoCompression;
-  options.compaction_style = rocksdb::CompactionStyle::kCompactionStyleNone;
+  options.compression = vidardb::CompressionType::kNoCompression;
+  options.compaction_style = vidardb::CompactionStyle::kCompactionStyleNone;
   options.level0_slowdown_writes_trigger = 99999;
   options.level0_stop_writes_trigger = 99999;
   options.allow_os_buffer = false;
   options.write_buffer_size = FLAGS_memtable_size;
-  rocksdb::BlockBasedTableOptions table_options;
-  table_options.block_cache = rocksdb::NewLRUCache(FLAGS_block_cache_size);
+  vidardb::BlockBasedTableOptions table_options;
+  table_options.block_cache = vidardb::NewLRUCache(FLAGS_block_cache_size);
   table_options.block_size = FLAGS_block_size;
   options.table_factory.reset(
-      rocksdb::NewBlockBasedTableFactory(table_options));
+      vidardb::NewBlockBasedTableFactory(table_options));
 
-  status = rocksdb::DestroyDB(path, options);
+  status = vidardb::DestroyDB(path, options);
   assert(status.ok());
-  rocksdb::DB* db_raw;
-  status = rocksdb::DB::Open(options, path, &db_raw);
+  vidardb::DB* db_raw;
+  status = vidardb::DB::Open(options, path, &db_raw);
   assert(status.ok());
-  std::unique_ptr<rocksdb::DB> db(db_raw);
+  std::unique_ptr<vidardb::DB> db(db_raw);
 
   std::vector<ShardState> shard_states(FLAGS_shards + 1);
   std::deque<Reader> readers;
@@ -371,4 +371,4 @@ int main(int argc, char** argv) {
   writers.clear();
   readers.clear();
 }
-#endif  // !defined(GFLAGS) || defined(ROCKSDB_LITE)
+#endif  // !defined(GFLAGS) || defined(VIDARDB_LITE)

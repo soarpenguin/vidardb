@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include "util/options_parser.h"
 
@@ -13,29 +13,29 @@
 #include <utility>
 #include <vector>
 
-#include "rocksdb/convenience.h"
-#include "rocksdb/db.h"
+#include "vidardb/convenience.h"
+#include "vidardb/db.h"
 #include "util/options_helper.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 static const std::string option_file_header =
-    "# This is a RocksDB option file.\n"
+    "# This is a VidarDB option file.\n"
     "#\n"
     "# For detailed file format spec, please refer to the example file\n"
-    "# in examples/rocksdb_option_file_example.ini\n"
+    "# in examples/vidardb_option_file_example.ini\n"
     "#\n"
     "\n";
 
-Status PersistRocksDBOptions(const DBOptions& db_opt,
+Status PersistVidarDBOptions(const DBOptions& db_opt,
                              const std::vector<std::string>& cf_names,
                              const std::vector<ColumnFamilyOptions>& cf_opts,
                              const std::string& file_name, Env* env) {
-  TEST_SYNC_POINT("PersistRocksDBOptions:start");
+  TEST_SYNC_POINT("PersistVidarDBOptions:start");
   if (cf_names.size() != cf_opts.size()) {
     return Status::InvalidArgument(
         "cf_names.size() and cf_opts.size() must be the same");
@@ -51,12 +51,12 @@ Status PersistRocksDBOptions(const DBOptions& db_opt,
   writable->Append(option_file_header + "[" +
                    opt_section_titles[kOptionSectionVersion] +
                    "]\n"
-                   "  rocksdb_version=" +
-                   ToString(ROCKSDB_MAJOR) + "." + ToString(ROCKSDB_MINOR) +
-                   "." + ToString(ROCKSDB_PATCH) + "\n");
+                   "  vidardb_version=" +
+                   ToString(VIDARDB_MAJOR) + "." + ToString(VIDARDB_MINOR) +
+                   "." + ToString(VIDARDB_PATCH) + "\n");
   writable->Append("  options_file_version=" +
-                   ToString(ROCKSDB_OPTION_FILE_MAJOR) + "." +
-                   ToString(ROCKSDB_OPTION_FILE_MINOR) + "\n");
+                   ToString(VIDARDB_OPTION_FILE_MAJOR) + "." +
+                   ToString(VIDARDB_OPTION_FILE_MINOR) + "\n");
   writable->Append("\n[" + opt_section_titles[kOptionSectionDBOptions] +
                    "]\n  ");
 
@@ -95,13 +95,13 @@ Status PersistRocksDBOptions(const DBOptions& db_opt,
   writable->Fsync();
   writable->Close();
 
-  return RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
+  return VidarDBOptionsParser::VerifyVidarDBOptionsFromFile(
       db_opt, cf_names, cf_opts, file_name, env);
 }
 
-RocksDBOptionsParser::RocksDBOptionsParser() { Reset(); }
+VidarDBOptionsParser::VidarDBOptionsParser() { Reset(); }
 
-void RocksDBOptionsParser::Reset() {
+void VidarDBOptionsParser::Reset() {
   db_opt_ = DBOptions();
   db_opt_map_.clear();
   cf_names_.clear();
@@ -116,7 +116,7 @@ void RocksDBOptionsParser::Reset() {
   }
 }
 
-bool RocksDBOptionsParser::IsSection(const std::string& line) {
+bool VidarDBOptionsParser::IsSection(const std::string& line) {
   if (line.size() < 2) {
     return false;
   }
@@ -126,7 +126,7 @@ bool RocksDBOptionsParser::IsSection(const std::string& line) {
   return true;
 }
 
-Status RocksDBOptionsParser::ParseSection(OptionSection* section,
+Status VidarDBOptionsParser::ParseSection(OptionSection* section,
                                           std::string* title,
                                           std::string* argument,
                                           const std::string& line,
@@ -168,14 +168,14 @@ Status RocksDBOptionsParser::ParseSection(OptionSection* section,
   return Status::InvalidArgument(std::string("Unknown section ") + line);
 }
 
-Status RocksDBOptionsParser::InvalidArgument(const int line_num,
+Status VidarDBOptionsParser::InvalidArgument(const int line_num,
                                              const std::string& message) {
   return Status::InvalidArgument(
-      "[RocksDBOptionsParser Error] ",
+      "[VidarDBOptionsParser Error] ",
       message + " (at line " + ToString(line_num) + ")");
 }
 
-Status RocksDBOptionsParser::ParseStatement(std::string* name,
+Status VidarDBOptionsParser::ParseStatement(std::string* name,
                                             std::string* value,
                                             const std::string& line,
                                             const int line_num) {
@@ -233,7 +233,7 @@ bool ReadOneLine(std::istringstream* iss, SequentialFile* seq_file,
 }
 }  // namespace
 
-Status RocksDBOptionsParser::Parse(const std::string& file_name, Env* env) {
+Status VidarDBOptionsParser::Parse(const std::string& file_name, Env* env) {
   Reset();
 
   std::unique_ptr<SequentialFile> seq_file;
@@ -288,7 +288,7 @@ Status RocksDBOptionsParser::Parse(const std::string& file_name, Env* env) {
   return ValidityCheck();
 }
 
-Status RocksDBOptionsParser::CheckSection(const OptionSection section,
+Status VidarDBOptionsParser::CheckSection(const OptionSection section,
                                           const std::string& section_arg,
                                           const int line_num) {
   if (section == kOptionSectionDBOptions) {
@@ -335,7 +335,7 @@ Status RocksDBOptionsParser::CheckSection(const OptionSection section,
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::ParseVersionNumber(const std::string& ver_name,
+Status VidarDBOptionsParser::ParseVersionNumber(const std::string& ver_name,
                                                 const std::string& ver_string,
                                                 const int max_count,
                                                 int* version) {
@@ -386,7 +386,7 @@ Status RocksDBOptionsParser::ParseVersionNumber(const std::string& ver_name,
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::EndSection(
+Status VidarDBOptionsParser::EndSection(
     const OptionSection section, const std::string& section_title,
     const std::string& section_arg,
     const std::unordered_map<std::string, std::string>& opt_map) {
@@ -429,7 +429,7 @@ Status RocksDBOptionsParser::EndSection(
     }
   } else if (section == kOptionSectionVersion) {
     for (const auto pair : opt_map) {
-      if (pair.first == "rocksdb_version") {
+      if (pair.first == "vidardb_version") {
         s = ParseVersionNumber(pair.first, pair.second, 3, db_version);
         if (!s.ok()) {
           return s;
@@ -449,20 +449,20 @@ Status RocksDBOptionsParser::EndSection(
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::ValidityCheck() {
+Status VidarDBOptionsParser::ValidityCheck() {
   if (!has_db_options_) {
     return Status::Corruption(
-        "A RocksDB Option file must have a single DBOptions section");
+        "A VidarDB Option file must have a single DBOptions section");
   }
   if (!has_default_cf_options_) {
     return Status::Corruption(
-        "A RocksDB Option file must have a single CFOptions:default section");
+        "A VidarDB Option file must have a single CFOptions:default section");
   }
 
   return Status::OK();
 }
 
-std::string RocksDBOptionsParser::TrimAndRemoveComment(const std::string& line,
+std::string VidarDBOptionsParser::TrimAndRemoveComment(const std::string& line,
                                                        bool trim_only) {
   size_t start = 0;
   size_t end = line.size();
@@ -589,12 +589,12 @@ bool AreEqualOptions(
 
 }  // namespace
 
-Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
+Status VidarDBOptionsParser::VerifyVidarDBOptionsFromFile(
     const DBOptions& db_opt, const std::vector<std::string>& cf_names,
     const std::vector<ColumnFamilyOptions>& cf_opts,
     const std::string& file_name, Env* env,
     OptionsSanityCheckLevel sanity_check_level) {
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   std::unique_ptr<SequentialFile> seq_file;
   Status s = parser.Parse(file_name, env);
   if (!s.ok()) {
@@ -612,11 +612,11 @@ Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
   if (cf_names.size() != parser.cf_names()->size()) {
     if (sanity_check_level >= kSanityLevelLooselyCompatible) {
       return Status::InvalidArgument(
-          "[RocksDBOptionParser Error] The persisted options does not have "
+          "[VidarDBOptionParser Error] The persisted options does not have "
           "the same number of column family names as the db instance.");
     } else if (cf_opts.size() > parser.cf_opts()->size()) {
       return Status::InvalidArgument(
-          "[RocksDBOptionsParser Error]",
+          "[VidarDBOptionsParser Error]",
           "The persisted options file has less number of column family "
           "names than that of the specified one.");
     }
@@ -624,7 +624,7 @@ Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
   for (size_t i = 0; i < cf_names.size(); ++i) {
     if (cf_names[i] != parser.cf_names()->at(i)) {
       return Status::InvalidArgument(
-          "[RocksDBOptionParser Error] The persisted options and the db"
+          "[VidarDBOptionParser Error] The persisted options and the db"
           "instance does not have the same name for column family ",
           ToString(i));
     }
@@ -634,12 +634,12 @@ Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
   if (cf_opts.size() != parser.cf_opts()->size()) {
     if (sanity_check_level >= kSanityLevelLooselyCompatible) {
       return Status::InvalidArgument(
-          "[RocksDBOptionsParser Error]",
+          "[VidarDBOptionsParser Error]",
           "The persisted options does not have the same number of "
           "column families as the db instance.");
     } else if (cf_opts.size() > parser.cf_opts()->size()) {
       return Status::InvalidArgument(
-          "[RocksDBOptionsParser Error]",
+          "[VidarDBOptionsParser Error]",
           "The persisted options file has less number of column families "
           "than that of the specified number.");
     }
@@ -661,7 +661,7 @@ Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::VerifyDBOptions(
+Status VidarDBOptionsParser::VerifyDBOptions(
     const DBOptions& base_opt, const DBOptions& persisted_opt,
     const std::unordered_map<std::string, std::string>* opt_map,
     OptionsSanityCheckLevel sanity_check_level) {
@@ -686,7 +686,7 @@ Status RocksDBOptionsParser::VerifyDBOptions(
             reinterpret_cast<const char*>(&persisted_opt) + pair.second.offset,
             pair.second.type, &persisted_value);
         snprintf(buffer, sizeof(buffer),
-                 "[RocksDBOptionsParser]: "
+                 "[VidarDBOptionsParser]: "
                  "failed the verification on DBOptions::%s --- "
                  "The specified one is %s while the persisted one is %s.\n",
                  pair.first.c_str(), base_value.c_str(),
@@ -698,7 +698,7 @@ Status RocksDBOptionsParser::VerifyDBOptions(
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::VerifyCFOptions(
+Status VidarDBOptionsParser::VerifyCFOptions(
     const ColumnFamilyOptions& base_opt,
     const ColumnFamilyOptions& persisted_opt,
     const std::unordered_map<std::string, std::string>* persisted_opt_map,
@@ -724,7 +724,7 @@ Status RocksDBOptionsParser::VerifyCFOptions(
             reinterpret_cast<const char*>(&persisted_opt) + pair.second.offset,
             pair.second.type, &persisted_value);
         snprintf(buffer, sizeof(buffer),
-                 "[RocksDBOptionsParser]: "
+                 "[VidarDBOptionsParser]: "
                  "failed the verification on ColumnFamilyOptions::%s --- "
                  "The specified one is %s while the persisted one is %s.\n",
                  pair.first.c_str(), base_value.c_str(),
@@ -736,14 +736,14 @@ Status RocksDBOptionsParser::VerifyCFOptions(
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::VerifyBlockBasedTableFactory(
+Status VidarDBOptionsParser::VerifyBlockBasedTableFactory(
     const BlockBasedTableFactory* base_tf,
     const BlockBasedTableFactory* file_tf,
     OptionsSanityCheckLevel sanity_check_level) {
   if ((base_tf != nullptr) != (file_tf != nullptr) &&
       sanity_check_level > kSanityLevelNone) {
     return Status::Corruption(
-        "[RocksDBOptionsParser]: Inconsistent TableFactory class type");
+        "[VidarDBOptionsParser]: Inconsistent TableFactory class type");
   }
   if (base_tf == nullptr) {
     return Status::OK();
@@ -763,7 +763,7 @@ Status RocksDBOptionsParser::VerifyBlockBasedTableFactory(
                            reinterpret_cast<const char*>(&file_opt),
                            pair.second, pair.first, nullptr)) {
         return Status::Corruption(
-            "[RocksDBOptionsParser]: "
+            "[VidarDBOptionsParser]: "
             "failed the verification on BlockBasedTableOptions::",
             pair.first);
       }
@@ -772,14 +772,14 @@ Status RocksDBOptionsParser::VerifyBlockBasedTableFactory(
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::VerifyTableFactory(
+Status VidarDBOptionsParser::VerifyTableFactory(
     const TableFactory* base_tf, const TableFactory* file_tf,
     OptionsSanityCheckLevel sanity_check_level) {
   if (base_tf && file_tf) {
     if (sanity_check_level > kSanityLevelNone &&
         base_tf->Name() != file_tf->Name()) {
       return Status::Corruption(
-          "[RocksDBOptionsParser]: "
+          "[VidarDBOptionsParser]: "
           "failed the verification on TableFactory->Name()");
     }
     auto s = VerifyBlockBasedTableFactory(
@@ -795,6 +795,6 @@ Status RocksDBOptionsParser::VerifyTableFactory(
   }
   return Status::OK();
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

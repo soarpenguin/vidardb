@@ -7,11 +7,11 @@
 * Sherlock Huang  https://github.com/SherlockNoMad
 
 ## Introduction
-RocksDB is a well proven open source key-value persistent store, optimized for fast storage. It provides scalability with number of CPUs and storage IOPS, to support IO-bound, in-memory and write-once workloads, most importantly, to be flexible to allow for innovation.
+VidarDB is a well proven open source key-value persistent store, optimized for fast storage. It provides scalability with number of CPUs and storage IOPS, to support IO-bound, in-memory and write-once workloads, most importantly, to be flexible to allow for innovation.
 
-As Microsoft Bing team we have been continuously pushing hard to improve the scalability, efficiency of platform and eventually benefit Bing end-user satisfaction.  We would like to explore the opportunity to embrace open source, RocksDB here, to use, enhance and customize for our usage, and also contribute back to the RocksDB community. Herein, we are pleased to offer this RocksDB port for Windows platform.
+As Microsoft Bing team we have been continuously pushing hard to improve the scalability, efficiency of platform and eventually benefit Bing end-user satisfaction.  We would like to explore the opportunity to embrace open source, VidarDB here, to use, enhance and customize for our usage, and also contribute back to the VidarDB community. Herein, we are pleased to offer this VidarDB port for Windows platform.
 
-These notes describe some decisions and changes we had to make with regards to porting RocksDB on Windows. We hope this will help both reviewers and users of the Windows port.
+These notes describe some decisions and changes we had to make with regards to porting VidarDB on Windows. We hope this will help both reviewers and users of the Windows port.
 We are open for comments and improvements.
 
 ## OS specifics
@@ -19,7 +19,7 @@ All of the porting, testing and benchmarking was done on Windows Server 2012 R2 
 
 ## Porting goals
 We strive to achieve the following goals:
-* make use of the existing porting interface of RocksDB
+* make use of the existing porting interface of VidarDB
 * make minimum [WY2]modifications within platform independent code.
 * make all unit test pass both in debug and release builds. 
   * Note: latest introduction of SyncPoint seems to disable running db_test in Release.
@@ -43,9 +43,9 @@ We plan to use this port for our business purposes here at Bing and this provide
 
 * Certain headers that are not present and not necessary on Windows were simply `#ifndef OS_WIN` in a few places (`unistd.h`)
 * All posix specific headers were replaced to port/port.h which worked well
-* Replaced `dirent.h` for `port/dirent.h` (very few places) with the implementation of the relevant interfaces within `rocksdb::port` namespace
-* Replaced `sys/time.h` to `port/sys_time.h` (few places) implemented equivalents within `rocksdb::port`
-* `printf %z` specification is not supported on Windows. To imitate existing standards we came up with a string macro `ROCKSDB_PRIszt` which expands to `%z` on posix systems and to Iu on windows.
+* Replaced `dirent.h` for `port/dirent.h` (very few places) with the implementation of the relevant interfaces within `vidardb::port` namespace
+* Replaced `sys/time.h` to `port/sys_time.h` (few places) implemented equivalents within `vidardb::port`
+* `printf %z` specification is not supported on Windows. To imitate existing standards we came up with a string macro `VIDARDB_PRIszt` which expands to `%z` on posix systems and to Iu on windows.
 * in class member initialization were moved to a __ctors in some cases
 * `constexpr` is not supported. We had to replace `std::numeric_limits<>::max/min()` to its C macros for constants. Sometimes we had to make class members `static const` and place a definition within a .cc file.
 * `constexpr` for functions was replaced to a template specialization (1 place)
@@ -63,25 +63,25 @@ We endeavored to make it functionally on par with posix_env. This means we repli
 * Use `SetFileInformationByHandle` to compensate absence of `fallocate`.
 
 ### In detail
-Even though Windows provides its own efficient thread-pool implementation we chose to replicate posix logic using `std::thread` primitives. This allows anyone to quickly detect any changes within the posix source code and replicate them within windows env. This has proven to work very well. At the same time for anyone who wishes to replace the built-in thread-pool can do so using RocksDB stackable environments.
+Even though Windows provides its own efficient thread-pool implementation we chose to replicate posix logic using `std::thread` primitives. This allows anyone to quickly detect any changes within the posix source code and replicate them within windows env. This has proven to work very well. At the same time for anyone who wishes to replace the built-in thread-pool can do so using VidarDB stackable environments.
 
 For disk access we implemented all of the functionality present within the posix_env which includes memory mapped files, random access, rate-limiter support etc.
-The `use_os_buffer` flag on Posix platforms currently denotes disabling read-ahead log via `fadvise` mechanism. Windows does not have `fadvise` system call. What is more, it implements disk cache in a way that differs from Linux greatly. It’s not an uncommon practice on Windows to perform un-buffered disk access to gain control of the memory consumption. We think that in our use case this may also be a good configuration option at the expense of disk throughput. To compensate one may increase the configured in-memory cache size instead. Thus we have chosen  `use_os_buffer=false` to disable OS disk buffering for `WinWritableFile` and `WinRandomAccessFile`. The OS imposes restrictions on the alignment of the disk offsets, buffers used and the amount of data that is read/written when accessing files in un-buffered mode. When the option is true, the classes behave in a standard way. This allows to perform writes and reads in cases when un-buffered access does not make sense such as WAL and MANIFEST.
+The `use_os_buffer` flag on Posix platforms currently denotes disabling read-ahead log via `fadvise` mechanism. Windows does not have `fadvise` system call. What is more, it implements disk cache in a way that differs from Linux greatly. Itï¿½s not an uncommon practice on Windows to perform un-buffered disk access to gain control of the memory consumption. We think that in our use case this may also be a good configuration option at the expense of disk throughput. To compensate one may increase the configured in-memory cache size instead. Thus we have chosen  `use_os_buffer=false` to disable OS disk buffering for `WinWritableFile` and `WinRandomAccessFile`. The OS imposes restrictions on the alignment of the disk offsets, buffers used and the amount of data that is read/written when accessing files in un-buffered mode. When the option is true, the classes behave in a standard way. This allows to perform writes and reads in cases when un-buffered access does not make sense such as WAL and MANIFEST.
 
 We have replaced `pread/pwrite` with `WriteFile/ReadFile` with `OVERLAPPED` structure so we can atomically seek to the position of the disk operation but still perform the operation synchronously. Thus we able to emulate that functionality of `pread/pwrite` reasonably well. The only difference is that the file pointer is not returned to its original position but that hardly matters given the random nature of access.
 
 We used `SetFileInformationByHandle` both to truncate files after writing a full final page to disk and to pre-allocate disk space for faster I/O thus compensating for the absence of `fallocate` although some differences remain. For example, the pre-allocated space is not filled with zeros like on Linux, however, on a positive note, the end of file position is also not modified after pre-allocation.
 
-RocksDB renames, copies and deletes files at will even though they may be opened with another handle at the same time. We had to relax and allow nearly all the concurrent access permissions possible.
+VidarDB renames, copies and deletes files at will even though they may be opened with another handle at the same time. We had to relax and allow nearly all the concurrent access permissions possible.
 
 ## Thread-Local Storage
-Thread-Local storage plays a significant role for RocksDB performance. Rather than creating a separate implementation we chose to create inline wrappers that forward `pthread_specific` calls to Windows `Tls` interfaces within `rocksdb::port` namespace. This leaves the existing meat of the logic in tact and unchanged and just as maintainable.
+Thread-Local storage plays a significant role for VidarDB performance. Rather than creating a separate implementation we chose to create inline wrappers that forward `pthread_specific` calls to Windows `Tls` interfaces within `vidardb::port` namespace. This leaves the existing meat of the logic in tact and unchanged and just as maintainable.
 
-To mitigate the lack of thread local storage cleanup on thread-exit we added a limited amount of windows specific code within the same thread_local.cc file that injects a cleanup callback into a `"__tls"` structure within `".CRT$XLB"` data segment. This approach guarantees that the callback is invoked regardless of whether RocksDB used within an executable, standalone DLL or within another DLL.
+To mitigate the lack of thread local storage cleanup on thread-exit we added a limited amount of windows specific code within the same thread_local.cc file that injects a cleanup callback into a `"__tls"` structure within `".CRT$XLB"` data segment. This approach guarantees that the callback is invoked regardless of whether VidarDB used within an executable, standalone DLL or within another DLL.
 
 ## Jemalloc usage
 
-When RocksDB is used with Jemalloc the latter needs to be initialized before any of the C++ globals or statics. To accomplish that we injected an initialization routine into `".CRT$XCT"` that is automatically invoked by the runtime before initializing static objects. je-uninit is queued to `atexit()`. 
+When VidarDB is used with Jemalloc the latter needs to be initialized before any of the C++ globals or statics. To accomplish that we injected an initialization routine into `".CRT$XCT"` that is automatically invoked by the runtime before initializing static objects. je-uninit is queued to `atexit()`. 
 
 The jemalloc redirecting `new/delete` global operators are used by the linker providing certain conditions are met. See build section in these notes.
 
@@ -100,10 +100,10 @@ All of the benchmarks are run on the same set of machines. Here are the details 
 * Operating System: Windows Server 2012 R2 Datacenter
 * 100 Million keys; each key is of size 10 bytes, each value is of size 800 bytes
 * total database size is ~76GB
-* The performance result is based on RocksDB 3.11.
+* The performance result is based on VidarDB 3.11.
 * The parameters used, unless specified, were exactly the same as published in the GitHub Wiki page. 
 
-### RocksDB on flash storage
+### VidarDB on flash storage
 
 #### Test 1. Bulk Load of keys in Random Order
 
@@ -170,7 +170,7 @@ Version 3.10
 * Readwhilewriting: 24.854 micros/op 40.2k ops/sec; 
 
 
-### RocksDB In Memory 
+### VidarDB In Memory 
 
 #### Test 1. Point Lookup
 

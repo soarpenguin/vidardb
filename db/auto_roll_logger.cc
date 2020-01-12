@@ -6,7 +6,7 @@
 #include "db/auto_roll_logger.h"
 #include "util/mutexlock.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // -- AutoRollLogger
 Status AutoRollLogger::ResetLogger() {
@@ -171,4 +171,4 @@ Status CreateLoggerFromOptions(const std::string& dbname,
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

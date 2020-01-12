@@ -11,9 +11,9 @@
 #include <vector>
 
 #include <stdint.h>
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class BlockBuilder {
  public:
@@ -63,4 +63,4 @@ class BlockBuilder {
   std::string           last_key_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

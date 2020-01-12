@@ -5,11 +5,11 @@
 
 #pragma once
 #include <string>
-#include "rocksdb/env.h"
-#include "rocksdb/types.h"
+#include "vidardb/env.h"
+#include "vidardb/types.h"
 #include "db/dbformat.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class GetContext {
  public:
@@ -70,4 +70,4 @@ class GetContext {
 void replayGetContextLog(const Slice& replay_log, const Slice& user_key,
                          GetContext* get_context);
 
-}  // namespace rocksdb
+}  // namespace vidardb

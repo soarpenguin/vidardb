@@ -9,13 +9,13 @@
 #pragma once
 
 #ifdef OS_WIN
-#  define ROCKSDB_STD_THREADPOOL
+#  define VIDARDB_STD_THREADPOOL
 #endif
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/thread_status_util.h"
 
-#ifdef ROCKSDB_STD_THREADPOOL
+#ifdef VIDARDB_STD_THREADPOOL
 #  include <thread>
 #  include <mutex>
 #  include <condition_variable>
@@ -24,7 +24,7 @@
 #include <atomic>
 #include <vector>
 
-namespace rocksdb {
+namespace vidardb {
 
 class ThreadPool {
  public:
@@ -88,7 +88,7 @@ class ThreadPool {
 
   int total_threads_limit_;
 
-#ifdef ROCKSDB_STD_THREADPOOL
+#ifdef VIDARDB_STD_THREADPOOL
   std::mutex mu_;
   std::condition_variable bgsignal_;
   std::vector<std::thread> bgthreads_;
@@ -107,4 +107,4 @@ class ThreadPool {
   void SetBackgroundThreadsInternal(int num, bool allow_reduce);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

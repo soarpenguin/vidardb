@@ -15,11 +15,11 @@
 #include "db/filename.h"
 #include "db/log_format.h"
 #include "db/version_set.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/table.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/table.h"
+#include "vidardb/write_batch.h"
 #include "util/fault_injection_test_env.h"
 #include "util/logging.h"
 #include "util/mock_env.h"
@@ -28,7 +28,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 static const int kValueSize = 1000;
 static const int kMaxNumValues = 2000;
@@ -81,8 +81,8 @@ class FaultInjectionTest : public testing::Test,
   }
 
   ~FaultInjectionTest() {
-    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-    rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+    vidardb::SyncPoint::GetInstance()->DisableProcessing();
+    vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
   }
 
   bool ChangeOptions() {
@@ -427,14 +427,14 @@ TEST_P(FaultInjectionTest, UninstalledCompaction) {
   OpenDB();
 
   if (!sequential_order_) {
-    rocksdb::SyncPoint::GetInstance()->LoadDependency({
+    vidardb::SyncPoint::GetInstance()->LoadDependency({
         {"FaultInjectionTest::FaultTest:0", "DBImpl::BGWorkCompaction"},
         {"CompactionJob::Run():End", "FaultInjectionTest::FaultTest:1"},
         {"FaultInjectionTest::FaultTest:2",
          "DBImpl::BackgroundCompaction:NonTrivial:AfterRun"},
     });
   }
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   int kNumKeys = 1000;
   Build(WriteOptions(), 0, kNumKeys);
@@ -447,22 +447,22 @@ TEST_P(FaultInjectionTest, UninstalledCompaction) {
   env_->SetFilesystemActive(false);
   TEST_SYNC_POINT("FaultInjectionTest::FaultTest:2");
   CloseDB();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   ResetDBState(kResetDropUnsyncedData);
 
   std::atomic<bool> opened(false);
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::Open:Opened", [&](void* arg) { opened.store(true); });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BGWorkCompaction",
       [&](void* arg) { ASSERT_TRUE(opened.load()); });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   ASSERT_OK(OpenDB());
   ASSERT_OK(Verify(0, kNumKeys, FaultInjectionTest::kValExpectFound));
   WaitCompactionFinish();
   ASSERT_OK(Verify(0, kNumKeys, FaultInjectionTest::kValExpectFound));
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
 }
 
 TEST_P(FaultInjectionTest, ManualLogSyncTest) {
@@ -503,7 +503,7 @@ TEST_P(FaultInjectionTest, ManualLogSyncTest) {
 
 INSTANTIATE_TEST_CASE_P(FaultTest, FaultInjectionTest, ::testing::Bool());
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -20,12 +20,12 @@
 // Only generate field unused warning for padding array, or build under
 // GCC 4.8.1 will fail.
 #ifdef __clang__
-#define ROCKSDB_FIELD_UNUSED __attribute__((__unused__))
+#define VIDARDB_FIELD_UNUSED __attribute__((__unused__))
 #else
-#define ROCKSDB_FIELD_UNUSED
+#define VIDARDB_FIELD_UNUSED
 #endif  // __clang__
 
-namespace rocksdb {
+namespace vidardb {
 
 class Logger;
 
@@ -86,7 +86,7 @@ class ConcurrentArena : public Allocator {
 
  private:
   struct Shard {
-    char padding[40] ROCKSDB_FIELD_UNUSED;
+    char padding[40] VIDARDB_FIELD_UNUSED;
     mutable SpinMutex mutex;
     char* free_begin_;
     std::atomic<size_t> allocated_and_unused_;
@@ -94,13 +94,13 @@ class ConcurrentArena : public Allocator {
     Shard() : free_begin_(nullptr), allocated_and_unused_(0) {}
   };
 
-#ifdef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifdef VIDARDB_SUPPORT_THREAD_LOCAL
   static __thread uint32_t tls_cpuid;
 #else
   enum ZeroFirstEnum : uint32_t { tls_cpuid = 0 };
 #endif
 
-  char padding0[56] ROCKSDB_FIELD_UNUSED;
+  char padding0[56] VIDARDB_FIELD_UNUSED;
 
   size_t shard_block_size_;
 
@@ -114,7 +114,7 @@ class ConcurrentArena : public Allocator {
   std::atomic<size_t> memory_allocated_bytes_;
   std::atomic<size_t> irregular_block_num_;
 
-  char padding1[56] ROCKSDB_FIELD_UNUSED;
+  char padding1[56] VIDARDB_FIELD_UNUSED;
 
   Shard* Repick();
 
@@ -197,4 +197,4 @@ class ConcurrentArena : public Allocator {
   ConcurrentArena& operator=(const ConcurrentArena&) = delete;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

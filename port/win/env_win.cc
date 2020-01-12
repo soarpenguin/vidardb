@@ -18,8 +18,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
+#include "vidardb/env.h"
+#include "vidardb/slice.h"
 
 #include "port/port.h"
 #include "port/dirent.h"
@@ -35,7 +35,7 @@
 #include <Rpc.h>  // For UUID generation
 #include <Windows.h>
 
-namespace rocksdb {
+namespace vidardb {
 
 ThreadStatusUpdater* CreateThreadStatusUpdater() {
   return new ThreadStatusUpdater();
@@ -531,7 +531,7 @@ Status WinEnvIO::GetTestDirectory(std::string* result) {
     CreateDir(output);
   }
 
-  output.append("\\testrocksdb-");
+  output.append("\\testvidardb-");
   output.append(std::to_string(_getpid()));
 
   CreateDir(output);
@@ -552,7 +552,7 @@ Status WinEnvIO::NewLogger(const std::string& fname,
     IOSTATS_TIMER_GUARD(open_nanos);
     hFile = CreateFileA(
       fname.c_str(), GENERIC_WRITE,
-      FILE_SHARE_READ | FILE_SHARE_DELETE,  // In RocksDb log files are
+      FILE_SHARE_READ | FILE_SHARE_DELETE,  // In VidarDB log files are
       // renamed and deleted before
       // they are closed. This enables
       // doing so.
@@ -1022,4 +1022,4 @@ std::string Env::GenerateUniqueId() {
   return result;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

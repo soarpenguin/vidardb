@@ -13,10 +13,10 @@
 #include <memory>
 
 #include "db/log_format.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
+#include "vidardb/slice.h"
+#include "vidardb/status.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class WritableFileWriter;
 
@@ -100,4 +100,4 @@ class Writer {
 };
 
 }  // namespace log
-}  // namespace rocksdb
+}  // namespace vidardb

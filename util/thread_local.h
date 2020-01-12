@@ -16,12 +16,12 @@
 
 #include "port/port.h"
 
-#ifndef ROCKSDB_SUPPORT_THREAD_LOCAL
-#define ROCKSDB_SUPPORT_THREAD_LOCAL \
+#ifndef VIDARDB_SUPPORT_THREAD_LOCAL
+#define VIDARDB_SUPPORT_THREAD_LOCAL \
   !defined(OS_WIN) && !defined(OS_MACOSX) && !defined(IOS_CROSS_COMPILE)
 #endif
 
-namespace rocksdb {
+namespace vidardb {
 
 // Cleanup function that will be called for a stored thread local
 // pointer (if not NULL) when one of the following happens:
@@ -203,7 +203,7 @@ class ThreadLocalPtr {
     // The private mutex.  Developers should always use Mutex() instead of
     // using this variable directly.
     port::Mutex mutex_;
-#ifdef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifdef VIDARDB_SUPPORT_THREAD_LOCAL
     // Thread local storage
     static __thread ThreadData* tls_;
 #endif
@@ -218,4 +218,4 @@ class ThreadLocalPtr {
   const uint32_t id_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -10,12 +10,12 @@
 #include "db/log_reader.h"
 
 #include <stdio.h>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace log {
 
 Reader::Reporter::~Reporter() {
@@ -392,7 +392,7 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result, size_t* drop_size) {
       // Skip zero length record without reporting any drops since
       // such records are produced by the mmap based writing code in
       // env_posix.cc that preallocates file regions.
-      // NOTE: this should never happen in DB written by new RocksDB versions,
+      // NOTE: this should never happen in DB written by new VidarDB versions,
       // since we turn off mmap writes to manifest and log files
       buffer_.clear();
       return kBadRecord;
@@ -428,4 +428,4 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result, size_t* drop_size) {
 }
 
 }  // namespace log
-}  // namespace rocksdb
+}  // namespace vidardb

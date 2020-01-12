@@ -11,17 +11,17 @@
 
 #include <inttypes.h>
 #include <string>
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 #include "memtable/memtable.h"
 #include "db/version_set.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
 #include "table/merger.h"
 #include "util/coding.h"
 #include "util/log_buffer.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class InternalKeyComparator;
 class Mutex;
@@ -423,4 +423,4 @@ uint64_t MemTableList::GetMinLogContainingPrepSection() {
   return min_log;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

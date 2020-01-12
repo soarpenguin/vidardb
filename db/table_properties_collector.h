@@ -6,13 +6,13 @@
 // This file defines a collection of statistics collectors.
 #pragma once
 
-#include "rocksdb/table_properties.h"
+#include "vidardb/table_properties.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace rocksdb {
+namespace vidardb {
 
 struct InternalKeyTablePropertiesNames {
   static const std::string kDeletedKeys;
@@ -50,7 +50,7 @@ class IntTblPropCollectorFactory {
 };
 
 // Collecting the statistics for internal keys. Visible only by internal
-// rocksdb modules.
+// vidardb modules.
 class InternalKeyPropertiesCollector : public IntTblPropCollector {
  public:
   virtual Status InternalAdd(const Slice& key, const Slice& value,
@@ -82,7 +82,7 @@ class InternalKeyPropertiesCollectorFactory
   }
 };
 
-// When rocksdb creates a new table, it will encode all "user keys" into
+// When vidardb creates a new table, it will encode all "user keys" into
 // "internal keys", which contains meta information of a given entry.
 //
 // This class extracts user key from the encoded internal key when Add() is
@@ -134,4 +134,4 @@ class UserKeyTablePropertiesCollectorFactory
   std::shared_ptr<TablePropertiesCollectorFactory> user_collector_factory_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

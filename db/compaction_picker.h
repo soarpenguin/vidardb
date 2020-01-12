@@ -17,13 +17,13 @@
 
 #include "db/compaction.h"
 #include "db/version_set.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/status.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/status.h"
 #include "util/mutable_cf_options.h"
 
 
-namespace rocksdb {
+namespace vidardb {
 
 class LogBuffer;
 class Compaction;
@@ -73,11 +73,11 @@ class CompactionPicker {
 // files.  If it's not possible to conver an invalid input_files
 // into a valid one by adding more files, the function will return a
 // non-ok status with specific reason.
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   Status SanitizeCompactionInputFiles(std::unordered_set<uint64_t>* input_files,
                                       const ColumnFamilyMetaData& cf_meta,
                                       const int output_level) const;
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Free up the files that participated in a compaction
   //
@@ -165,11 +165,11 @@ class CompactionPicker {
 
 // A helper function to SanitizeCompactionInputFiles() that
 // sanitizes "input_files" by adding necessary files.
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   virtual Status SanitizeCompactionInputFilesForAllLevels(
       std::unordered_set<uint64_t>* input_files,
       const ColumnFamilyMetaData& cf_meta, const int output_level) const;
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Keeps track of all compactions that are running on Level0.
   // It is protected by DB mutex
@@ -215,7 +215,7 @@ class LevelCompactionPicker : public CompactionPicker {
                                                 int* level, int* output_level);
 };
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 class UniversalCompactionPicker : public CompactionPicker {
  public:
   UniversalCompactionPicker(const ImmutableCFOptions& ioptions,
@@ -341,7 +341,7 @@ class NullCompactionPicker : public CompactionPicker {
     return false;
   }
 };
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 CompressionType GetCompressionType(const ImmutableCFOptions& ioptions,
                                    const VersionStorageInfo* vstorage,
@@ -349,4 +349,4 @@ CompressionType GetCompressionType(const ImmutableCFOptions& ioptions,
                                    int level, int base_level,
                                    const bool enable_compression = true);
 
-}  // namespace rocksdb
+}  // namespace vidardb

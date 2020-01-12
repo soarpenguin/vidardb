@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include <algorithm>
 #include <map>
@@ -14,16 +14,16 @@
 #include "db/column_family.h"
 #include "db/version_set.h"
 #include "db/writebuffer.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/options.h"
 #include "table/mock_table.h"
 #include "util/file_reader_writer.h"
 #include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
@@ -490,7 +490,7 @@ TEST_F(CompactionJobTest, CorruptionAfterDeletion) {
   RunCompaction({files}, expected_results);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -502,8 +502,8 @@ int main(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   fprintf(stderr,
-          "SKIPPED as CompactionJobStats is not supported in ROCKSDB_LITE\n");
+          "SKIPPED as CompactionJobStats is not supported in VIDARDB_LITE\n");
   return 0;
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

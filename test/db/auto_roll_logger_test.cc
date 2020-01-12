@@ -15,11 +15,11 @@
 #include "port/port.h"
 #include "util/sync_point.h"
 #include "util/testharness.h"
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 #include <sys/stat.h>
 #include <errno.h>
 
-namespace rocksdb {
+namespace vidardb {
 
 class AutoRollLoggerTest : public testing::Test {
  public:
@@ -173,7 +173,7 @@ TEST_F(AutoRollLoggerTest, RollLogFileByTime) {
 
 TEST_F(AutoRollLoggerTest, OpenLogFilesMultipleTimesWithOptionLog_max_size) {
   // If only 'log_max_size' options is specified, then every time
-  // when rocksdb is restarted, a new empty log file will be created.
+  // when vidardb is restarted, a new empty log file will be created.
   InitTestDb();
   // WORKAROUND:
   // avoid complier's complaint of "comparison between signed
@@ -273,7 +273,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
   ASSERT_TRUE(auto_roll_logger);
   std::thread flush_thread;
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       // Need to pin the old logger before beginning the roll, as rolling grabs
       // the mutex, which would prevent us from accessing the old logger.
       {"AutoRollLogger::Flush:PinnedLogger",
@@ -291,7 +291,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
       {"AutoRollLogger::ResetLogger:AfterNewLogger",
        "AutoRollLoggerTest::LogFlushWhileRolling:FlushCallback2"},
   });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "PosixLogger::Flush:BeginCallback", [&](void* arg) {
         TEST_SYNC_POINT(
             "AutoRollLoggerTest::LogFlushWhileRolling:FlushCallbackBegin");
@@ -302,7 +302,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
               "AutoRollLoggerTest::LogFlushWhileRolling:FlushCallback2");
         }
       });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   flush_thread = std::thread([&]() { auto_roll_logger->Flush(); });
   TEST_SYNC_POINT(
@@ -310,7 +310,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
   RollLogFileBySizeTest(auto_roll_logger, options.max_log_file_size,
                         kSampleMessage + ":LogFlushWhileRolling");
   flush_thread.join();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 #endif  // OS_WIN
@@ -454,8 +454,8 @@ TEST_F(AutoRollLoggerTest, LogHeaderTest) {
 }
 
 TEST_F(AutoRollLoggerTest, LogFileExistence) {
-  rocksdb::DB* db;
-  rocksdb::Options options;
+  vidardb::DB* db;
+  vidardb::Options options;
 #ifdef OS_WIN
   // Replace all slashes in the path so windows CompSpec does not
   // become confused
@@ -469,12 +469,12 @@ TEST_F(AutoRollLoggerTest, LogFileExistence) {
   ASSERT_EQ(system(deleteCmd.c_str()), 0);
   options.max_log_file_size = 100 * 1024 * 1024;
   options.create_if_missing = true;
-  ASSERT_OK(rocksdb::DB::Open(options, kTestDir, &db));
+  ASSERT_OK(vidardb::DB::Open(options, kTestDir, &db));
   ASSERT_OK(env->FileExists(kLogFile));
   delete db;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

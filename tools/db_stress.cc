@@ -23,7 +23,7 @@
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
@@ -42,11 +42,11 @@ int main() {
 #include "db/db_impl.h"
 #include "db/version_set.h"
 #include "port/port.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/write_batch.h"
+#include "vidardb/cache.h"
+#include "vidardb/env.h"
+#include "vidardb/slice.h"
+#include "vidardb/statistics.h"
+#include "vidardb/write_batch.h"
 #include "util/coding.h"
 #include "util/compression.h"
 #include "util/crc32c.h"
@@ -118,20 +118,20 @@ DEFINE_bool(verbose, false, "Verbose");
 DEFINE_bool(progress_reports, true,
             "If true, db_stress will report number of finished operations");
 
-DEFINE_uint64(db_write_buffer_size, rocksdb::Options().db_write_buffer_size,
+DEFINE_uint64(db_write_buffer_size, vidardb::Options().db_write_buffer_size,
               "Number of bytes to buffer in all memtables before compacting");
 
 DEFINE_int32(write_buffer_size,
-             static_cast<int32_t>(rocksdb::Options().write_buffer_size),
+             static_cast<int32_t>(vidardb::Options().write_buffer_size),
              "Number of bytes to buffer in memtable before compacting");
 
 DEFINE_int32(max_write_buffer_number,
-             rocksdb::Options().max_write_buffer_number,
+             vidardb::Options().max_write_buffer_number,
              "The number of in-memory memtables. "
              "Each memtable is of size FLAGS_write_buffer_size.");
 
 DEFINE_int32(min_write_buffer_number_to_merge,
-             rocksdb::Options().min_write_buffer_number_to_merge,
+             vidardb::Options().min_write_buffer_number_to_merge,
              "The minimum number of write buffers that will be merged together "
              "before writing to storage. This is cheap because it is an "
              "in-memory merge. If this feature is not enabled, then all these "
@@ -142,7 +142,7 @@ DEFINE_int32(min_write_buffer_number_to_merge,
              " each of these individual write buffers.");
 
 DEFINE_int32(max_write_buffer_number_to_maintain,
-             rocksdb::Options().max_write_buffer_number_to_maintain,
+             vidardb::Options().max_write_buffer_number_to_maintain,
              "The total maximum number of write buffers to maintain in memory "
              "including copies of buffers that have already been flushed. "
              "Unlike max_write_buffer_number, this parameter does not affect "
@@ -155,7 +155,7 @@ DEFINE_int32(max_write_buffer_number_to_maintain,
              "after they are flushed.  If this value is set to -1, "
              "'max_write_buffer_number' will be used.");
 
-DEFINE_int32(open_files, rocksdb::Options().max_open_files,
+DEFINE_int32(open_files, vidardb::Options().max_open_files,
              "Maximum number of files to keep open at the same time "
              "(use default if == 0)");
 
@@ -163,26 +163,26 @@ DEFINE_int64(compressed_cache_size, -1,
              "Number of bytes to use as a cache of compressed data."
              " Negative means use default settings.");
 
-DEFINE_int32(compaction_style, rocksdb::Options().compaction_style, "");
+DEFINE_int32(compaction_style, vidardb::Options().compaction_style, "");
 
 DEFINE_int32(level0_file_num_compaction_trigger,
-             rocksdb::Options().level0_file_num_compaction_trigger,
+             vidardb::Options().level0_file_num_compaction_trigger,
              "Level0 compaction start trigger");
 
 DEFINE_int32(level0_slowdown_writes_trigger,
-             rocksdb::Options().level0_slowdown_writes_trigger,
+             vidardb::Options().level0_slowdown_writes_trigger,
              "Number of files in level-0 that will slow down writes");
 
 DEFINE_int32(level0_stop_writes_trigger,
-             rocksdb::Options().level0_stop_writes_trigger,
+             vidardb::Options().level0_stop_writes_trigger,
              "Number of files in level-0 that will trigger put stop.");
 
 DEFINE_int32(block_size,
-             static_cast<int32_t>(rocksdb::BlockBasedTableOptions().block_size),
+             static_cast<int32_t>(vidardb::BlockBasedTableOptions().block_size),
              "Number of bytes in a block.");
 
 DEFINE_int32(max_background_compactions,
-             rocksdb::Options().max_background_compactions,
+             vidardb::Options().max_background_compactions,
              "The maximum number of concurrent background compactions "
              "that can occur in parallel.");
 
@@ -194,7 +194,7 @@ DEFINE_int32(compaction_thread_pool_variations, 2,
              "Range of background thread pool size variations when adjusted "
              "periodically.");
 
-DEFINE_int32(max_background_flushes, rocksdb::Options().max_background_flushes,
+DEFINE_int32(max_background_flushes, vidardb::Options().max_background_flushes,
              "The maximum number of concurrent background flushes "
              "that can occur in parallel.");
 
@@ -260,11 +260,11 @@ DEFINE_string(db, "", "Use the db with the following name.");
 DEFINE_bool(verify_checksum, false,
             "Verify checksum for every block read from storage");
 
-DEFINE_bool(mmap_read, rocksdb::EnvOptions().use_mmap_reads,
+DEFINE_bool(mmap_read, vidardb::EnvOptions().use_mmap_reads,
             "Allow reads to occur via mmap-ing files");
 
 // Database statistics
-static std::shared_ptr<rocksdb::Statistics> dbstats;
+static std::shared_ptr<vidardb::Statistics> dbstats;
 DEFINE_bool(statistics, false, "Create database statistics");
 
 DEFINE_bool(sync, false, "Sync all writes to disk");
@@ -279,12 +279,12 @@ DEFINE_int32(kill_random_test, 0,
              "probability 1/this");
 static const bool FLAGS_kill_random_test_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_kill_random_test, &ValidateInt32Positive);
-extern int rocksdb_kill_odds;
+extern int vidardb_kill_odds;
 
 DEFINE_string(kill_prefix_blacklist, "",
               "If non-empty, kill points with prefix in the list given will be"
               " skipped. Items are comma-separated.");
-extern std::vector<std::string> rocksdb_kill_prefix_blacklist;
+extern std::vector<std::string> vidardb_kill_prefix_blacklist;
 
 DEFINE_bool(disable_wal, false, "If true, do not write WAL for write.");
 
@@ -350,28 +350,28 @@ static const bool FLAGS_num_iterations_dummy __attribute__((unused)) =
     RegisterFlagValidator(&FLAGS_num_iterations, &ValidateUint32Range);
 
 namespace {
-enum rocksdb::CompressionType StringToCompressionType(const char* ctype) {
+enum vidardb::CompressionType StringToCompressionType(const char* ctype) {
   assert(ctype);
 
   if (!strcasecmp(ctype, "none"))
-    return rocksdb::kNoCompression;
+    return vidardb::kNoCompression;
   else if (!strcasecmp(ctype, "snappy"))
-    return rocksdb::kSnappyCompression;
+    return vidardb::kSnappyCompression;
   else if (!strcasecmp(ctype, "zlib"))
-    return rocksdb::kZlibCompression;
+    return vidardb::kZlibCompression;
   else if (!strcasecmp(ctype, "bzip2"))
-    return rocksdb::kBZip2Compression;
+    return vidardb::kBZip2Compression;
   else if (!strcasecmp(ctype, "lz4"))
-    return rocksdb::kLZ4Compression;
+    return vidardb::kLZ4Compression;
   else if (!strcasecmp(ctype, "lz4hc"))
-    return rocksdb::kLZ4HCCompression;
+    return vidardb::kLZ4HCCompression;
   else if (!strcasecmp(ctype, "xpress"))
-    return rocksdb::kXpressCompression;
+    return vidardb::kXpressCompression;
   else if (!strcasecmp(ctype, "zstd"))
-    return rocksdb::kZSTDNotFinalCompression;
+    return vidardb::kZSTDNotFinalCompression;
 
   fprintf(stdout, "Cannot parse compression type '%s'\n", ctype);
-  return rocksdb::kSnappyCompression; //default value
+  return vidardb::kSnappyCompression; //default value
 }
 
 std::vector<std::string> SplitString(std::string src) {
@@ -392,12 +392,12 @@ std::vector<std::string> SplitString(std::string src) {
 
 DEFINE_string(compression_type, "snappy",
               "Algorithm to use to compress the database");
-static enum rocksdb::CompressionType FLAGS_compression_type_e =
-    rocksdb::kSnappyCompression;
+static enum vidardb::CompressionType FLAGS_compression_type_e =
+    vidardb::kSnappyCompression;
 
 DEFINE_string(hdfs, "", "Name of hdfs environment");
 // posix or hdfs environment
-static rocksdb::Env* FLAGS_env = rocksdb::Env::Default();
+static vidardb::Env* FLAGS_env = vidardb::Env::Default();
 
 DEFINE_uint64(ops_per_thread, 1200000, "Number of operations per thread.");
 static const bool FLAGS_ops_per_thread_dummy __attribute__((unused)) =
@@ -450,7 +450,7 @@ DEFINE_bool(use_merge, false, "On true, replaces all writes with a Merge "
             "that behaves like a Put");
 
 
-namespace rocksdb {
+namespace vidardb {
 
 // convert long to a big-endian slice key
 static std::string Key(int64_t val) {
@@ -625,7 +625,7 @@ class Stats {
             "", bytes_mb, rate, (100*writes_)/done_, done_);
     fprintf(stdout, "%-12s: Wrote %ld times\n", "", writes_);
     fprintf(stdout, "%-12s: Deleted %ld times\n", "", deletes_);
-    fprintf(stdout, "%-12s: Single deleted %" ROCKSDB_PRIszt " times\n", "",
+    fprintf(stdout, "%-12s: Single deleted %" VIDARDB_PRIszt " times\n", "",
            single_deletes_);
     fprintf(stdout, "%-12s: %ld read and %ld found the key\n", "",
             gets_, founds_);
@@ -879,7 +879,7 @@ class DbStressListener : public EventListener {
       db_paths_(db_paths),
       rand_(301) {}
   virtual ~DbStressListener() {}
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   virtual void OnFlushCompleted(
       DB* db, const FlushJobInfo& info) override {
     assert(db);
@@ -971,7 +971,7 @@ class DbStressListener : public EventListener {
     }
 #endif  // !NDEBUG
   }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
  private:
   std::string db_name_;
@@ -1594,12 +1594,12 @@ class StressTest {
         }
       }
 
-#ifndef ROCKSDB_LITE  // Lite does not support GetColumnFamilyMetaData
+#ifndef VIDARDB_LITE  // Lite does not support GetColumnFamilyMetaData
       if (FLAGS_compact_files_one_in > 0 &&
           thread->rand.Uniform(FLAGS_compact_files_one_in) == 0) {
         auto* random_cf =
             column_families_[thread->rand.Next() % FLAGS_column_families];
-        rocksdb::ColumnFamilyMetaData cf_meta_data;
+        vidardb::ColumnFamilyMetaData cf_meta_data;
         db_->GetColumnFamilyMetaData(random_cf, &cf_meta_data);
 
         // Randomly compact up to three consecutive files from a level
@@ -1644,7 +1644,7 @@ class StressTest {
           }
         }
       }
-#endif                // !ROCKSDB_LITE
+#endif                // !VIDARDB_LITE
 
       long rand_key = thread->rand.Next() % max_key;
       int rand_column_family = thread->rand.Next() % FLAGS_column_families;
@@ -1910,7 +1910,7 @@ class StressTest {
     if (!FLAGS_verbose) {
       return;
     }
-    fprintf(stdout, "[CF %d] %" PRIi64 " == > (%" ROCKSDB_PRIszt ") ", cf, key, sz);
+    fprintf(stdout, "[CF %d] %" PRIi64 " == > (%" VIDARDB_PRIszt ") ", cf, key, sz);
     for (size_t i = 0; i < sz; i++) {
       fprintf(stdout, "%X", value[i]);
     }
@@ -1929,7 +1929,7 @@ class StressTest {
   }
 
   void PrintEnv() const {
-    fprintf(stdout, "RocksDB version           : %d.%d\n", kMajorVersion,
+    fprintf(stdout, "VidarDB version           : %d.%d\n", kMajorVersion,
             kMinorVersion);
     fprintf(stdout, "Column families           : %d\n", FLAGS_column_families);
     if (!FLAGS_test_batches_snapshots) {
@@ -1985,10 +1985,10 @@ class StressTest {
 
     fprintf(stdout, "Memtablerep               : %s\n", memtablerep);
 
-    fprintf(stdout, "Test kill odd             : %d\n", rocksdb_kill_odds);
-    if (!rocksdb_kill_prefix_blacklist.empty()) {
+    fprintf(stdout, "Test kill odd             : %d\n", vidardb_kill_odds);
+    if (!vidardb_kill_prefix_blacklist.empty()) {
       fprintf(stdout, "Skipping kill points prefixes:\n");
-      for (auto& p : rocksdb_kill_prefix_blacklist) {
+      for (auto& p : vidardb_kill_prefix_blacklist) {
         fprintf(stdout, "  %s\n", p.c_str());
       }
     }
@@ -2013,7 +2013,7 @@ class StressTest {
     options_.max_background_compactions = FLAGS_max_background_compactions;
     options_.max_background_flushes = FLAGS_max_background_flushes;
     options_.compaction_style =
-        static_cast<rocksdb::CompactionStyle>(FLAGS_compaction_style);
+        static_cast<vidardb::CompactionStyle>(FLAGS_compaction_style);
     options_.max_open_files = FLAGS_open_files;
     options_.statistics = dbstats;
     options_.env = FLAGS_env;
@@ -2056,7 +2056,7 @@ class StressTest {
         break;
       default:
         fprintf(stderr,
-                "RocksdbLite only supports skip list mem table. Skip "
+                "VidarDBLite only supports skip list mem table. Skip "
                 "--rep_factory\n");
     }
 
@@ -2140,7 +2140,7 @@ class StressTest {
       assert(!s.ok() || column_families_.size() ==
                             static_cast<size_t>(FLAGS_column_families));
     } else {
-      fprintf(stderr, "TTL is not supported in RocksDBLite\n");
+      fprintf(stderr, "TTL is not supported in VidarDBLite\n");
       exit(1);
     }
     if (!s.ok()) {
@@ -2185,7 +2185,7 @@ class StressTest {
   std::vector<std::string> options_index_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   SetUsageMessage(std::string("\nUSAGE:\n") + std::string(argv[0]) +
@@ -2193,7 +2193,7 @@ int main(int argc, char** argv) {
   ParseCommandLineFlags(&argc, &argv, true);
 
   if (FLAGS_statistics) {
-    dbstats = rocksdb::CreateDBStatistics();
+    dbstats = vidardb::CreateDBStatistics();
   }
   FLAGS_compression_type_e =
     StringToCompressionType(FLAGS_compression_type.c_str());
@@ -2237,15 +2237,15 @@ int main(int argc, char** argv) {
   // Choose a location for the test database if none given with --db=<path>
   if (FLAGS_db.empty()) {
       std::string default_db_path;
-      rocksdb::Env::Default()->GetTestDirectory(&default_db_path);
+      vidardb::Env::Default()->GetTestDirectory(&default_db_path);
       default_db_path += "/dbstress";
       FLAGS_db = default_db_path;
   }
 
-  rocksdb_kill_odds = FLAGS_kill_random_test;
-  rocksdb_kill_prefix_blacklist = SplitString(FLAGS_kill_prefix_blacklist);
+  vidardb_kill_odds = FLAGS_kill_random_test;
+  vidardb_kill_prefix_blacklist = SplitString(FLAGS_kill_prefix_blacklist);
 
-  rocksdb::StressTest stress;
+  vidardb::StressTest stress;
   if (stress.Run()) {
     return 0;
   } else {

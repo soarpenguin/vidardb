@@ -16,10 +16,10 @@
 #include <vector>
 
 #include "db/filename.h"
-#include "rocksdb/options.h"
-#include "rocksdb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/env.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 void DumpDBFileSummary(const DBOptions& options, const std::string& dbname) {
   if (options.info_log == nullptr) {
@@ -124,4 +124,4 @@ void DumpDBFileSummary(const DBOptions& options, const std::string& dbname) {
   Header(options.info_log, "Write Ahead Log file in %s: %s\n",
          options.wal_dir.c_str(), wal_info.c_str());
 }
-}  // namespace rocksdb
+}  // namespace vidardb

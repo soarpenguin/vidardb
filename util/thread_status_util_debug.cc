@@ -5,11 +5,11 @@
 
 #include <atomic>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/thread_status_updater.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #ifndef NDEBUG
 // the delay for debugging purpose.
@@ -29,4 +29,4 @@ void ThreadStatusUtil::TEST_StateDelay(const ThreadStatus::StateType state) {
 
 #endif  // !NDEBUG
 
-}  // namespace rocksdb
+}  // namespace vidardb

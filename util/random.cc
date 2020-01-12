@@ -14,13 +14,13 @@
 #include "port/likely.h"
 #include "util/thread_local.h"
 
-#ifdef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifdef VIDARDB_SUPPORT_THREAD_LOCAL
 #define STORAGE_DECL static __thread
 #else
 #define STORAGE_DECL static
 #endif
 
-namespace rocksdb {
+namespace vidardb {
 
 Random* Random::GetTLSInstance() {
   STORAGE_DECL Random* tls_instance;
@@ -35,4 +35,4 @@ Random* Random::GetTLSInstance() {
   return rv;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

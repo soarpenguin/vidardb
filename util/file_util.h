@@ -6,12 +6,12 @@
 #pragma once
 #include <string>
 
-#include "rocksdb/status.h"
-#include "rocksdb/types.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
+#include "vidardb/status.h"
+#include "vidardb/types.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 extern Status CopyFile(Env* env, const std::string& source,
                        const std::string& destination, uint64_t size = 0);
@@ -22,4 +22,4 @@ extern Status CreateFile(Env* env, const std::string& destination,
 extern Status DeleteSSTFile(const DBOptions* db_options,
                             const std::string& fname, uint32_t path_id);
 
-}  // namespace rocksdb
+}  // namespace vidardb

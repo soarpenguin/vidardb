@@ -13,9 +13,9 @@
 #include <cstdint>
 
 #include "port/port.h"
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
-namespace rocksdb {
+namespace vidardb {
 // An entry is a variable length heap-allocated structure.
 // Entries are referenced by cache and/or by any external entity.
 // The cache keeps all its entries in table. Some elements
@@ -68,4 +68,4 @@ struct LRUHandle {
   }
 };
 
-}  // end namespace rocksdb
+}  // end namespace vidardb

@@ -18,7 +18,7 @@
 #include "util/histogram.h"
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 HistogramBucketMapper::HistogramBucketMapper()
     :

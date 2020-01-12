@@ -15,7 +15,7 @@
 #include "db/column_family.h"
 #include "db/log_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTable;
 
@@ -120,4 +120,4 @@ struct JobContext {
   }
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

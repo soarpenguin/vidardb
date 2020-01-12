@@ -19,12 +19,12 @@
 #include <fcntl.h>
 #include <atomic>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
 #include "port/sys_time.h"
 #include "util/iostats_context_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace port {
 
@@ -157,4 +157,4 @@ size_t WinLogger::GetLogFileSize() const { return log_size_; }
 
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

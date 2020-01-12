@@ -8,9 +8,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Prints logs to stderr for faster debugging
 class StderrLogger : public Logger {
@@ -28,4 +28,4 @@ class StderrLogger : public Logger {
   }
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -5,13 +5,13 @@
 
 #pragma once
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 #include "db/db_impl.h"
 #include <vector>
 #include <string>
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBImplReadOnly : public DBImpl {
  public:
@@ -60,7 +60,7 @@ class DBImplReadOnly : public DBImpl {
     return Status::NotSupported("Not supported operation in read only mode.");
   }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   virtual Status DisableFileDeletions() override {
     return Status::NotSupported("Not supported operation in read only mode.");
   }
@@ -73,7 +73,7 @@ class DBImplReadOnly : public DBImpl {
                               bool flush_memtable = true) override {
     return Status::NotSupported("Not supported operation in read only mode.");
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   using DBImpl::Flush;
   virtual Status Flush(const FlushOptions& options,
@@ -95,4 +95,4 @@ class DBImplReadOnly : public DBImpl {
 };
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
