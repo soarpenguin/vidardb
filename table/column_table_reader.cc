@@ -989,7 +989,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
       sub_key_bs.reserve(num_entries_);
     }
 
-    std::string start_sub_key; // track start sub key
+    std::string start_sub_key;  // track start sub key
     SequenceNumber sequence_num = range.SequenceNum();
     // Range query one by one to improve performance
     for (size_t i = 0u; i < columns_.size(); i++) {
@@ -1020,21 +1020,31 @@ class ColumnTable::ColumnIterator : public InternalIterator {
               start_sub_key = iter->value().ToString();
             }
 
-            sub_key_bs.push_back(true);
             std::string user_key(iter->key().data(), iter->key().size() - 8);
             SeqTypeVal stv(parsed_key.sequence, parsed_key.type, "");
 
             auto it = res.end();
             it = res.emplace_hint(it, std::move(user_key), std::move(stv));
+            if (it->second.seq_ > parsed_key.sequence) {
+              // already exists the same user key, which overloads the current
+              sub_key_bs.push_back(false);
+              continue;
+            }
+
+            // two cases:
+            // 1. already exists the same user key, invalidate the old one
+            // 2. // same seq, the current one
+            sub_key_bs.push_back(true);
             if (it->second.seq_ < parsed_key.sequence) {
+              // already exists the same user key, invalidate the old one
               it->second.seq_ = parsed_key.sequence;
               it->second.type_ = parsed_key.type;
               it->second.val_ = "";
             }
 
-            user_vals.emplace_back(it);
+            user_vals.push_back(it);
             if (CompressResultMap(&res, read_options)) {
-              break; // Reach the batch capacity
+              break;  // Reach the batch capacity
             }
           } else {
             sub_key_bs.push_back(false);
@@ -1053,13 +1063,11 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             continue;
           }
 
-          auto it = user_vals[user_val_idx];
+          auto it = user_vals[user_val_idx++];
           it->second.val_.append(iter->value().ToString());
           if (i + 1 < columns_.size()) {
             it->second.val_.append(1, delim_);
           }
-
-          user_val_idx++;
         }
       }
     }
