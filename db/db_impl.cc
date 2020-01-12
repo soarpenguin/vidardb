@@ -3722,9 +3722,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
   // Update the next range query
   if (meta->current_limit_key) {
-    if (meta->current_limit_key != &limit_lookup_key) {
-      delete static_cast<LookupKey*>(meta->current_limit_key);
-    }
+    delete static_cast<LookupKey*>(meta->current_limit_key);
     meta->current_limit_key = nullptr;
   }
   size_t map_size = map_res.size();

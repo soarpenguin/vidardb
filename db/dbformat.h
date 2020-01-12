@@ -361,7 +361,7 @@ struct SeqTypeVal {
 // Return true if the map size has reached the capacity, else false.
 inline bool CompressResultMap(std::map<std::string, SeqTypeVal>* res,
                               const ReadOptions& read_options) {
-  if (read_options.batch_capacity <= 0) { // infinite
+  if (read_options.batch_capacity <= 0) {  // infinite
     return false;
   }
 
