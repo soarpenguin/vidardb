@@ -550,6 +550,7 @@ bool DBIter::FindValueForCurrentKeyUsingSeek() {
   }
 
   assert(false);
+  return false;
 }
 
 // Used in Next to change directions

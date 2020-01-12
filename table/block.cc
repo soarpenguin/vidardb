@@ -261,10 +261,10 @@ void ColumnBlockIter::Seek(const Slice& target) {
   }
 
   Slice key = key_.GetKey();
-  uint64_t restart_pos;
+  uint64_t restart_pos = 0;
   GetFixed64BigEndian(&key, &restart_pos);
 
-  uint64_t target_pos;
+  uint64_t target_pos = 0;
   GetFixed64BigEndian(&target, &target_pos);
 
   uint64_t step = target_pos - restart_pos;
