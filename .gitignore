@@ -5,10 +5,10 @@
 .settings/
 *.d
 *.o
+*.a
 shared-objects
 make_config.mk
 librocksdb.so
 librocksdb.so.4
 librocksdb.so.4.9
 librocksdb.so.4.9.0
-librocksdb.a
