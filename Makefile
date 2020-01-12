@@ -735,7 +735,7 @@ unity.a: unity.o
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ unity.o
 
 # try compiling db_test with unity
-unity_test: db/db_test.o db/db_test_util.o $(TESTHARNESS) unity.a
+unity_test: test/db/db_test.o db/db_test_util.o $(TESTHARNESS) unity.a
 	$(AM_LINK)
 	./unity_test
 
@@ -780,7 +780,7 @@ db_bench: tools/db_bench.o $(BENCHTOOLOBJECTS)
 cache_bench: util/cache_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
-memtablerep_bench: db/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
+memtablerep_bench: memtable/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
 db_stress: tools/db_stress.o $(LIBOBJECTS) $(TESTUTIL)
@@ -789,232 +789,232 @@ db_stress: tools/db_stress.o $(LIBOBJECTS) $(TESTUTIL)
 write_stress: tools/write_stress.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
-db_sanity_test: tools/db_sanity_test.o $(LIBOBJECTS) $(TESTUTIL)
+db_sanity_test: test/tools/db_sanity_test.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
 db_repl_stress: tools/db_repl_stress.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
-arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
+arena_test: test/util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-column_family_test: db/column_family_test.o $(LIBOBJECTS) $(TESTHARNESS)
+column_family_test: test/db/column_family_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-table_properties_collector_test: db/table_properties_collector_test.o $(LIBOBJECTS) $(TESTHARNESS)
+table_properties_collector_test: test/db/table_properties_collector_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
+cache_test: test/util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-coding_test: util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS)
+coding_test: test/util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-histogram_test: util/histogram_test.o $(LIBOBJECTS) $(TESTHARNESS)
+histogram_test: test/util/histogram_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-thread_local_test: util/thread_local_test.o $(LIBOBJECTS) $(TESTHARNESS)
+thread_local_test: test/util/thread_local_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-corruption_test: db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
+corruption_test: test/db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-crc32c_test: util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
+crc32c_test: test/util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_test: db/db_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_test: test/db/db_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 db_test2: db/db_test2.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_block_cache_test: db/db_block_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_block_cache_test: test/db/db_block_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_log_iter_test: db/db_log_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_log_iter_test: test/db/db_log_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_compaction_test: db/db_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_compaction_test: test/db/db_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_dynamic_level_test: db/db_dynamic_level_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_dynamic_level_test: test/db/db_dynamic_level_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_iterator_test: db/db_iterator_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_iterator_test: test/db/db_iterator_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_sst_test: db/db_sst_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_sst_test: test/db/db_sst_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_tailing_iter_test: db/db_tailing_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_tailing_iter_test: test/db/db_tailing_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_iter_test: db/db_iter_test.o $(LIBOBJECTS) $(TESTHARNESS)
+db_iter_test: test/db/db_iter_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_universal_compaction_test: db/db_universal_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_universal_compaction_test: test/db/db_universal_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_wal_test: db/db_wal_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_wal_test: test/db/db_wal_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_io_failure_test: db/db_io_failure_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_io_failure_test: test/db/db_io_failure_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_properties_test: db/db_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_properties_test: test/db/db_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_table_properties_test: db/db_table_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_table_properties_test: test/db/db_table_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 log_write_bench: util/log_write_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK) $(PROFILING_FLAGS)
 
-comparator_db_test: db/comparator_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
+comparator_db_test: test/db/comparator_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 table_reader_bench: table/table_reader_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK) $(PROFILING_FLAGS)
 
-perf_context_test: db/perf_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
+perf_context_test: test/db/perf_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
 
-env_mirror_test: utilities/env_mirror_test.o $(LIBOBJECTS) $(TESTHARNESS)
+env_mirror_test: test/utilities/env_mirror_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-env_registry_test: utilities/env_registry_test.o $(LIBOBJECTS) $(TESTHARNESS)
+env_registry_test: test/utilities/env_registry_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-flush_job_test: db/flush_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
+flush_job_test: test/db/flush_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-compaction_iterator_test: db/compaction_iterator_test.o $(LIBOBJECTS) $(TESTHARNESS)
+compaction_iterator_test: test/db/compaction_iterator_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-compaction_job_test: db/compaction_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
+compaction_job_test: test/db/compaction_job_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-compaction_job_stats_test: db/compaction_job_stats_test.o $(LIBOBJECTS) $(TESTHARNESS)
+compaction_job_stats_test: test/db/compaction_job_stats_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-wal_manager_test: db/wal_manager_test.o $(LIBOBJECTS) $(TESTHARNESS)
+wal_manager_test: test/db/wal_manager_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-dbformat_test: db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS)
+dbformat_test: test/db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-env_basic_test: util/env_basic_test.o $(LIBOBJECTS) $(TESTHARNESS)
+env_basic_test: test/util/env_basic_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-env_test: util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
+env_test: test/util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-fault_injection_test: db/fault_injection_test.o $(LIBOBJECTS) $(TESTHARNESS)
+fault_injection_test: test/db/fault_injection_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-delete_scheduler_test: util/delete_scheduler_test.o $(LIBOBJECTS) $(TESTHARNESS)
+delete_scheduler_test: test/util/delete_scheduler_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
+filename_test: test/db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-file_reader_writer_test: util/file_reader_writer_test.o $(LIBOBJECTS) $(TESTHARNESS)
+file_reader_writer_test: test/util/file_reader_writer_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
+log_test: test/db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-table_test: table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
+table_test: test/table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-block_test: table/block_test.o $(LIBOBJECTS) $(TESTHARNESS)
+block_test: test/table/block_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-inlineskiplist_test: db/inlineskiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
+inlineskiplist_test: test/db/inlineskiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-skiplist_test: db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
+skiplist_test: test/db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-version_edit_test: db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS)
+version_edit_test: test/db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-version_set_test: db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
+version_set_test: test/db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-compaction_picker_test: db/compaction_picker_test.o $(LIBOBJECTS) $(TESTHARNESS)
+compaction_picker_test: test/db/compaction_picker_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-version_builder_test: db/version_builder_test.o $(LIBOBJECTS) $(TESTHARNESS)
+version_builder_test: test/db/version_builder_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-file_indexer_test: db/file_indexer_test.o $(LIBOBJECTS) $(TESTHARNESS)
+file_indexer_test: test/db/file_indexer_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
+write_batch_test: test/db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-write_controller_test: db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
+write_controller_test: test/db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-merger_test: table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)
+merger_test: test/table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-options_file_test: db/options_file_test.o $(LIBOBJECTS) $(TESTHARNESS)
+options_file_test: test/db/options_file_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-deletefile_test: db/deletefile_test.o $(LIBOBJECTS) $(TESTHARNESS)
+deletefile_test: test/db/deletefile_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-geodb_test: utilities/geodb/geodb_test.o $(LIBOBJECTS) $(TESTHARNESS)
+geodb_test: test/utilities/geodb/geodb_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 rocksdb_undump: tools/dump/rocksdb_undump.o $(LIBOBJECTS)
 	$(AM_LINK)
 
-listener_test: db/listener_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+listener_test: test/db/listener_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-thread_list_test: util/thread_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
+thread_list_test: test/util/thread_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-compact_files_test: db/compact_files_test.o $(LIBOBJECTS) $(TESTHARNESS)
+compact_files_test: test/db/compact_files_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-options_test: util/options_test.o $(LIBOBJECTS) $(TESTHARNESS)
+options_test: test/util/options_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-options_settable_test: util/options_settable_test.o $(LIBOBJECTS) $(TESTHARNESS)
+options_settable_test: test/util/options_settable_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_bench_tool_test: tools/db_bench_tool_test.o $(BENCHTOOLOBJECTS) $(TESTHARNESS)
+db_bench_tool_test: test/tools/db_bench_tool_test.o $(BENCHTOOLOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-event_logger_test: util/event_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
+event_logger_test: test/util/event_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-mock_env_test : util/mock_env_test.o $(LIBOBJECTS) $(TESTHARNESS)
+mock_env_test : test/util/mock_env_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-manual_compaction_test: db/manual_compaction_test.o $(LIBOBJECTS) $(TESTHARNESS)
+manual_compaction_test: test/db/manual_compaction_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-filelock_test: util/filelock_test.o $(LIBOBJECTS) $(TESTHARNESS)
+filelock_test: test/util/filelock_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-auto_roll_logger_test: db/auto_roll_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
+auto_roll_logger_test: test/db/auto_roll_logger_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-memtable_list_test: db/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
+memtable_list_test: test/memtable/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-heap_test: util/heap_test.o $(GTEST)
+heap_test: test/util/heap_test.o $(GTEST)
 	$(AM_LINK)
 
-repair_test: db/repair_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+repair_test: test/db/repair_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-iostats_context_test: util/iostats_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
+iostats_context_test: test/util/iostats_context_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
 
 #-------------------------------------------------

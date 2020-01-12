@@ -39,7 +39,7 @@
 #include "db/db_impl.h"
 #include "db/dbformat.h"
 #include "db/flush_scheduler.h"
-#include "db/memtable.h"
+#include "memtable/memtable.h"
 #include "db/snapshot_impl.h"
 #include "db/write_batch_internal.h"
 #include "util/coding.h"

@@ -19,7 +19,7 @@
 #include "db/dbformat.h"
 #include "db/column_family.h"
 #include "db/log_writer.h"
-#include "db/memtable_list.h"
+#include "memtable/memtable_list.h"
 #include "db/snapshot_impl.h"
 #include "db/version_edit.h"
 #include "port/port.h"

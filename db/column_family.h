@@ -14,7 +14,7 @@
 #include <vector>
 #include <atomic>
 
-#include "db/memtable_list.h"
+#include "memtable/memtable_list.h"
 #include "db/write_batch_internal.h"
 #include "db/write_controller.h"
 #include "db/table_cache.h"

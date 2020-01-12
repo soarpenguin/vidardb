@@ -27,7 +27,7 @@ int main() {
 #include <vector>
 
 #include "db/dbformat.h"
-#include "db/memtable.h"
+#include "memtable/memtable.h"
 #include "db/writebuffer.h"
 #include "port/port.h"
 #include "port/stack_trace.h"

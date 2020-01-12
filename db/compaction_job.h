@@ -24,7 +24,7 @@
 #include "db/internal_stats.h"
 #include "db/job_context.h"
 #include "db/log_writer.h"
-#include "db/memtable_list.h"
+#include "memtable/memtable_list.h"
 #include "db/version_edit.h"
 #include "db/write_controller.h"
 #include "db/write_thread.h"

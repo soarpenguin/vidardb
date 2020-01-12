@@ -32,7 +32,7 @@
 #include "db/write_controller.h"
 #include "db/write_thread.h"
 #include "db/writebuffer.h"
-#include "memtable_list.h"
+#include "memtable/memtable_list.h"
 #include "port/port.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"

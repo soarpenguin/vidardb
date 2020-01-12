@@ -21,7 +21,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/memtablerep.h"
 #include "rocksdb/immutable_options.h"
-#include "db/memtable_allocator.h"
+#include "memtable/memtable_allocator.h"
 #include "util/concurrent_arena.h"
 #include "util/instrumented_mutex.h"
 #include "util/mutable_cf_options.h"
