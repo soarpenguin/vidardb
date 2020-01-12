@@ -3694,7 +3694,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   meta->limit_sequence = 0;  // include limit key
   LookupKey limit_lookup_key(range.limit, meta->limit_sequence);
   LookupRange lookup_range(&start_lookup_key, &limit_lookup_key);
-  meta->current_limit_key = &limit_lookup_key;
+  meta->current_limit_key = new LookupKey(range.limit, meta->limit_sequence);
 
   // Prepare range query
   std::map<std::string, SeqTypeVal> map_res;

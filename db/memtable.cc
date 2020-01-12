@@ -482,7 +482,11 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
           it->second.val_ = val;
         }
 
-        CompressResultMap(s->res, *(s->read_options));
+        if (CompressResultMap(s->res, *(s->read_options))) {
+          // Reach the batch capacity
+          *(s->status) = Status::OK();
+          return false;
+        }
       }
       *(s->status) = Status::OK();
       return true;

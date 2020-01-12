@@ -982,11 +982,9 @@ class ColumnTable::ColumnIterator : public InternalIterator {
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
                             std::map<std::string, SeqTypeVal>& res) {
-    std::vector<std::string> user_keys;
-    std::vector<SeqTypeVal> user_vals;
-    std::vector<bool> sub_key_bs;
+    std::vector<std::map<std::string, SeqTypeVal>::iterator> user_vals;
+    std::vector<bool> sub_key_bs; // track the valid sub_keys
     if (num_entries_ > 0) {
-      user_keys.reserve(num_entries_);
       user_vals.reserve(num_entries_);
       sub_key_bs.reserve(num_entries_);
     }
@@ -1023,12 +1021,21 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             }
 
             sub_key_bs.push_back(true);
-
             std::string user_key(iter->key().data(), iter->key().size() - 8);
-            user_keys.emplace_back(std::move(user_key));
-
             SeqTypeVal stv(parsed_key.sequence, parsed_key.type, "");
-            user_vals.emplace_back(std::move(stv));
+
+            auto it = res.end();
+            it = res.emplace_hint(it, std::move(user_key), std::move(stv));
+            if (it->second.seq_ < parsed_key.sequence) {
+              it->second.seq_ = parsed_key.sequence;
+              it->second.type_ = parsed_key.type;
+              it->second.val_ = "";
+            }
+
+            user_vals.emplace_back(it);
+            if (CompressResultMap(&res, read_options)) {
+              break; // Reach the batch capacity
+            }
           } else {
             sub_key_bs.push_back(false);
           }
@@ -1046,26 +1053,15 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             continue;
           }
 
-          user_vals[user_val_idx].val_.append(iter->value().ToString());
+          auto it = user_vals[user_val_idx];
+          it->second.val_.append(iter->value().ToString());
           if (i + 1 < columns_.size()) {
-            user_vals[user_val_idx].val_.append(1, delim_);
+            it->second.val_.append(1, delim_);
           }
 
           user_val_idx++;
         }
       }
-    }
-
-    for (size_t i = 0u; i < user_keys.size(); i++) {
-      SeqTypeVal& stv = user_vals[i];
-
-      auto it = res.end();
-      it = res.emplace_hint(it, std::move(user_keys[i]), stv);
-      if (it->second.seq_ < stv.seq_) {
-        it->second = std::move(stv);
-      }
-
-      CompressResultMap(&res, read_options);
     }
 
     return Status();

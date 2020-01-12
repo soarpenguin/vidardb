@@ -909,7 +909,9 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
           it->second.val_ = val;
         }
 
-        CompressResultMap(&res, read_options);
+        if (CompressResultMap(&res, read_options)) {
+          break; // Reach the batch capacity
+        }
       }
     }
 
