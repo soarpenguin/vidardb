@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "db/dbformat.h"
-#include "db/skiplist.h"
+#include "memtable/skiplist.h"
 #include "db/version_edit.h"
 #include "vidardb/db.h"
 #include "vidardb/env.h"

@@ -13,7 +13,7 @@
 #include <thread>
 
 #include "db/db_impl.h"
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "vidardb/db.h"
 #include "vidardb/env.h"
 #include "vidardb/iterator.h"

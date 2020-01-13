@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "port/stack_trace.h"
 #include "vidardb/db.h"
 #include "util/testharness.h"

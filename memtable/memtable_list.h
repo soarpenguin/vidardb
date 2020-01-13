@@ -14,7 +14,7 @@
 #include "db/dbformat.h"
 #include "db/filename.h"
 #include "memtable/memtable.h"
-#include "db/skiplist.h"
+#include "memtable/skiplist.h"
 #include "vidardb/db.h"
 #include "vidardb/iterator.h"
 #include "vidardb/options.h"

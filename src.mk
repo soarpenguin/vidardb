@@ -28,7 +28,6 @@ LIB_SOURCES =                                                   \
   memtable/memtable.cc                                          \
   memtable/memtable_list.cc                                     \
   db/repair.cc                                                  \
-  db/slice.cc                                                   \
   db/snapshot_impl.cc                                           \
   db/table_cache.cc                                             \
   db/table_properties_collector.cc                              \
@@ -151,7 +150,7 @@ TEST_BENCH_SOURCES =                                                         \
   test/db/listener_test.cc                                                   \
   test/db/log_test.cc                                                        \
   test/db/manual_compaction_test.cc                                          \
-  memtable/memtablerep_bench.cc                                              \
+  tools/memtablerep_bench.cc                                              \
   test/db/options_file_test.cc                                               \
   test/db/perf_context_test.cc                                               \
   test/db/skiplist_test.cc                                                   \

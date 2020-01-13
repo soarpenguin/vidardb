@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/inlineskiplist.h"
+#include "memtable/inlineskiplist.h"
 #include <set>
 #include "vidardb/env.h"
 #include "util/concurrent_arena.h"

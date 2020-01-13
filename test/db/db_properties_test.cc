@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <string>
 
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "port/stack_trace.h"
 #include "vidardb/options.h"
 #include "vidardb/perf_context.h"

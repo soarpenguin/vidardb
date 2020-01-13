@@ -7,7 +7,7 @@
 #include <string>
 
 #include "db/db_impl.h"
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "vidardb/options.h"
 #include "vidardb/table.h"
 #include "util/testharness.h"

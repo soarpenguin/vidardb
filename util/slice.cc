@@ -14,6 +14,20 @@
 
 namespace vidardb {
 
+Slice::Slice(const SliceParts& parts, std::string* buf) {
+  size_t length = 0;
+  for (int i = 0; i < parts.num_parts; ++i) {
+    length += parts.parts[i].size();
+  }
+  buf->reserve(length);
+
+  for (int i = 0; i < parts.num_parts; ++i) {
+    buf->append(parts.parts[i].data(), parts.parts[i].size());
+  }
+  data_ = buf->data();
+  size_ = buf->size();
+}
+
 // 2 small internal utility functions, for efficient hex conversions
 // and no need for snprintf, toupper etc...
 // Originally from wdt/util/EncryptionUtils.cpp - for ToString(true)/DecodeHex:

@@ -24,7 +24,7 @@
 #endif
 
 #include "db/db_impl.h"
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/job_context.h"

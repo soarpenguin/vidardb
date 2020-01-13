@@ -735,7 +735,7 @@ unity.a: unity.o
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ unity.o
 
 # try compiling db_test with unity
-unity_test: test/db/db_test.o db/db_test_util.o $(TESTHARNESS) unity.a
+unity_test: test/db/db_test.o test/db/db_test_util.o $(TESTHARNESS) unity.a
 	$(AM_LINK)
 	./unity_test
 
@@ -777,10 +777,10 @@ libvidardb_env_basic_test.a: $(LIBOBJECTS) $(TESTHARNESS)
 db_bench: tools/db_bench.o $(BENCHTOOLOBJECTS)
 	$(AM_LINK)
 
-cache_bench: util/cache_bench.o $(LIBOBJECTS) $(TESTUTIL)
+cache_bench: tools/cache_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
-memtablerep_bench: memtable/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
+memtablerep_bench: tools/memtablerep_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(AM_LINK)
 
 db_stress: tools/db_stress.o $(LIBOBJECTS) $(TESTUTIL)
@@ -822,49 +822,49 @@ corruption_test: test/db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
 crc32c_test: test/util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_test: test/db/db_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_test: test/db/db_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_test2: db/db_test2.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_test2: test/db/db_test2.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_block_cache_test: test/db/db_block_cache_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_block_cache_test: test/db/db_block_cache_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_log_iter_test: test/db/db_log_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_log_iter_test: test/db/db_log_iter_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_compaction_test: test/db/db_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_compaction_test: test/db/db_compaction_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_dynamic_level_test: test/db/db_dynamic_level_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_dynamic_level_test: test/db/db_dynamic_level_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_iterator_test: test/db/db_iterator_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_iterator_test: test/db/db_iterator_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_sst_test: test/db/db_sst_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_sst_test: test/db/db_sst_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_tailing_iter_test: test/db/db_tailing_iter_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_tailing_iter_test: test/db/db_tailing_iter_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 db_iter_test: test/db/db_iter_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_universal_compaction_test: test/db/db_universal_compaction_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_universal_compaction_test: test/db/db_universal_compaction_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_wal_test: test/db/db_wal_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_wal_test: test/db/db_wal_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_io_failure_test: test/db/db_io_failure_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_io_failure_test: test/db/db_io_failure_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_properties_test: test/db/db_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_properties_test: test/db/db_properties_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
-db_table_properties_test: test/db/db_table_properties_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+db_table_properties_test: test/db/db_table_properties_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 log_write_bench: util/log_write_bench.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -972,7 +972,7 @@ geodb_test: test/utilities/geodb/geodb_test.o $(LIBOBJECTS) $(TESTHARNESS)
 vidardb_undump: tools/dump/vidardb_undump.o $(LIBOBJECTS)
 	$(AM_LINK)
 
-listener_test: test/db/listener_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+listener_test: test/db/listener_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 thread_list_test: test/util/thread_list_test.o $(LIBOBJECTS) $(TESTHARNESS)
@@ -1011,7 +1011,7 @@ memtable_list_test: test/memtable/memtable_list_test.o $(LIBOBJECTS) $(TESTHARNE
 heap_test: test/util/heap_test.o $(GTEST)
 	$(AM_LINK)
 
-repair_test: test/db/repair_test.o db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
+repair_test: test/db/repair_test.o test/db/db_test_util.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(AM_LINK)
 
 iostats_context_test: test/util/iostats_context_test.o $(LIBOBJECTS) $(TESTHARNESS)

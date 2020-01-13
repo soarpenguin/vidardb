@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "db/db_impl.h"
-#include "db/db_test_util.h"
+#include "test/db/db_test_util.h"
 #include "vidardb/db.h"
 #include "vidardb/transaction_log.h"
 #include "util/file_util.h"
