@@ -3,11 +3,11 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
@@ -18,8 +18,8 @@ int main() {
 #include <gflags/gflags.h>
 
 #include "db/write_batch_internal.h"
-#include "rocksdb/db.h"
-#include "rocksdb/types.h"
+#include "vidardb/db.h"
+#include "vidardb/types.h"
 #include "util/testutil.h"
 
 // Run a thread to perform Put's.
@@ -28,7 +28,7 @@ int main() {
 // --num_inserts = the num of inserts the first thread should perform.
 // --wal_ttl = the wal ttl for the run.
 
-using namespace rocksdb;
+using namespace vidardb;
 
 using GFLAGS::ParseCommandLineFlags;
 using GFLAGS::SetUsageMessage;
@@ -138,8 +138,8 @@ int main(int argc, const char** argv) {
   if (replThread.no_read < dataPump.no_records) {
     // no. read should be => than inserted.
     fprintf(stderr,
-            "No. of Record's written and read not same\nRead : %" ROCKSDB_PRIszt
-            " Written : %" ROCKSDB_PRIszt "\n",
+            "No. of Record's written and read not same\nRead : %" VIDARDB_PRIszt
+            " Written : %" VIDARDB_PRIszt "\n",
             replThread.no_read, dataPump.no_records);
     exit(1);
   }
@@ -149,10 +149,10 @@ int main(int argc, const char** argv) {
 
 #endif  // GFLAGS
 
-#else  // ROCKSDB_LITE
+#else  // VIDARDB_LITE
 #include <stdio.h>
 int main(int argc, char** argv) {
   fprintf(stderr, "Not supported in lite mode.\n");
   return 1;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

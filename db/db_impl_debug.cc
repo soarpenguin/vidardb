@@ -12,7 +12,7 @@
 #include "db/db_impl.h"
 #include "util/thread_status_updater.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 uint64_t DBImpl::TEST_GetLevel0TotalSize() {
   InstrumentedMutexLock l(&mutex_);
@@ -178,5 +178,5 @@ Status DBImpl::TEST_GetLatestMutableCFOptions(
   return Status::OK();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 #endif  // NDEBUG

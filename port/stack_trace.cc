@@ -5,17 +5,17 @@
 //
 #include "port/stack_trace.h"
 
-#if defined(ROCKSDB_LITE) || !(defined(ROCKSDB_BACKTRACE) || defined(OS_MACOSX)) || \
+#if defined(VIDARDB_LITE) || !(defined(VIDARDB_BACKTRACE) || defined(OS_MACOSX)) || \
     defined(CYGWIN) || defined(OS_FREEBSD)
 
 // noop
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 void InstallStackTraceHandler() {}
 void PrintStack(int first_frames_to_skip) {}
 }  // namespace port
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #else
 
@@ -27,7 +27,7 @@ void PrintStack(int first_frames_to_skip) {}
 #include <unistd.h>
 #include <cxxabi.h>
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 namespace {
@@ -132,6 +132,6 @@ void InstallStackTraceHandler() {
 }
 
 }  // namespace port
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #endif

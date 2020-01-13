@@ -9,7 +9,7 @@
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
@@ -19,9 +19,9 @@ int main() {
 #include <stdio.h>
 #include <gflags/gflags.h>
 
-#include "rocksdb/db.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/env.h"
+#include "vidardb/db.h"
+#include "vidardb/cache.h"
+#include "vidardb/env.h"
 #include "port/port.h"
 #include "util/mutexlock.h"
 #include "util/random.h"
@@ -46,7 +46,7 @@ DEFINE_int32(lookup_percent, 50,
 DEFINE_int32(erase_percent, 10,
              "Ratio of erase to total workload (expressed as a percentage)");
 
-namespace rocksdb {
+namespace vidardb {
 
 class CacheBench;
 namespace {
@@ -147,7 +147,7 @@ class CacheBench {
   }
 
   bool Run() {
-    rocksdb::Env* env = rocksdb::Env::Default();
+    vidardb::Env* env = vidardb::Env::Default();
 
     PrintEnv();
     SharedState shared(this);
@@ -237,7 +237,7 @@ class CacheBench {
   }
 
   void PrintEnv() const {
-    printf("RocksDB version     : %d.%d\n", kMajorVersion, kMinorVersion);
+    printf("VidarDB version     : %d.%d\n", kMajorVersion, kMinorVersion);
     printf("Number of threads   : %d\n", FLAGS_threads);
     printf("Ops per thread      : %" PRIu64 "\n", FLAGS_ops_per_thread);
     printf("Cache size          : %" PRIu64 "\n", FLAGS_cache_size);
@@ -250,7 +250,7 @@ class CacheBench {
     printf("----------------------------\n");
   }
 };
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ParseCommandLineFlags(&argc, &argv, true);
@@ -260,7 +260,7 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  rocksdb::CacheBench bench;
+  vidardb::CacheBench bench;
   if (FLAGS_populate_cache) {
     bench.PopulateCache();
   }

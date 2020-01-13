@@ -8,11 +8,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 #pragma once
 #include <string>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/aligned_buffer.h"
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Statistics;
 class HistogramImpl;
@@ -28,11 +28,11 @@ class SequentialFileReader {
   explicit SequentialFileReader(std::unique_ptr<SequentialFile>&& _file)
       : file_(std::move(_file)) {}
 
-  SequentialFileReader(SequentialFileReader&& o) ROCKSDB_NOEXCEPT {
+  SequentialFileReader(SequentialFileReader&& o) VIDARDB_NOEXCEPT {
     *this = std::move(o);
   }
 
-  SequentialFileReader& operator=(SequentialFileReader&& o) ROCKSDB_NOEXCEPT {
+  SequentialFileReader& operator=(SequentialFileReader&& o) VIDARDB_NOEXCEPT {
     file_ = std::move(o.file_);
     return *this;
   }
@@ -67,11 +67,11 @@ class RandomAccessFileReader {
         hist_type_(hist_type),
         file_read_hist_(file_read_hist) {}
 
-  RandomAccessFileReader(RandomAccessFileReader&& o) ROCKSDB_NOEXCEPT {
+  RandomAccessFileReader(RandomAccessFileReader&& o) VIDARDB_NOEXCEPT {
     *this = std::move(o);
   }
 
-  RandomAccessFileReader& operator=(RandomAccessFileReader&& o) ROCKSDB_NOEXCEPT{
+  RandomAccessFileReader& operator=(RandomAccessFileReader&& o) VIDARDB_NOEXCEPT{
     file_ = std::move(o.file_);
     env_ = std::move(o.env_);
     stats_ = std::move(o.stats_);
@@ -168,4 +168,4 @@ class WritableFileWriter {
 extern Status NewWritableFile(Env* env, const std::string& fname,
                               unique_ptr<WritableFile>* result,
                               const EnvOptions& options);
-}  // namespace rocksdb
+}  // namespace vidardb

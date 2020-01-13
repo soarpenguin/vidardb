@@ -9,7 +9,7 @@
 
 #include "db/column_family.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 void FlushScheduler::ScheduleFlush(ColumnFamilyData* cfd) {
 #ifndef NDEBUG
@@ -78,4 +78,4 @@ void FlushScheduler::Clear() {
   assert(Empty());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

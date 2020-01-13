@@ -9,13 +9,13 @@
 
 #include "db/inlineskiplist.h"
 #include <set>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/concurrent_arena.h"
 #include "util/hash.h"
 #include "util/random.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Our test skip list stores 8-byte unsigned integers
 typedef uint64_t Key;
@@ -467,7 +467,7 @@ TEST_F(InlineSkipTest, ConcurrentInsert1) { RunConcurrentInsert(1); }
 TEST_F(InlineSkipTest, ConcurrentInsert2) { RunConcurrentInsert(2); }
 TEST_F(InlineSkipTest, ConcurrentInsert3) { RunConcurrentInsert(3); }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -11,7 +11,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class VersionBuilderTest : public testing::Test {
  public:
@@ -297,7 +297,7 @@ TEST_F(VersionBuilderTest, EstimatedActiveKeys) {
             (kEntriesPerFile - 2 * kDeletionsPerFile) * kNumFiles);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

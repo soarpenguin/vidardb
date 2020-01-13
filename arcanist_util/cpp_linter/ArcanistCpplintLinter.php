@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Uses google's cpplint.py to check code. RocksDB team forked this file from
+ * Uses google's cpplint.py to check code. VidarDB team forked this file from
  * phabricator's /src/lint/linter/ArcanistCpplintLinter.php, and customized it
  * for its own use.
  *
@@ -43,7 +43,7 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
 
   public function lintPath($path) {
     $bin = $this->getLintPath();
-    $path = $this->rocksdbDir().'/'.$path;
+    $path = $this->vidardbDir().'/'.$path;
 
     $f = new ExecFuture("%C $path", $bin);
 
@@ -81,8 +81,8 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
     return dirname(__FILE__);
   }
 
-  // TODO(kaili) a quick and dirty way to figure out rocksdb's root dir.
-  private function rocksdbDir() {
+  // TODO(kaili) a quick and dirty way to figure out vidardb's root dir.
+  private function vidardbDir() {
     return $this->linterDir()."/../..";
   }
 }

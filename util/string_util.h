@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace rocksdb {
+namespace vidardb {
 
 extern std::vector<std::string> StringSplit(const std::string& arg, char delim);
 
@@ -27,4 +27,4 @@ inline std::string ToString(T value) {
 #endif
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

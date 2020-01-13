@@ -9,12 +9,12 @@
 
 #include "db/dbformat.h"
 #include "port/port.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/table_properties.h"
 #include "table/get_context.h"
 #include "util/coding.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace mock {
 
 namespace {
@@ -139,4 +139,4 @@ void MockTableFactory::AssertLatestFile(
 }
 
 }  // namespace mock
-}  // namespace rocksdb
+}  // namespace vidardb

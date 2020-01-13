@@ -16,9 +16,9 @@
 #include <cstring>
 #include <unordered_map>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/convenience.h"
-#include "rocksdb/memtablerep.h"
+#include "vidardb/cache.h"
+#include "vidardb/convenience.h"
+#include "vidardb/memtablerep.h"
 #include "util/options_helper.h"
 #include "util/options_parser.h"
 #include "util/options_sanity_check.h"
@@ -35,7 +35,7 @@ using GFLAGS::ParseCommandLineFlags;
 DEFINE_bool(enable_print, false, "Print options generated to console.");
 #endif  // GFLAGS
 
-namespace rocksdb {
+namespace vidardb {
 
 // Verify options are settable from options strings.
 // We take the approach that depends on compiler behavior that copy constructor
@@ -43,7 +43,7 @@ namespace rocksdb {
 // As a result, we only run the tests to verify new fields in options are
 // settable through string on limited platforms as it depends on behavior of
 // compilers.
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #ifdef OS_LINUX
 #ifndef __clang__
 
@@ -411,9 +411,9 @@ TEST_F(OptionsSettableTest, ColumnFamilyOptionsAllFieldsSettable) {
 }
 #endif  // !__clang__
 #endif  // OS_LINUX
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -12,13 +12,13 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-namespace rocksdb {
+namespace vidardb {
 
 // A helper function that ensures the table properties returned in
 // `GetPropertiesOfAllTablesTest` is correct.
@@ -243,12 +243,12 @@ TEST_F(DBTablePropertiesTest, GetColumnFamilyNameProperty) {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

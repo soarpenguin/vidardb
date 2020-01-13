@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 
-#include "rocksdb/options.h"
+#include "vidardb/options.h"
 
 #undef min
 #undef max
@@ -50,8 +50,8 @@ typedef SSIZE_T ssize_t;
 // size_t printf formatting named in the manner of C99 standard formatting
 // strings such as PRIu64
 // in fact, we could use that one
-#ifndef ROCKSDB_PRIszt
-#define ROCKSDB_PRIszt "Iu"
+#ifndef VIDARDB_PRIszt
+#define VIDARDB_PRIszt "Iu"
 #endif
 
 #define __attribute__(A)
@@ -66,7 +66,7 @@ typedef SSIZE_T ssize_t;
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
 
-namespace rocksdb {
+namespace vidardb {
 
 #define PREFETCH(addr, rw, locality)
 
@@ -75,7 +75,7 @@ namespace port {
 // VS 15
 #if (defined _MSC_VER) && (_MSC_VER >= 1900)
 
-#define ROCKSDB_NOEXCEPT noexcept
+#define VIDARDB_NOEXCEPT noexcept
 
 // For use at db/file_indexer.h kLevelMaxIndex
 const int kMaxInt32 = std::numeric_limits<int>::max();
@@ -89,7 +89,7 @@ const size_t kMaxSizet = std::numeric_limits<size_t>::max();
 // VS 15 has snprintf
 #define snprintf _snprintf
 
-#define ROCKSDB_NOEXCEPT
+#define VIDARDB_NOEXCEPT
 // std::numeric_limits<size_t>::max() is not constexpr just yet
 // therefore, use the same limits
 
@@ -294,6 +294,6 @@ using port::pthread_setspecific;
 using port::pthread_getspecific;
 using port::truncate;
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_WIN_H_

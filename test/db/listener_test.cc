@@ -9,14 +9,14 @@
 #include "db/filename.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/table.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/perf_context.h"
+#include "vidardb/slice.h"
+#include "vidardb/table.h"
+#include "vidardb/table_properties.h"
 #include "table/block_based_table_factory.h"
 #include "util/hash.h"
 #include "util/logging.h"
@@ -27,9 +27,9 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-namespace rocksdb {
+namespace vidardb {
 
 class EventListenerTest : public DBTestBase {
  public:
@@ -38,16 +38,16 @@ class EventListenerTest : public DBTestBase {
   const size_t k110KB = 110 << 10;
 };
 
-struct TestPropertiesCollector : public rocksdb::TablePropertiesCollector {
-  virtual rocksdb::Status AddUserKey(const rocksdb::Slice& key,
-                                     const rocksdb::Slice& value,
-                                     rocksdb::EntryType type,
-                                     rocksdb::SequenceNumber seq,
+struct TestPropertiesCollector : public vidardb::TablePropertiesCollector {
+  virtual vidardb::Status AddUserKey(const vidardb::Slice& key,
+                                     const vidardb::Slice& value,
+                                     vidardb::EntryType type,
+                                     vidardb::SequenceNumber seq,
                                      uint64_t file_size) override {
     return Status::OK();
   }
-  virtual rocksdb::Status Finish(
-      rocksdb::UserCollectedProperties* properties) override {
+  virtual vidardb::Status Finish(
+      vidardb::UserCollectedProperties* properties) override {
     properties->insert({"0", "1"});
     return Status::OK();
   }
@@ -56,8 +56,8 @@ struct TestPropertiesCollector : public rocksdb::TablePropertiesCollector {
     return "TestTablePropertiesCollector";
   }
 
-  rocksdb::UserCollectedProperties GetReadableProperties() const override {
-    rocksdb::UserCollectedProperties ret;
+  vidardb::UserCollectedProperties GetReadableProperties() const override {
+    vidardb::UserCollectedProperties ret;
     ret["2"] = "3";
     return ret;
   }
@@ -112,9 +112,9 @@ TEST_F(EventListenerTest, OnSingleDBCompactionTest) {
   options.max_bytes_for_level_base = options.target_file_size_base * 2;
   options.max_bytes_for_level_multiplier = 2;
   options.compression = kNoCompression;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   options.enable_thread_tracking = true;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   options.level0_file_num_compaction_trigger = kNumL0Files;
   options.table_properties_collector_factories.push_back(
       std::make_shared<TestPropertiesCollectorFactory>());
@@ -169,7 +169,7 @@ class TestFlushListener : public EventListener {
     ASSERT_GT(info.table_properties.num_data_blocks, 0U);
     ASSERT_GT(info.table_properties.num_entries, 0U);
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
     // Verify the id of the current thread that created this table
     // file matches the id of any active flush or compaction thread.
     uint64_t thread_id = env_->GetThreadID();
@@ -186,7 +186,7 @@ class TestFlushListener : public EventListener {
       }
     }
     ASSERT_TRUE(found_match);
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   }
 
   void OnFlushCompleted(
@@ -225,9 +225,9 @@ class TestFlushListener : public EventListener {
 TEST_F(EventListenerTest, OnSingleDBFlushTest) {
   Options options;
   options.write_buffer_size = k110KB;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   options.enable_thread_tracking = true;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   TestFlushListener* listener = new TestFlushListener(options.env);
   options.listeners.emplace_back(listener);
   std::vector<std::string> cf_names = {
@@ -261,9 +261,9 @@ TEST_F(EventListenerTest, OnSingleDBFlushTest) {
 TEST_F(EventListenerTest, MultiCF) {
   Options options;
   options.write_buffer_size = k110KB;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   options.enable_thread_tracking = true;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   TestFlushListener* listener = new TestFlushListener(options.env);
   options.listeners.emplace_back(listener);
   options.table_properties_collector_factories.push_back(
@@ -295,9 +295,9 @@ TEST_F(EventListenerTest, MultiCF) {
 
 TEST_F(EventListenerTest, MultiDBMultiListeners) {
   Options options;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   options.enable_thread_tracking = true;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   options.table_properties_collector_factories.push_back(
       std::make_shared<TestPropertiesCollectorFactory>());
   std::vector<TestFlushListener*> listeners;
@@ -377,9 +377,9 @@ TEST_F(EventListenerTest, MultiDBMultiListeners) {
 
 TEST_F(EventListenerTest, DisableBGCompaction) {
   Options options;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   options.enable_thread_tracking = true;
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
   TestFlushListener* listener = new TestFlushListener(options.env);
   const int kCompactionTrigger = 1;
   const int kSlowdownTrigger = 5;
@@ -747,10 +747,10 @@ TEST_F(EventListenerTest, MemTableSealedListenerTest) {
     ASSERT_OK(Flush());
   }
 }
-} // namespace rocksdb
+} // namespace vidardb
 
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

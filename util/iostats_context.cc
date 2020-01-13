@@ -4,10 +4,10 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include <sstream>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/iostats_context_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #ifndef IOS_CROSS_COMPILE
 # ifdef _WIN32
@@ -53,4 +53,4 @@ std::string IOStatsContext::ToString(bool exclude_zero_counters) const {
   return ss.str();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

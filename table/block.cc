@@ -16,13 +16,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include "rocksdb/comparator.h"
+#include "vidardb/comparator.h"
 #include "table/format.h"
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/perf_context_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Helper routine: decode the next block entry starting at "p",
 // storing the number of shared key bytes, non_shared key bytes,
@@ -388,4 +388,4 @@ size_t Block::ApproximateMemoryUsage() const {
   return usable_size();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -11,7 +11,7 @@
 #include <algorithm>
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 inline size_t TruncateToPageBoundary(size_t page_size, size_t s) {
   s -= (s & (page_size - 1));
@@ -41,11 +41,11 @@ public:
       bufstart_(nullptr) {
   }
 
-  AlignedBuffer(AlignedBuffer&& o) ROCKSDB_NOEXCEPT {
+  AlignedBuffer(AlignedBuffer&& o) VIDARDB_NOEXCEPT {
     *this = std::move(o);
   }
 
-  AlignedBuffer& operator=(AlignedBuffer&& o) ROCKSDB_NOEXCEPT {
+  AlignedBuffer& operator=(AlignedBuffer&& o) VIDARDB_NOEXCEPT {
     alignment_ = std::move(o.alignment_);
     buf_ = std::move(o.buf_);
     capacity_ = std::move(o.capacity_);

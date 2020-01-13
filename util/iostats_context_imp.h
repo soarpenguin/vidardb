@@ -4,7 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-#include "rocksdb/iostats_context.h"
+#include "vidardb/iostats_context.h"
 #include "util/perf_step_timer.h"
 
 #ifndef IOS_CROSS_COMPILE

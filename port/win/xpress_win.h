@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 namespace xpress {
 

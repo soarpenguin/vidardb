@@ -14,18 +14,18 @@
 
 #include <atomic>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
 #include <stdint.h>
 #include <Windows.h>
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 
 namespace port {
 
-class WinLogger : public rocksdb::Logger {
+class WinLogger : public vidardb::Logger {
  public:
   WinLogger(uint64_t (*gettid)(), Env* env, HANDLE file,
             const InfoLogLevel log_level = InfoLogLevel::ERROR_LEVEL);
@@ -59,4 +59,4 @@ class WinLogger : public rocksdb::Logger {
 
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

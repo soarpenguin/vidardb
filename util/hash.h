@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace rocksdb {
+namespace vidardb {
 
 extern uint32_t Hash(const char* data, size_t n, uint32_t seed);
 
@@ -25,4 +25,4 @@ inline uint32_t GetSliceHash(const Slice& s) {
   return Hash(s.data(), s.size(), 397);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

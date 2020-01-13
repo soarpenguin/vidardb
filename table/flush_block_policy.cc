@@ -3,14 +3,14 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/options.h"
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/slice.h"
+#include "vidardb/options.h"
+#include "vidardb/flush_block_policy.h"
+#include "vidardb/slice.h"
 #include "table/block_builder.h"
 
 #include <cassert>
 
-namespace rocksdb {
+namespace vidardb {
 
 // Flush block by size
 class FlushBlockBySizePolicy : public FlushBlockPolicy {
@@ -79,4 +79,4 @@ FlushBlockPolicy* FlushBlockBySizePolicyFactory::NewFlushBlockPolicy(
 }
 /***************************** Shichao ******************************/
 
-}  // namespace rocksdb
+}  // namespace vidardb

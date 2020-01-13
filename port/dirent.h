@@ -12,12 +12,12 @@
 #ifndef STORAGE_LEVELDB_PORT_DIRENT_H_
 #define STORAGE_LEVELDB_PORT_DIRENT_H_
 
-#ifdef ROCKSDB_PLATFORM_POSIX
+#ifdef VIDARDB_PLATFORM_POSIX
 #include <dirent.h>
 #include <sys/types.h>
 #elif defined(OS_WIN)
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 struct dirent {
@@ -40,7 +40,7 @@ using port::opendir;
 using port::readdir;
 using port::closedir;
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #endif  // OS_WIN
 

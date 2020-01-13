@@ -8,7 +8,7 @@
 #include "util/histogram.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class HistogramTest : public testing::Test {};
 
@@ -99,7 +99,7 @@ TEST_F(HistogramTest, ClearHistogram) {
   ClearHistogram(histogram);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

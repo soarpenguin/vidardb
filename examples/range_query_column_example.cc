@@ -2,11 +2,11 @@
 #include <iostream>
 using namespace std;
 
-#include "rocksdb/db.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h"
+#include "vidardb/db.h"
+#include "vidardb/status.h"
+#include "vidardb/options.h"
 #include "../table/adaptive_table_factory.h"
-using namespace rocksdb;
+using namespace vidardb;
 
 unsigned int M = 3;
 string kDBPath = "/tmp/range_query_column_example";

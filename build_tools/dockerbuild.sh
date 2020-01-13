@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v $PWD:/rocks -w /rocks buildpack-deps make
+docker run -v $PWD:/vidardb -w /vidardb buildpack-deps make

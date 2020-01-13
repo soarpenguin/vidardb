@@ -4,10 +4,10 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-#include "rocksdb/perf_level.h"
+#include "vidardb/perf_level.h"
 #include "port/port.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #if defined(IOS_CROSS_COMPILE)
 extern PerfLevel perf_level;
@@ -15,4 +15,4 @@ extern PerfLevel perf_level;
 extern __thread PerfLevel perf_level;
 #endif
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -16,13 +16,13 @@
 
 #include "db/dbformat.h"
 #include "port/port.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/env.h"
-#include "rocksdb/table.h"
-#include "rocksdb/options.h"
+#include "vidardb/cache.h"
+#include "vidardb/env.h"
+#include "vidardb/table.h"
+#include "vidardb/options.h"
 #include "table/table_reader.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 class Arena;
@@ -122,4 +122,4 @@ class TableCache {
   std::string row_cache_id_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

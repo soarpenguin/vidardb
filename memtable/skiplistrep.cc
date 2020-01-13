@@ -5,10 +5,10 @@
 //
 #include "db/inlineskiplist.h"
 #include "memtable/memtable.h"
-#include "rocksdb/memtablerep.h"
+#include "vidardb/memtablerep.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace {
 class SkipListRep : public MemTableRep {
   InlineSkipList<const MemTableRep::KeyComparator&> skip_list_;
@@ -263,4 +263,4 @@ MemTableRep* SkipListFactory::CreateMemTableRep(
   return new SkipListRep(compare, allocator, lookahead_);
 }
 
-} // namespace rocksdb
+} // namespace vidardb

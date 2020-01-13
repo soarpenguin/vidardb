@@ -3,10 +3,10 @@
 # fail early
 set -e
 
-if test -z $ROCKSDB_PATH; then
-  ROCKSDB_PATH=~/rocksdb
+if test -z $VIDARDB_PATH; then
+  VIDARDB_PATH=~/vidardb
 fi
-source $ROCKSDB_PATH/build_tools/fbcode_config4.8.1.sh
+source $VIDARDB_PATH/build_tools/fbcode_config4.8.1.sh
 
 EXTRA_LDFLAGS=""
 
@@ -31,7 +31,7 @@ set -x
 EXTRA_CMD=""
 if ! test -e version.json; then
   # this is Mongo 3.0
-  EXTRA_CMD="--rocksdb \
+  EXTRA_CMD="--vidardb \
     --variant-dir=linux2/norm
     --cxx=${CXX} \
     --cc=${CC} \
@@ -43,8 +43,8 @@ scons \
   LINKFLAGS="$EXTRA_LDFLAGS $EXEC_LDFLAGS $PLATFORM_LDFLAGS" \
   CCFLAGS="$CXXFLAGS -L $STATIC_LIB_DEP_DIR" \
   LIBS="lz4 gcc stdc++" \
-  LIBPATH="$ROCKSDB_PATH" \
-  CPPPATH="$ROCKSDB_PATH/include" \
+  LIBPATH="$VIDARDB_PATH" \
+  CPPPATH="$VIDARDB_PATH/include" \
   -j32 \
   --allocator=$ALLOC \
   --nostrip \

@@ -9,10 +9,10 @@
 
 #include "db/file_indexer.h"
 #include <algorithm>
-#include "rocksdb/comparator.h"
+#include "vidardb/comparator.h"
 #include "db/version_edit.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 FileIndexer::FileIndexer(const Comparator* ucmp)
     : num_levels_(0), ucmp_(ucmp), level_rb_(nullptr) {}
@@ -210,4 +210,4 @@ void FileIndexer::CalculateRB(
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

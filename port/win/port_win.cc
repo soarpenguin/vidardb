@@ -28,7 +28,7 @@
 
 #include "util/logging.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 void gettimeofday(struct timeval* tv, struct timezone* /* tz */) {
@@ -227,7 +227,7 @@ void Crash(const std::string& srcfile, int srcline) {
 int GetMaxOpenFiles() { return -1; }
 
 }  // namespace port
-}  // namespace rocksdb
+}  // namespace vidardb
 
 #ifdef JEMALLOC
 
@@ -235,7 +235,7 @@ int GetMaxOpenFiles() { return -1; }
 
 #ifndef JEMALLOC_NON_INIT
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace port {
 
@@ -245,13 +245,13 @@ __declspec(noinline) void WINAPI InitializeJemalloc() {
 }
 
 }  // port
-}  // rocksdb
+}  // vidardb
 
 extern "C" {
 
 #ifdef _WIN64
 
-#pragma comment(linker, "/INCLUDE:p_rocksdb_init_jemalloc")
+#pragma comment(linker, "/INCLUDE:p_vidardb_init_jemalloc")
 
 typedef void(WINAPI* CRT_Startup_Routine)(void);
 
@@ -261,20 +261,20 @@ typedef void(WINAPI* CRT_Startup_Routine)(void);
 // constructors
 // which are placed into XCU
 #pragma const_seg(".CRT$XCT")
-extern const CRT_Startup_Routine p_rocksdb_init_jemalloc;
-const CRT_Startup_Routine p_rocksdb_init_jemalloc =
-    rocksdb::port::InitializeJemalloc;
+extern const CRT_Startup_Routine p_vidardb_init_jemalloc;
+const CRT_Startup_Routine p_vidardb_init_jemalloc =
+    vidardb::port::InitializeJemalloc;
 #pragma const_seg()
 
 #else  // _WIN64
 
 // x86 untested
 
-#pragma comment(linker, "/INCLUDE:_p_rocksdb_init_jemalloc")
+#pragma comment(linker, "/INCLUDE:_p_vidardb_init_jemalloc")
 
 #pragma section(".CRT$XCT", read)
 JEMALLOC_SECTION(".CRT$XCT") JEMALLOC_ATTR(used) static const void(
-    WINAPI* p_rocksdb_init_jemalloc)(void) = rocksdb::port::InitializeJemalloc;
+    WINAPI* p_vidardb_init_jemalloc)(void) = vidardb::port::InitializeJemalloc;
 
 #endif  // _WIN64
 

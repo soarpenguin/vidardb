@@ -52,9 +52,9 @@ default_params = {
 def get_dbname(test_name):
     test_tmpdir = os.environ.get("TEST_TMPDIR")
     if test_tmpdir is None or test_tmpdir == "":
-        dbname = tempfile.mkdtemp(prefix='rocksdb_crashtest_' + test_name)
+        dbname = tempfile.mkdtemp(prefix='vidardb_crashtest_' + test_name)
     else:
-        dbname = test_tmpdir + "/rocksdb_crashtest_" + test_name
+        dbname = test_tmpdir + "/vidardb_crashtest_" + test_name
         shutil.rmtree(dbname, True)
     return dbname
 
@@ -175,7 +175,7 @@ def gen_cmd(params):
 
 
 # This script runs and kills db_stress multiple times. It checks consistency
-# in case of unsafe crashes in RocksDB.
+# in case of unsafe crashes in VidarDB.
 def blackbox_crash_main(args):
     cmd_params = gen_cmd_params(args)
     dbname = get_dbname('blackbox')
@@ -236,7 +236,7 @@ def blackbox_crash_main(args):
 
 
 # This python script runs db_stress multiple times. Some runs with
-# kill_random_test that causes rocksdb to crash at various points in code.
+# kill_random_test that causes vidardb to crash at various points in code.
 def whitebox_crash_main(args):
     cmd_params = gen_cmd_params(args)
     dbname = get_dbname('whitebox')

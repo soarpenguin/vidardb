@@ -13,12 +13,12 @@
 #include <vector>
 
 #include "port/port.h"
-#include "rocksdb/cache.h"
+#include "vidardb/cache.h"
 #include "util/hash.h"
 #include "util/lru_cache_handle.h"
 #include "util/mutexlock.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
@@ -608,4 +608,4 @@ std::shared_ptr<Cache> NewLRUCache(size_t capacity, int num_shard_bits,
                                            strict_capacity_limit);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

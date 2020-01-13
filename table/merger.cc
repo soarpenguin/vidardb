@@ -12,9 +12,9 @@
 #include <vector>
 
 #include "db/pinned_iterators_manager.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "vidardb/comparator.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
 #include "table/internal_iterator.h"
 #include "table/iter_heap.h"
 #include "table/iterator_wrapper.h"
@@ -24,7 +24,7 @@
 #include "util/stop_watch.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 // Without anonymous namespace here, we fail the warning -Wmissing-prototypes
 namespace {
 typedef BinaryHeap<IteratorWrapper*, MaxIteratorComparator> MergerMaxIterHeap;
@@ -356,4 +356,4 @@ InternalIterator* MergeIteratorBuilder::Finish() {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

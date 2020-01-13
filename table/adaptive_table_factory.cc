@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #include "table/adaptive_table_factory.h"
 
 #include "table/table_builder.h"
@@ -10,7 +10,7 @@
 #include "port/port.h"
 #include "util/instrumented_mutex.h"  // Shichao
 
-namespace rocksdb {
+namespace vidardb {
 
 AdaptiveTableFactory::~AdaptiveTableFactory() {}  // Shichao
 
@@ -141,5 +141,5 @@ extern TableFactory* NewAdaptiveTableFactory(
       block_based_table_factory, column_table_factory, knob);  // Shichao
 }
 
-}  // namespace rocksdb
-#endif  // ROCKSDB_LITE
+}  // namespace vidardb
+#endif  // VIDARDB_LITE

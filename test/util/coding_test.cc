@@ -11,7 +11,7 @@
 
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Coding { };
 
@@ -196,7 +196,7 @@ TEST(Coding, Strings) {
   ASSERT_EQ("", input.ToString());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

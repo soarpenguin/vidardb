@@ -95,7 +95,7 @@ class PreCommitChecker(Env):
     #
     def get_commands(self, test):
         status, out = self.GetOutput(
-            "build_tools/rocksdb-lego-determinator %s" % test, ".")
+            "build_tools/vidardb-lego-determinator %s" % test, ".")
         return status, out
 
     #
@@ -180,7 +180,7 @@ class PreCommitChecker(Env):
 #
 # Main
 #
-parser = argparse.ArgumentParser(description='RocksDB pre-commit checker.')
+parser = argparse.ArgumentParser(description='VidarDB pre-commit checker.')
 
 # <test ....>
 parser.add_argument('test', nargs='+',

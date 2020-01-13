@@ -14,11 +14,11 @@
 #include <cassert>
 #include <string>
 #include "port/port.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/immutable_options.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/immutable_options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Multiple two operands. If they overflow, return op1.
 uint64_t MultiplyCheckOverflow(uint64_t op1, int op2) {
@@ -64,13 +64,13 @@ uint64_t MutableCFOptions::ExpandedCompactionByteSizeLimit(int level) const {
 
 void MutableCFOptions::Dump(Logger* log) const {
   // Memtable related options
-  Log(log, "                        write_buffer_size: %" ROCKSDB_PRIszt,
+  Log(log, "                        write_buffer_size: %" VIDARDB_PRIszt,
       write_buffer_size);
   Log(log, "                  max_write_buffer_number: %d",
       max_write_buffer_number);
-  Log(log, "                         arena_block_size: %" ROCKSDB_PRIszt,
+  Log(log, "                         arena_block_size: %" VIDARDB_PRIszt,
       arena_block_size);
-  Log(log, "                    max_successive_merges: %" ROCKSDB_PRIszt,
+  Log(log, "                    max_successive_merges: %" VIDARDB_PRIszt,
       max_successive_merges);
   Log(log, "                           filter_deletes: %d",
       filter_deletes);
@@ -114,4 +114,4 @@ void MutableCFOptions::Dump(Logger* log) const {
       max_sequential_skip_in_iterations);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

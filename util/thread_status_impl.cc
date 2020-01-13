@@ -6,14 +6,14 @@
 
 #include <sstream>
 
-#include "rocksdb/env.h"
-#include "rocksdb/thread_status.h"
+#include "vidardb/env.h"
+#include "vidardb/thread_status.h"
 #include "util/logging.h"
 #include "util/thread_operation.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 const std::string& ThreadStatus::GetThreadTypeName(
     ThreadStatus::ThreadType thread_type) {
   static std::string thread_type_names[NUM_THREAD_TYPES + 1] = {
@@ -163,5 +163,5 @@ std::map<std::string, uint64_t>
   return std::map<std::string, uint64_t>();
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
-}  // namespace rocksdb
+#endif  // VIDARDB_USING_THREAD_STATUS
+}  // namespace vidardb

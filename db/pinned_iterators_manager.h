@@ -10,7 +10,7 @@
 
 #include "table/internal_iterator.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // PinnedIteratorsManager will be notified whenever we need to pin an Iterator
 // and it will be responsible for deleting pinned Iterators when they are
@@ -63,4 +63,4 @@ class PinnedIteratorsManager {
   std::unique_ptr<std::vector<InternalIterator*>> pinned_iters_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

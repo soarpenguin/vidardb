@@ -8,11 +8,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <algorithm>
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 #include "util/string_util.h"
 #include <stdio.h>
 
-namespace rocksdb {
+namespace vidardb {
 
 // 2 small internal utility functions, for efficient hex conversions
 // and no need for snprintf, toupper etc...
@@ -56,7 +56,7 @@ std::string Slice::ToString(bool hex) const {
   }
 }
 
-// Originally from rocksdb/utilities/ldb_cmd.h
+// Originally from vidardb/utilities/ldb_cmd.h
 bool Slice::DecodeHex(std::string* result) const {
   std::string::size_type len = size_;
   if (len % 2) {
@@ -83,4 +83,4 @@ bool Slice::DecodeHex(std::string* result) const {
   return true;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

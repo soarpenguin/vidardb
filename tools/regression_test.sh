@@ -1,27 +1,27 @@
 #!/bin/bash
-# The RocksDB regression test script.
+# The VidarDB regression test script.
 # REQUIREMENT: must be able to run make db_bench in the current directory
 #
 # This script will do the following things in order:
 #
-# 1. check out the specified rocksdb commit.
+# 1. check out the specified vidardb commit.
 # 2. build db_bench using the specified commit
 # 3. setup test directory $TEST_PATH.  If not specified, then the test directory
-#    will be "/tmp/rocksdb/regression_test"
+#    will be "/tmp/vidardb/regression_test"
 # 4. run set of benchmarks on the specified host
 #    (can be either locally or remotely)
 # 5. generate report in the $RESULT_PATH.  If RESULT_PATH is not specified,
 #    RESULT_PATH will be set to $TEST_PATH/current_time
 #
 # = Examples =
-# * Run the regression test using rocksdb commit abcdef that outputs results
+# * Run the regression test using vidardb commit abcdef that outputs results
 #   and temp files in "/my/output/dir" 
 # 
 #   TEST_PATH=/my/output/dir COMMIT_ID=abcdef ./tools/regression_test.sh
 #
 # * Run the regression test on a remost host under "/my/output/dir" directory
 #   and stores the result locally in "/my/benchmark/results" using commit
-#   abcdef and with the rocksdb options specified in /my/path/to/OPTIONS-012345
+#   abcdef and with the vidardb options specified in /my/path/to/OPTIONS-012345
 #   with 1000000000 keys in each benchmark in the regression test where each
 #   key and value are 100 and 900 bytes respectively:
 #
@@ -37,19 +37,19 @@
 #
 # = Regression test environmental parameters =
 #   TEST_PATH: the root directory of the regression test.
-#       Default: "/tmp/rocksdb/regression_test"
+#       Default: "/tmp/vidardb/regression_test"
 #   RESULT_PATH: the directory where the regression results will be generated.
 #       Default: "$TEST_PATH/current_time"
 #   REMOTE_USER_AT_HOST: If set, then test will run on the specified host under
 #       TEST_PATH directory and outputs test results locally in RESULT_PATH
 #       The REMOTE_USER_AT_HOST should follow the format user-id@host.name
-#   DB_PATH: the path where the rocksdb database will be created during the
+#   DB_PATH: the path where the vidardb database will be created during the
 #       regression test.  Default:  $TEST_PATH/db
-#   WAL_PATH: the path where the rocksdb WAL will be outputed.
+#   WAL_PATH: the path where the vidardb WAL will be outputed.
 #       Default:  $TEST_PATH/wal
 #   OPTIONS_FILE:  If specified, then the regression test will use the specified
-#       file to initialize the RocksDB options in its benchmarks.  Note that
-#       this feature only work for commits after 88acd93 or rocksdb version
+#       file to initialize the VidarDB options in its benchmarks.  Note that
+#       this feature only work for commits after 88acd93 or vidardb version
 #       later than 4.9.
 #
 # = db_bench parameters =
@@ -59,7 +59,7 @@
 #       Default: 1G.
 #   KEY_SIZE:  The size of each key in bytes in db_bench.  Default: 100.
 #   VALUE_SIZE:  The size of each value in bytes in db_bench.  Default: 900.
-#   CACHE_SIZE:  The size of RocksDB block cache used in db_bench.  Default: 1G
+#   CACHE_SIZE:  The size of VidarDB block cache used in db_bench.  Default: 1G
 #   STATISTICS:  If 1, then statistics is on in db_bench.  Default: 0.
 #   COMPRESSION_RATIO:  The compression ratio of the key generated in db_bench.
 #       Default: 0.5.
@@ -79,11 +79,11 @@
 
 function main {
   commit=${1:-"origin/master"}
-  test_root_dir=${TEST_PATH:-"/tmp/rocksdb/regression_test"}
+  test_root_dir=${TEST_PATH:-"/tmp/vidardb/regression_test"}
 
   init_arguments $test_root_dir
 
-  checkout_rocksdb $commit
+  checkout_vidardb $commit
   build_db_bench
 
   setup_test_directory
@@ -253,7 +253,7 @@ function exit_on_error {
   fi
 }
 
-function checkout_rocksdb {
+function checkout_vidardb {
   echo "Checking out commit $1 ..."
 
   git fetch --all

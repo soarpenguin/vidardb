@@ -12,11 +12,11 @@
 #include "db/dbformat.h"
 #include "db/filename.h"
 
-#include "rocksdb/cache.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/table.h"
+#include "vidardb/cache.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/flush_block_policy.h"
+#include "vidardb/table.h"
 
 #include "table/block.h"
 #include "table/column_table_reader.h"
@@ -34,7 +34,7 @@
 #include "util/stop_watch.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // The interface for building index.
 // Instruction for adding a new concrete IndexBuilder:
@@ -719,4 +719,4 @@ TableProperties ColumnTableBuilder::GetTableProperties() const {
   return ret;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

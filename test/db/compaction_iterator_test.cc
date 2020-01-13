@@ -7,7 +7,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class CompactionIteratorTest : public testing::Test {
  public:
@@ -60,7 +60,7 @@ TEST_F(CompactionIteratorTest, CorruptionAfterSingleDeletion) {
   ASSERT_FALSE(c_iter_->Valid());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

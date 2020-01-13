@@ -11,7 +11,7 @@
 #include "port/port.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 WriteThread::WriteThread(uint64_t max_yield_usec, uint64_t slow_yield_usec)
     : max_yield_usec_(max_yield_usec),
@@ -68,7 +68,7 @@ uint8_t WriteThread::AwaitState(Writer* w, uint8_t goal_mask,
   // SELinux test server with support for syscall auditing enabled, the
   // minimum latency between FUTEX_WAKE to returning from FUTEX_WAIT is
   // 2.7 usec, and the average is more like 10 usec.  That can be a big
-  // drag on RockDB's single-writer design.  Of course, spinning is a
+  // drag on VidarDB's single-writer design.  Of course, spinning is a
   // bad idea if other threads are waiting to run or if we're going to
   // wait for a long time.  How do we decide?
   //
@@ -76,7 +76,7 @@ uint8_t WriteThread::AwaitState(Writer* w, uint8_t goal_mask,
   // short-contended, and long.  If we had an oracle, then we would always
   // spin for short-uncontended, always block for long, and our choice for
   // short-contended might depend on whether we were trying to optimize
-  // RocksDB throughput or avoid being greedy with system resources.
+  // VidarDB throughput or avoid being greedy with system resources.
   //
   // Bucketing into short or long is easy by measuring elapsed time.
   // Differentiating short-uncontended from short-contended is a bit
@@ -429,4 +429,4 @@ void WriteThread::ExitUnbatched(Writer* w) {
   ExitAsBatchGroupLeader(w, w, dummy_status);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

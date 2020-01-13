@@ -16,9 +16,9 @@
 #include <unordered_map>
 #include <inttypes.h>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/convenience.h"
-#include "rocksdb/memtablerep.h"
+#include "vidardb/cache.h"
+#include "vidardb/convenience.h"
+#include "vidardb/memtablerep.h"
 #include "util/options_helper.h"
 #include "util/options_parser.h"
 #include "util/options_sanity_check.h"
@@ -35,11 +35,11 @@ using GFLAGS::ParseCommandLineFlags;
 DEFINE_bool(enable_print, false, "Print options generated to console.");
 #endif  // GFLAGS
 
-namespace rocksdb {
+namespace vidardb {
 
 class OptionsTest : public testing::Test {};
 
-#ifndef ROCKSDB_LITE  // GetOptionsFromMap is not supported in ROCKSDB_LITE
+#ifndef VIDARDB_LITE  // GetOptionsFromMap is not supported in VIDARDB_LITE
 TEST_F(OptionsTest, GetOptionsFromMapTest) {
   std::unordered_map<std::string, std::string> cf_options_map = {
       {"write_buffer_size", "1"},
@@ -239,10 +239,10 @@ TEST_F(OptionsTest, GetOptionsFromMapTest) {
   ASSERT_EQ(new_db_opt.bytes_per_sync, static_cast<uint64_t>(47));
   ASSERT_EQ(new_db_opt.wal_bytes_per_sync, static_cast<uint64_t>(48));
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE  // GetColumnFamilyOptionsFromString is not supported in
-                      // ROCKSDB_LITE
+#ifndef VIDARDB_LITE  // GetColumnFamilyOptionsFromString is not supported in
+                      // VIDARDB_LITE
 TEST_F(OptionsTest, GetColumnFamilyOptionsFromStringTest) {
   ColumnFamilyOptions base_cf_opt;
   ColumnFamilyOptions new_cf_opt;
@@ -396,9 +396,9 @@ TEST_F(OptionsTest, GetColumnFamilyOptionsFromStringTest) {
   ASSERT_TRUE(new_cf_opt.memtable_factory != nullptr);
   ASSERT_EQ(std::string(new_cf_opt.memtable_factory->Name()), "SkipListFactory");
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE  // GetBlockBasedTableOptionsFromString is not supported
+#ifndef VIDARDB_LITE  // GetBlockBasedTableOptionsFromString is not supported
 TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
   BlockBasedTableOptions table_opt;
   BlockBasedTableOptions new_opt;
@@ -445,9 +445,9 @@ TEST_F(OptionsTest, GetBlockBasedTableOptionsFromString) {
              "filter_policy=bloomfilter:4",
              &new_opt));
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE  // GetMemTableRepFactoryFromString is not supported
+#ifndef VIDARDB_LITE  // GetMemTableRepFactoryFromString is not supported
 TEST_F(OptionsTest, GetMemTableRepFactoryFromString) {
   std::unique_ptr<MemTableRepFactory> new_mem_factory = nullptr;
 
@@ -484,9 +484,9 @@ TEST_F(OptionsTest, GetMemTableRepFactoryFromString) {
 
   ASSERT_NOK(GetMemTableRepFactoryFromString("bad_factory", &new_mem_factory));
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE  // GetOptionsFromString is not supported in RocksDB Lite
+#ifndef VIDARDB_LITE  // GetOptionsFromString is not supported in VidarDB Lite
 TEST_F(OptionsTest, GetOptionsFromStringTest) {
   Options base_options, new_options;
   base_options.write_buffer_size = 20;
@@ -535,7 +535,7 @@ TEST_F(OptionsTest, DBOptionsSerialization) {
   //          new_options == base_options
   ASSERT_OK(GetDBOptionsFromString(DBOptions(), base_options_file_content,
                                    &new_options));
-  ASSERT_OK(RocksDBOptionsParser::VerifyDBOptions(base_options, new_options));
+  ASSERT_OK(VidarDBOptionsParser::VerifyDBOptions(base_options, new_options));
 }
 
 TEST_F(OptionsTest, ColumnFamilyOptionsSerialization) {
@@ -554,16 +554,16 @@ TEST_F(OptionsTest, ColumnFamilyOptionsSerialization) {
   //          new_opt == base_opt
   ASSERT_OK(GetColumnFamilyOptionsFromString(
       ColumnFamilyOptions(), base_options_file_content, &new_opt));
-  ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(base_opt, new_opt));
+  ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(base_opt, new_opt));
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 Status StringToMap(
     const std::string& opts_str,
     std::unordered_map<std::string, std::string>* opts_map);
 
-#ifndef ROCKSDB_LITE  // StringToMap is not supported in ROCKSDB_LITE
+#ifndef VIDARDB_LITE  // StringToMap is not supported in VIDARDB_LITE
 TEST_F(OptionsTest, StringToMapTest) {
   std::unordered_map<std::string, std::string> opts_map;
   // Regular options
@@ -680,9 +680,9 @@ TEST_F(OptionsTest, StringToMapTest) {
   ASSERT_NOK(StringToMap("k1=v1;k2={{}}{}", &opts_map));
   ASSERT_NOK(StringToMap("k1=v1;k2={{dfdl}adfa}{}", &opts_map));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE  // StringToMap is not supported in ROCKSDB_LITE
+#ifndef VIDARDB_LITE  // StringToMap is not supported in VIDARDB_LITE
 TEST_F(OptionsTest, StringToMapRandomTest) {
   std::unordered_map<std::string, std::string> opts_map;
   // Make sure segfault is not hit by semi-random strings
@@ -749,9 +749,9 @@ TEST_F(OptionsTest, GetStringFromCompressionType) {
   ASSERT_NOK(
       GetStringFromCompressionType(&res, static_cast<CompressionType>(-10)));
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 class OptionsParserTest : public testing::Test {
  public:
   OptionsParserTest() { env_.reset(new test::StringEnv(Env::Default())); }
@@ -772,7 +772,7 @@ TEST_F(OptionsParserTest, Comment) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[ DBOptions ]\n"
       "  # note that we don't support space around \"=\"\n"
@@ -785,14 +785,14 @@ TEST_F(OptionsParserTest, Comment) {
       "                     # in the correct order\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_OK(parser.Parse(kTestFileName, env_.get()));
 
-  ASSERT_OK(RocksDBOptionsParser::VerifyDBOptions(*parser.db_opt(), db_opt));
+  ASSERT_OK(VidarDBOptionsParser::VerifyDBOptions(*parser.db_opt(), db_opt));
   ASSERT_EQ(parser.NumColumnFamilies(), 1U);
-  ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(
+  ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(
       *parser.GetCFOptions("default"), cf_opt));
 }
 
@@ -802,7 +802,7 @@ TEST_F(OptionsParserTest, ExtraSpace) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[      Version   ]\n"
-      "  rocksdb_version     = 3.14.0      \n"
+      "  vidardb_version     = 3.14.0      \n"
       "  options_file_version=1   # some comment\n"
       "[DBOptions  ]  # some comment\n"
       "max_open_files=12345   \n"
@@ -811,9 +811,9 @@ TEST_F(OptionsParserTest, ExtraSpace) {
       "        [CFOptions      \"default\"     ]\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_OK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -823,14 +823,14 @@ TEST_F(OptionsParserTest, MissingDBOptions) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[CFOptions \"default\"]\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_NOK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -846,7 +846,7 @@ TEST_F(OptionsParserTest, DoubleDBOptions) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[DBOptions]\n"
       "  max_open_files=12345\n"
@@ -856,9 +856,9 @@ TEST_F(OptionsParserTest, DoubleDBOptions) {
       "[CFOptions \"default\"]\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_NOK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -874,7 +874,7 @@ TEST_F(OptionsParserTest, NoDefaultCFOptions) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[DBOptions]\n"
       "  max_open_files=12345\n"
@@ -883,9 +883,9 @@ TEST_F(OptionsParserTest, NoDefaultCFOptions) {
       "[CFOptions \"something_else\"]\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_NOK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -901,7 +901,7 @@ TEST_F(OptionsParserTest, DefaultCFOptionsMustBeTheFirst) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[DBOptions]\n"
       "  max_open_files=12345\n"
@@ -912,9 +912,9 @@ TEST_F(OptionsParserTest, DefaultCFOptionsMustBeTheFirst) {
       "[CFOptions \"default\"]\n"
       "  # if a section is blank, we will use the default\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_NOK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -930,7 +930,7 @@ TEST_F(OptionsParserTest, DuplicateCFOptions) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.14.0\n"
+      "  vidardb_version=3.14.0\n"
       "  options_file_version=1\n"
       "[DBOptions]\n"
       "  max_open_files=12345\n"
@@ -940,9 +940,9 @@ TEST_F(OptionsParserTest, DuplicateCFOptions) {
       "[CFOptions \"something_else\"]\n"
       "[CFOptions \"something_else\"]\n";
 
-  const std::string kTestFileName = "test-rocksdb-options.ini";
+  const std::string kTestFileName = "test-vidardb-options.ini";
   env_->WriteToNewFile(kTestFileName, options_file_content);
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_NOK(parser.Parse(kTestFileName, env_.get()));
 }
 
@@ -958,13 +958,13 @@ TEST_F(OptionsParserTest, ParseVersion) {
       "# Currently we only support \"#\" styled comment.\n"
       "\n"
       "[Version]\n"
-      "  rocksdb_version=3.13.1\n"
+      "  vidardb_version=3.13.1\n"
       "  options_file_version=%s\n"
       "[DBOptions]\n"
       "[CFOptions \"default\"]\n";
   const int kLength = 1000;
   char buffer[kLength];
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
 
   const std::vector<std::string> invalid_versions = {
       "a.b.c", "3.2.2b", "3.-12", "3. 1",  // only digits and dots are allowed
@@ -996,7 +996,7 @@ void VerifyCFPointerTypedOptions(
     ColumnFamilyOptions* base_cf_opt, const ColumnFamilyOptions* new_cf_opt,
     const std::unordered_map<std::string, std::string>* new_cf_opt_map) {
   std::string name_buffer;
-  ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
+  ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
                                                   new_cf_opt_map));
 
   // test by setting table_factory to nullptr
@@ -1005,11 +1005,11 @@ void VerifyCFPointerTypedOptions(
     if (tmp_table_factory != nullptr) {
       base_cf_opt->table_factory.reset();
       // set table_factory to nullptr and expect non-ok status
-      ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(
+      ASSERT_NOK(VidarDBOptionsParser::VerifyCFOptions(
           *base_cf_opt, *new_cf_opt, new_cf_opt_map));
       // set the value back and expect ok status
       base_cf_opt->table_factory = tmp_table_factory;
-      ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
+      ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
                                                       new_cf_opt_map));
     }
   }
@@ -1020,11 +1020,11 @@ void VerifyCFPointerTypedOptions(
     if (tmp_memtable_factory != nullptr) {
       base_cf_opt->memtable_factory.reset();
       // set memtable_factory to nullptr and expect non-ok status
-      ASSERT_NOK(RocksDBOptionsParser::VerifyCFOptions(
+      ASSERT_NOK(VidarDBOptionsParser::VerifyCFOptions(
           *base_cf_opt, *new_cf_opt, new_cf_opt_map));
       // set the value back and expect ok status
       base_cf_opt->memtable_factory = tmp_memtable_factory;
-      ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
+      ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(*base_cf_opt, *new_cf_opt,
                                                       new_cf_opt_map));
     }
   }
@@ -1036,7 +1036,7 @@ TEST_F(OptionsParserTest, DumpAndParse) {
   std::vector<std::string> cf_names = {"default", "cf1", "cf2", "cf3",
                                        "c:f:4:4:4"
                                        "p\\i\\k\\a\\chu\\\\\\",
-                                       "###rocksdb#1-testcf#2###"};
+                                       "###vidardb#1-testcf#2###"};
   const int num_cf = static_cast<int>(cf_names.size());
   Random rnd(302);
   test::RandomInitDBOptions(&base_db_opt, &rnd);
@@ -1054,21 +1054,21 @@ TEST_F(OptionsParserTest, DumpAndParse) {
   }
 
   const std::string kOptionsFileName = "test-persisted-options.ini";
-  ASSERT_OK(PersistRocksDBOptions(base_db_opt, cf_names, base_cf_opts,
+  ASSERT_OK(PersistVidarDBOptions(base_db_opt, cf_names, base_cf_opts,
                                   kOptionsFileName, env_.get()));
 
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_OK(parser.Parse(kOptionsFileName, env_.get()));
 
-  ASSERT_OK(RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
+  ASSERT_OK(VidarDBOptionsParser::VerifyVidarDBOptionsFromFile(
       base_db_opt, cf_names, base_cf_opts, kOptionsFileName, env_.get()));
 
   ASSERT_OK(
-      RocksDBOptionsParser::VerifyDBOptions(*parser.db_opt(), base_db_opt));
+      VidarDBOptionsParser::VerifyDBOptions(*parser.db_opt(), base_db_opt));
   for (int c = 0; c < num_cf; ++c) {
     const auto* cf_opt = parser.GetCFOptions(cf_names[c]);
     ASSERT_NE(cf_opt, nullptr);
-    ASSERT_OK(RocksDBOptionsParser::VerifyCFOptions(
+    ASSERT_OK(VidarDBOptionsParser::VerifyCFOptions(
         base_cf_opts[c], *cf_opt, &(parser.cf_opt_maps()->at(c))));
   }
 
@@ -1083,7 +1083,7 @@ TEST_F(OptionsParserTest, DumpAndParse) {
   ASSERT_EQ(parser.GetCFOptions("does not exist"), nullptr);
 
   base_db_opt.max_open_files++;
-  ASSERT_NOK(RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
+  ASSERT_NOK(VidarDBOptionsParser::VerifyVidarDBOptionsFromFile(
       base_db_opt, cf_names, base_cf_opts, kOptionsFileName, env_.get()));
 }
 
@@ -1096,11 +1096,11 @@ TEST_F(OptionsParserTest, DifferentDefault) {
   ColumnFamilyOptions cf_univ_opts;
   cf_univ_opts.OptimizeUniversalStyleCompaction();
 
-  ASSERT_OK(PersistRocksDBOptions(DBOptions(), {"default", "universal"},
+  ASSERT_OK(PersistVidarDBOptions(DBOptions(), {"default", "universal"},
                                   {cf_level_opts, cf_univ_opts},
                                   kOptionsFileName, env_.get()));
 
-  RocksDBOptionsParser parser;
+  VidarDBOptionsParser parser;
   ASSERT_OK(parser.Parse(kOptionsFileName, env_.get()));
 
   {
@@ -1164,7 +1164,7 @@ class OptionsSanityCheckTest : public OptionsParserTest {
  protected:
   Status SanityCheckCFOptions(const ColumnFamilyOptions& cf_opts,
                               OptionsSanityCheckLevel level) {
-    return RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
+    return VidarDBOptionsParser::VerifyVidarDBOptionsFromFile(
         DBOptions(), {"default"}, {cf_opts}, kOptionsFileName, env_.get(),
         level);
   }
@@ -1174,7 +1174,7 @@ class OptionsSanityCheckTest : public OptionsParserTest {
     if (!s.ok()) {
       return s;
     }
-    return PersistRocksDBOptions(DBOptions(), {"default"}, {cf_opts},
+    return PersistVidarDBOptions(DBOptions(), {"default"}, {cf_opts},
                                  kOptionsFileName, env_.get());
   }
 
@@ -1309,16 +1309,16 @@ TEST_F(OptionsParserTest, EscapeOptionString) {
   ASSERT_TRUE(IsEscapedString(escaped_string));
   ASSERT_EQ(UnescapeOptionString(escaped_string), all_chars);
 
-  ASSERT_EQ(RocksDBOptionsParser::TrimAndRemoveComment(
+  ASSERT_EQ(VidarDBOptionsParser::TrimAndRemoveComment(
                 "     A simple statement with a comment.  # like this :)"),
             "A simple statement with a comment.");
 
-  ASSERT_EQ(RocksDBOptionsParser::TrimAndRemoveComment(
+  ASSERT_EQ(VidarDBOptionsParser::TrimAndRemoveComment(
                 "Escape \\# and # comment together   ."),
             "Escape \\# and");
 }
-#endif  // !ROCKSDB_LITE
-}  // namespace rocksdb
+#endif  // !VIDARDB_LITE
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -16,8 +16,8 @@
 
 #include "util/kv_map.h"
 #include "port/port.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/table.h"
+#include "vidardb/comparator.h"
+#include "vidardb/table.h"
 #include "table/internal_iterator.h"
 #include "table/table_builder.h"
 #include "table/table_reader.h"
@@ -25,7 +25,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace mock {
 
 stl_wrappers::KVMap MakeMockFile(
@@ -184,4 +184,4 @@ class MockTableFactory : public TableFactory {
 };
 
 }  // namespace mock
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -12,7 +12,7 @@
 #include "util/mutable_cf_options.h"
 #include "db/version_set.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // The structure that manages compaction input files associated
 // with the same physical level.
@@ -300,4 +300,4 @@ class Compaction {
 // Utility function
 extern uint64_t TotalFileSize(const std::vector<FileMetaData*>& files);
 
-}  // namespace rocksdb
+}  // namespace vidardb

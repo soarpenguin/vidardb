@@ -15,7 +15,7 @@
 #include <atomic>
 #include "util/allocator.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Logger;
 class WriteBuffer;
@@ -45,4 +45,4 @@ class MemTableAllocator : public Allocator {
   void operator=(const MemTableAllocator&);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

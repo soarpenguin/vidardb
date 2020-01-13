@@ -9,10 +9,10 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/iostats_context.h"
-#include "rocksdb/perf_context.h"
+#include "vidardb/iostats_context.h"
+#include "vidardb/perf_context.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBIteratorTest : public DBTestBase {
  public:
@@ -31,10 +31,10 @@ TEST_F(DBIteratorTest, IteratorProperty) {
     iter->SeekToFirst();
     std::string prop_value;
     ASSERT_NOK(iter->GetProperty("non_existing.value", &prop_value));
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.is-key-pinned", &prop_value));
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.is-key-pinned", &prop_value));
     ASSERT_EQ("0", prop_value);
     iter->Next();
-    ASSERT_OK(iter->GetProperty("rocksdb.iterator.is-key-pinned", &prop_value));
+    ASSERT_OK(iter->GetProperty("vidardb.iterator.is-key-pinned", &prop_value));
     ASSERT_EQ("Iterator is not valid.", prop_value);
   }
   Close();
@@ -59,7 +59,7 @@ TEST_F(DBIteratorTest, NonBlockingIteration) {
   do {
     ReadOptions non_blocking_opts, regular_opts;
     Options options = CurrentOptions();
-    options.statistics = rocksdb::CreateDBStatistics();
+    options.statistics = vidardb::CreateDBStatistics();
     non_blocking_opts.read_tier = kBlockCacheTier;
     CreateAndReopenWithCF({"pikachu"}, options);
     // write one kv to the database.
@@ -118,12 +118,12 @@ TEST_F(DBIteratorTest, NonBlockingIteration) {
   } while (ChangeOptions(kSkipNoSeekToLast | kSkipMmapReads));
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBIteratorTest, ManagedNonBlockingIteration) {
   do {
     ReadOptions non_blocking_opts, regular_opts;
     Options options = CurrentOptions();
-    options.statistics = rocksdb::CreateDBStatistics();
+    options.statistics = vidardb::CreateDBStatistics();
     non_blocking_opts.read_tier = kBlockCacheTier;
     CreateAndReopenWithCF({"pikachu"}, options);
     // write one kv to the database.
@@ -181,7 +181,7 @@ TEST_F(DBIteratorTest, ManagedNonBlockingIteration) {
     // Exclude kHashCuckoo as it does not support iteration currently
   } while (ChangeOptions(kSkipNoSeekToLast | kSkipMmapReads));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBIteratorTest, IterSeekBeforePrev) {
   ASSERT_OK(Put("a", "b"));
@@ -461,7 +461,7 @@ TEST_F(DBIteratorTest, IterReseek) {
   Options options = CurrentOptions(options_override);
   options.max_sequential_skip_in_iterations = 3;
   options.create_if_missing = true;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   DestroyAndReopen(options);
   CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -998,7 +998,7 @@ TEST_F(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
 
 TEST_F(DBIteratorTest, IteratorWithLocalStatistics) {
   Options options = CurrentOptions();
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   DestroyAndReopen(options);
 
   Random rnd(301);
@@ -1084,7 +1084,7 @@ TEST_F(DBIteratorTest, ReadAhead) {
   options.env = env_;
   options.disable_auto_compactions = true;
   options.write_buffer_size = 4 << 20;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
   table_options.block_size = 1024;
   table_options.no_block_cache = true;
@@ -1108,9 +1108,9 @@ TEST_F(DBIteratorTest, ReadAhead) {
     Put(Key(i), value);
   }
   ASSERT_OK(Flush());
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   ASSERT_EQ("1,1,1", FilesPerLevel());
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
   env_->random_read_bytes_counter_ = 0;
   options.statistics->setTickerCount(NO_FILE_OPENS, 0);
@@ -1148,10 +1148,10 @@ TEST_F(DBIteratorTest, ReadAhead) {
   delete iter;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

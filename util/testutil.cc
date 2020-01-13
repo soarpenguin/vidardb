@@ -15,7 +15,7 @@
 #include "port/port.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace test {
 
 Slice RandomString(Random* rnd, int len, std::string* dst) {
@@ -86,7 +86,7 @@ class Uint64ComparatorImpl : public Comparator {
   Uint64ComparatorImpl() { }
 
   virtual const char* Name() const override {
-    return "rocksdb.Uint64Comparator";
+    return "vidardb.Uint64Comparator";
   }
 
   virtual int Compare(const Slice& a, const Slice& b) const override {
@@ -187,7 +187,7 @@ BlockBasedTableOptions RandomBlockBasedTableOptions(Random* rnd) {
 }
 
 TableFactory* RandomTableFactory(Random* rnd, int pre_defined) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   int random_num = pre_defined >= 0 ? pre_defined : rnd->Uniform(4);
   switch (random_num) {
     default:
@@ -195,7 +195,7 @@ TableFactory* RandomTableFactory(Random* rnd, int pre_defined) {
   }
 #else
   return NewBlockBasedTableFactory();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
 void RandomInitDBOptions(DBOptions* db_opt, Random* rnd) {
@@ -312,4 +312,4 @@ void RandomInitCFOptions(ColumnFamilyOptions* cf_opt, Random* rnd) {
 }
 
 }  // namespace test
-}  // namespace rocksdb
+}  // namespace vidardb

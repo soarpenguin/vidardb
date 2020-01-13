@@ -3,16 +3,16 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 #include <string>
 
 #include "db/db_impl.h"
 #include "db/db_test_util.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 class OptionsFileTest : public testing::Test {
  public:
   OptionsFileTest() : dbname_(test::TmpDir() + "/options_file_test") {}
@@ -98,7 +98,7 @@ TEST_F(OptionsFileTest, OptionsFileName) {
   ASSERT_EQ(type, kTempFile);
   ASSERT_EQ(number, kTempOptionsFileNum);
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
 #if !(defined NDEBUG) || !defined(OS_WIN)
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 #include <cstdio>
 
 int main(int argc, char** argv) {
-  printf("Skipped as Options file is not supported in RocksDBLite.\n");
+  printf("Skipped as Options file is not supported in VidarDBLite.\n");
   return 0;
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

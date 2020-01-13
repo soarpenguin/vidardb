@@ -13,11 +13,11 @@
 #include <utility>
 #include <vector>
 #include <string>
-#include "rocksdb/cache.h"
+#include "vidardb/cache.h"
 #include "db/dbformat.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class VersionSet;
 
@@ -290,4 +290,4 @@ class VersionEdit {
   std::string column_family_name_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

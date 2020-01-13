@@ -8,7 +8,7 @@
 #include "util/random.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class WritableFileWriterTest : public testing::Test {};
 
@@ -125,7 +125,7 @@ TEST_F(WritableFileWriterTest, AppendStatusReturn) {
   ASSERT_NOK(writer->Append(std::string(2 * kMb, 'b')));
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

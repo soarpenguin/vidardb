@@ -7,7 +7,7 @@
 #include "util/perf_context_imp.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace {
 bool ShouldReportToStats(Env* env, Statistics* stats) {
   return env != nullptr && stats != nullptr &&
@@ -83,4 +83,4 @@ bool InstrumentedCondVar::TimedWaitInternal(uint64_t abs_time_us) {
   return cond_.TimedWait(abs_time_us);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

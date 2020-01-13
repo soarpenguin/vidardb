@@ -13,7 +13,7 @@
 #include "db/writebuffer.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 MemTableAllocator::MemTableAllocator(Allocator* allocator,
                                      WriteBuffer* write_buffer)
@@ -45,4 +45,4 @@ void MemTableAllocator::DoneAllocating() {
 
 size_t MemTableAllocator::BlockSize() const { return allocator_->BlockSize(); }
 
-}  // namespace rocksdb
+}  // namespace vidardb

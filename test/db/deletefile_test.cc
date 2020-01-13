@@ -7,9 +7,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-#include "rocksdb/db.h"
+#include "vidardb/db.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
@@ -17,14 +17,14 @@
 #include "util/string_util.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "rocksdb/env.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/env.h"
+#include "vidardb/transaction_log.h"
 #include <vector>
 #include <stdlib.h>
 #include <map>
 #include <string>
 
-namespace rocksdb {
+namespace vidardb {
 
 class DeleteFileTest : public testing::Test {
  public:
@@ -308,8 +308,8 @@ TEST_F(DeleteFileTest, DeleteNonDefaultColumnFamily) {
   column_families.emplace_back();
   column_families.emplace_back("new_cf", ColumnFamilyOptions());
 
-  std::vector<rocksdb::ColumnFamilyHandle*> handles;
-  rocksdb::DB* db;
+  std::vector<vidardb::ColumnFamilyHandle*> handles;
+  vidardb::DB* db;
   ASSERT_OK(DB::Open(db_options, dbname_, column_families, &handles, &db));
 
   Random rnd(5);
@@ -368,7 +368,7 @@ TEST_F(DeleteFileTest, DeleteNonDefaultColumnFamily) {
   delete db;
 }
 
-} //namespace rocksdb
+} //namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
@@ -380,8 +380,8 @@ int main(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   fprintf(stderr,
-          "SKIPPED as DBImpl::DeleteFile is not supported in ROCKSDB_LITE\n");
+          "SKIPPED as DBImpl::DeleteFile is not supported in VIDARDB_LITE\n");
   return 0;
 }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE

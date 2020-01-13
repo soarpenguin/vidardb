@@ -7,16 +7,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
 #include <thread>
 #include "port/port.h"
 #include "port/sys_time.h"
 
-#include "rocksdb/options.h"
+#include "vidardb/options.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 Env::~Env() {
 }
@@ -348,4 +348,4 @@ EnvOptions::EnvOptions() {
 }
 
 
-}  // namespace rocksdb
+}  // namespace vidardb

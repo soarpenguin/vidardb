@@ -3,13 +3,13 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/write_batch_base.h"
+#include "vidardb/write_batch_base.h"
 
 #include <string>
 
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Simple implementation of SlicePart variants of Put().  Child classes
 // can override these method with more performant solutions if they choose.
@@ -43,4 +43,4 @@ void WriteBatchBase::Delete(const SliceParts& key) {
   Delete(key_slice);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

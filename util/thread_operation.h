@@ -13,13 +13,13 @@
 
 #pragma once
 
-#include "rocksdb/thread_status.h"
+#include "vidardb/thread_status.h"
 
 #include <string>
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 
 // The structure that describes a major thread operation.
 struct OperationInfo {
@@ -117,5 +117,5 @@ struct OperationInfo {
 struct StateInfo {
 };
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
-}  // namespace rocksdb
+#endif  // VIDARDB_USING_THREAD_STATUS
+}  // namespace vidardb

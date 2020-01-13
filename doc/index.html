@@ -2,52 +2,52 @@
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="doc.css" />
-<title>RocksDB</title>
+<title>VidarDB</title>
 </head>
 
 <body>
-<h1>RocksDB</h1>
+<h1>VidarDB</h1>
 <address>The Facebook Database Engineering Team</address>
 <address>Build on earlier work on leveldb by Sanjay Ghemawat
                (sanjay@google.com) and Jeff Dean (jeff@google.com)</address>
 <p>
-The <code>rocksdb</code> library provides a persistent key value store.  Keys and
+The <code>vidardb</code> library provides a persistent key value store.  Keys and
 values are arbitrary byte arrays.  The keys are ordered within the key
 value store according to a user-specified comparator function.
 
 <p>
 <h1>Opening A Database</h1>
 <p>
-A <code>rocksdb</code> database has a name which corresponds to a file system
+A <code>vidardb</code> database has a name which corresponds to a file system
 directory.  All of the contents of database are stored in this
 directory.  The following example shows how to open a database,
 creating it if necessary:
 <p>
 <pre>
   #include &lt;assert&gt;
-  #include "rocksdb/db.h"
+  #include "vidardb/db.h"
 
-  rocksdb::DB* db;
-  rocksdb::Options options;
+  vidardb::DB* db;
+  vidardb::Options options;
   options.create_if_missing = true;
-  rocksdb::Status status = rocksdb::DB::Open(options, "/tmp/testdb", &amp;db);
+  vidardb::Status status = vidardb::DB::Open(options, "/tmp/testdb", &amp;db);
   assert(status.ok());
   ...
 </pre>
 If you want to raise an error if the database already exists, add
-the following line before the <code>rocksdb::DB::Open</code> call:
+the following line before the <code>vidardb::DB::Open</code> call:
 <pre>
   options.error_if_exists = true;
 </pre>
 <h1>Status</h1>
 <p>
-You may have noticed the <code>rocksdb::Status</code> type above.  Values of this
-type are returned by most functions in <code>rocksdb</code> that may encounter an
+You may have noticed the <code>vidardb::Status</code> type above.  Values of this
+type are returned by most functions in <code>vidardb</code> that may encounter an
 error.  You can check if such a result is ok, and also print an
 associated error message:
 <p>
 <pre>
-   rocksdb::Status s = ...;
+   vidardb::Status s = ...;
    if (!s.ok()) cerr &lt;&lt; s.ToString() &lt;&lt; endl;
 </pre>
 <h1>Closing A Database</h1>
@@ -67,9 +67,9 @@ modify/query the database.  For example, the following code
 moves the value stored under key1 to key2.
 <pre>
   std::string value;
-  rocksdb::Status s = db-&gt;Get(rocksdb::ReadOptions(), key1, &amp;value);
-  if (s.ok()) s = db-&gt;Put(rocksdb::WriteOptions(), key2, value);
-  if (s.ok()) s = db-&gt;Delete(rocksdb::WriteOptions(), key1);
+  vidardb::Status s = db-&gt;Get(vidardb::ReadOptions(), key1, &amp;value);
+  if (s.ok()) s = db-&gt;Put(vidardb::WriteOptions(), key2, value);
+  if (s.ok()) s = db-&gt;Delete(vidardb::WriteOptions(), key1);
 </pre>
 
 <h1>Atomic Updates</h1>
@@ -80,15 +80,15 @@ Such problems can be avoided by using the <code>WriteBatch</code> class to
 atomically apply a set of updates:
 <p>
 <pre>
-  #include "rocksdb/write_batch.h"
+  #include "vidardb/write_batch.h"
   ...
   std::string value;
-  rocksdb::Status s = db-&gt;Get(rocksdb::ReadOptions(), key1, &amp;value);
+  vidardb::Status s = db-&gt;Get(vidardb::ReadOptions(), key1, &amp;value);
   if (s.ok()) {
-    rocksdb::WriteBatch batch;
+    vidardb::WriteBatch batch;
     batch.Delete(key1);
     batch.Put(key2, value);
-    s = db-&gt;Write(rocksdb::WriteOptions(), &amp;batch);
+    s = db-&gt;Write(vidardb::WriteOptions(), &amp;batch);
   }
 </pre>
 The <code>WriteBatch</code> holds a sequence of edits to be made to the database,
@@ -111,7 +111,7 @@ persistent storage.  (On Posix systems, this is implemented by calling
 either <code>fsync(...)</code> or <code>fdatasync(...)</code> or
 <code>msync(..., MS_SYNC)</code> before the write operation returns.)
 <pre>
-  rocksdb::WriteOptions write_options;
+  vidardb::WriteOptions write_options;
   write_options.sync = true;
   db-&gt;Put(write_options, ...);
 </pre>
@@ -154,7 +154,7 @@ finished, you can manually call sync() to flush all dirty buffers
 to stable storage.
 
 <p>
-RocksDB by default uses faster fdatasync() to sync files. If you want
+VidarDB by default uses faster fdatasync() to sync files. If you want
 to use fsync(), you can set Options::use_fsync to true. You should set
 this to true on filesystems like ext3 that can lose files after a
 reboot.
@@ -163,9 +163,9 @@ reboot.
 <h1>Concurrency</h1>
 <p>
 A database may only be opened by one process at a time.
-The <code>rocksdb</code> implementation acquires a lock from the
+The <code>vidardb</code> implementation acquires a lock from the
 operating system to prevent misuse.  Within a single process, the
-same <code>rocksdb::DB</code> object may be safely shared by multiple
+same <code>vidardb::DB</code> object may be safely shared by multiple
 concurrent threads.  I.e., different threads may write into or fetch
 iterators or call <code>Get</code> on the same database without any
 external synchronization (the leveldb implementation will
@@ -181,10 +181,10 @@ the public header files.
 Merge operators provide efficient support for read-modify-write operation.
 More on the interface and implementation can be found on:
 <p>
-<a href="https://github.com/facebook/rocksdb/wiki/Merge-Operator">
+<a href="https://github.com/facebook/vidardb/wiki/Merge-Operator">
     Merge Operator</a>
 <p>
-<a href="https://github.com/facebook/rocksdb/wiki/Merge-Operator-Implementation">
+<a href="https://github.com/facebook/vidardb/wiki/Merge-Operator-Implementation">
     Merge Operator Implementation</a>
 
 <p>
@@ -194,7 +194,7 @@ The following example demonstrates how to print all key,value pairs
 in a database.
 <p>
 <pre>
-  rocksdb::Iterator* it = db-&gt;NewIterator(rocksdb::ReadOptions());
+  vidardb::Iterator* it = db-&gt;NewIterator(vidardb::ReadOptions());
   for (it-&gt;SeekToFirst(); it-&gt;Valid(); it-&gt;Next()) {
     cout &lt;&lt; it-&gt;key().ToString() &lt;&lt; ": "  &lt;&lt; it-&gt;value().ToString() &lt;&lt; endl;
   }
@@ -230,10 +230,10 @@ implicit snapshot of the current state.
 Snapshots are created by the DB::GetSnapshot() method:
 <p>
 <pre>
-  rocksdb::ReadOptions options;
+  vidardb::ReadOptions options;
   options.snapshot = db-&gt;GetSnapshot();
   ... apply some updates to db ...
-  rocksdb::Iterator* iter = db-&gt;NewIterator(options);
+  vidardb::Iterator* iter = db-&gt;NewIterator(options);
   ... read using iter to view the state when the snapshot was created ...
   delete iter;
   db-&gt;ReleaseSnapshot(options.snapshot);
@@ -245,22 +245,22 @@ support reading as of that snapshot.
 <h1>Slice</h1>
 <p>
 The return value of the <code>it->key()</code> and <code>it->value()</code> calls above
-are instances of the <code>rocksdb::Slice</code> type.  <code>Slice</code> is a simple
+are instances of the <code>vidardb::Slice</code> type.  <code>Slice</code> is a simple
 structure that contains a length and a pointer to an external byte
 array.  Returning a <code>Slice</code> is a cheaper alternative to returning a
 <code>std::string</code> since we do not need to copy potentially large keys and
-values.  In addition, <code>rocksdb</code> methods do not return null-terminated
-C-style strings since <code>rocksdb</code> keys and values are allowed to
+values.  In addition, <code>vidardb</code> methods do not return null-terminated
+C-style strings since <code>vidardb</code> keys and values are allowed to
 contain '\0' bytes.
 <p>
 C++ strings and null-terminated C-style strings can be easily converted
 to a Slice:
 <p>
 <pre>
-   rocksdb::Slice s1 = "hello";
+   vidardb::Slice s1 = "hello";
 
    std::string str("world");
-   rocksdb::Slice s2 = str;
+   vidardb::Slice s2 = str;
 </pre>
 A Slice can be easily converted back to a C++ string:
 <pre>
@@ -272,7 +272,7 @@ the external byte array into which the Slice points remains live while
 the Slice is in use.  For example, the following is buggy:
 <p>
 <pre>
-   rocksdb::Slice slice;
+   vidardb::Slice slice;
    if (...) {
      std::string str = ...;
      slice = str;
@@ -289,16 +289,16 @@ which orders bytes lexicographically.  You can however supply a custom
 comparator when opening a database.  For example, suppose each
 database key consists of two numbers and we should sort by the first
 number, breaking ties by the second number.  First, define a proper
-subclass of <code>rocksdb::Comparator</code> that expresses these rules:
+subclass of <code>vidardb::Comparator</code> that expresses these rules:
 <p>
 <pre>
-  class TwoPartComparator : public rocksdb::Comparator {
+  class TwoPartComparator : public vidardb::Comparator {
    public:
     // Three-way comparison function:
     //   if a &lt; b: negative result
     //   if a &gt; b: positive result
     //   else: zero result
-    int Compare(const rocksdb::Slice&amp; a, const rocksdb::Slice&amp; b) const {
+    int Compare(const vidardb::Slice&amp; a, const vidardb::Slice&amp; b) const {
       int a1, a2, b1, b2;
       ParseKey(a, &amp;a1, &amp;a2);
       ParseKey(b, &amp;b1, &amp;b2);
@@ -311,7 +311,7 @@ subclass of <code>rocksdb::Comparator</code> that expresses these rules:
 
     // Ignore the following methods for now:
     const char* Name() const { return "TwoPartComparator"; }
-    void FindShortestSeparator(std::string*, const rocksdb::Slice&amp;) const { }
+    void FindShortestSeparator(std::string*, const vidardb::Slice&amp;) const { }
     void FindShortSuccessor(std::string*) const { }
   };
 </pre>
@@ -319,18 +319,18 @@ Now create a database using this custom comparator:
 <p>
 <pre>
   TwoPartComparator cmp;
-  rocksdb::DB* db;
-  rocksdb::Options options;
+  vidardb::DB* db;
+  vidardb::Options options;
   options.create_if_missing = true;
   options.comparator = &amp;cmp;
-  rocksdb::Status status = rocksdb::DB::Open(options, "/tmp/testdb", &amp;db);
+  vidardb::Status status = vidardb::DB::Open(options, "/tmp/testdb", &amp;db);
   ...
 </pre>
 <h2>Backwards compatibility</h2>
 <p>
 The result of the comparator's <code>Name</code> method is attached to the
 database when it is created, and is checked on every subsequent
-database open.  If the name changes, the <code>rocksdb::DB::Open</code> call will
+database open.  If the name changes, the <code>vidardb::DB::Open</code> call will
 fail.  Therefore, change the name if and only if the new key format
 and comparison function are incompatible with existing databases, and
 it is ok to discard the contents of all existing databases.
@@ -350,22 +350,22 @@ version numbers found in the keys to decide how to interpret them.
 <p>
 By default, we keep the data in memory in skiplist memtable and the data
 on disk in a table format described here:
-<a href="https://github.com/facebook/rocksdb/wiki/Rocksdb-Table-Format">
-    RocksDB Table Format</a>.
+<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Table-Format">
+    VidarDB Table Format</a>.
 <p>
-Since one of the goals of RocksDB is to have
+Since one of the goals of VidarDB is to have
 different parts of the system easily pluggable, we support different
 implementations of both memtable and table format. You can supply
 your own memtable factory by setting <code>Options::memtable_factory</code>
 and your own table factory by setting <code>Options::table_factory</code>.
 For available memtable factories, please refer to
-<code>rocksdb/memtablerep.h</code> and for table factores to
-<code>rocksdb/table.h</code>. These features are both in active development
+<code>vidardb/memtablerep.h</code> and for table factores to
+<code>vidardb/table.h</code>. These features are both in active development
 and please be wary of any API changes that might break your application
 going forward.
 <p>
 You can also read more about memtables here:
-<a href="https://github.com/facebook/rocksdb/wiki/Rocksdb-Architecture-Guide#memtables">
+<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide#memtables">
 Memtables wiki
 </a>
 
@@ -373,12 +373,12 @@ Memtables wiki
 <h1>Performance</h1>
 <p>
 Performance can be tuned by changing the default values of the
-types defined in <code>include/rocksdb/options.h</code>.
+types defined in <code>include/vidardb/options.h</code>.
 
 <p>
 <h2>Block size</h2>
 <p>
-<code>rocksdb</code> groups adjacent keys together into the same block and such a
+<code>vidardb</code> groups adjacent keys together into the same block and such a
 block is the unit of transfer to and from persistent storage.  The
 default block size is approximately 4096 uncompressed bytes.
 Applications that mostly do bulk scans over the contents of the
@@ -423,9 +423,9 @@ compression entirely, but should only do so if benchmarks show a
 performance improvement:
 <p>
 <pre>
-  rocksdb::Options options;
-  options.compression = rocksdb::kNoCompression;
-  ... rocksdb::DB::Open(options, name, ...) ....
+  vidardb::Options options;
+  options.compression = vidardb::kNoCompression;
+  ... vidardb::DB::Open(options, name, ...) ....
 </pre>
 <h2>Cache</h2>
 <p>
@@ -439,13 +439,13 @@ compressed cache is used, the OS cache will be disabled automatically by setting
 <code>options.allow_os_buffer</code> to false.
 <p>
 <pre>
-  #include "rocksdb/cache.h"
+  #include "vidardb/cache.h"
 
-  rocksdb::Options options;
-  options.block_cache = rocksdb::NewLRUCache(100 * 1048576);  // 100MB uncompressed cache
-  options.block_cache_compressed = rocksdb::NewLRUCache(100 * 1048576);  // 100MB compressed cache
-  rocksdb::DB* db;
-  rocksdb::DB::Open(options, name, &db);
+  vidardb::Options options;
+  options.block_cache = vidardb::NewLRUCache(100 * 1048576);  // 100MB uncompressed cache
+  options.block_cache_compressed = vidardb::NewLRUCache(100 * 1048576);  // 100MB compressed cache
+  vidardb::DB* db;
+  vidardb::DB::Open(options, name, &db);
   ... use the db ...
   delete db
   delete options.block_cache;
@@ -458,9 +458,9 @@ displacing most of the cached contents.  A per-iterator option can be
 used to achieve this:
 <p>
 <pre>
-  rocksdb::ReadOptions options;
+  vidardb::ReadOptions options;
   options.fill_cache = false;
-  rocksdb::Iterator* it = db-&gt;NewIterator(options);
+  vidardb::Iterator* it = db-&gt;NewIterator(options);
   for (it-&gt;SeekToFirst(); it-&gt;Valid(); it-&gt;Next()) {
     ...
   }
@@ -477,7 +477,7 @@ by placing keys that are accessed together near each other and placing
 infrequently used keys in a separate region of the key space.
 <p>
 For example, suppose we are implementing a simple file system on top
-of <code>rocksdb</code>.  The types of entries we might wish to store are:
+of <code>vidardb</code>.  The types of entries we might wish to store are:
 <p>
 <pre>
    filename -&gt; permission-bits, length, list of file_block_ids
@@ -490,15 +490,15 @@ contents.
 <p>
 <h2>Filters</h2>
 <p>
-Because of the way <code>rocksdb</code> data is organized on disk,
+Because of the way <code>vidardb</code> data is organized on disk,
 a single <code>Get()</code> call may involve multiple reads from disk.
 The optional <code>FilterPolicy</code> mechanism can be used to reduce
 the number of disk reads substantially.
 <pre>
-   rocksdb::Options options;
+   vidardb::Options options;
    options.filter_policy = NewBloomFilter(10);
-   rocksdb::DB* db;
-   rocksdb::DB::Open(options, "/tmp/testdb", &amp;db);
+   vidardb::DB* db;
+   vidardb::DB::Open(options, "/tmp/testdb", &amp;db);
    ... use the database ...
    delete db;
    delete options.filter_policy;
@@ -522,7 +522,7 @@ consider a comparator that ignores trailing spaces when comparing keys.
 Instead, the application should provide a custom filter policy that
 also ignores trailing spaces.  For example:
 <pre>
-  class CustomFilterPolicy : public rocksdb::FilterPolicy {
+  class CustomFilterPolicy : public vidardb::FilterPolicy {
    private:
     FilterPolicy* builtin_policy_;
    public:
@@ -549,11 +549,11 @@ also ignores trailing spaces.  For example:
 <p>
 Advanced applications may provide a filter policy that does not use
 a bloom filter but uses some other mechanism for summarizing a set
-of keys.  See <code>rocksdb/filter_policy.h</code> for detail.
+of keys.  See <code>vidardb/filter_policy.h</code> for detail.
 <p>
 <h1>Checksums</h1>
 <p>
-<code>rocksdb</code> associates checksums with all data it stores in the file system.
+<code>vidardb</code> associates checksums with all data it stores in the file system.
 There are two separate controls provided over how aggressively these
 checksums are verified:
 <p>
@@ -572,7 +572,7 @@ checksums are verified:
   parts of its persistent storage have been corrupted.
 <p>
   If a database is corrupted (perhaps it cannot be opened when
-  paranoid checking is turned on), the <code>rocksdb::RepairDB</code> function
+  paranoid checking is turned on), the <code>vidardb::RepairDB</code> function
   may be used to recover as much of the data as possible.
 <p>
 </ul>
@@ -581,14 +581,14 @@ checksums are verified:
 <h1>Compaction</h1>
 <p>
 You can read more on Compactions here:
-<a href="https://github.com/facebook/rocksdb/wiki/Rocksdb-Architecture-Guide#multi-threaded-compactions">
+<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide#multi-threaded-compactions">
     Multi-threaded compactions
 </a>
 <p>
 Here we give overview of the options that impact behavior of Compactions:
 <ul>
 <p>
-<li><code>Options::compaction_style</code> - RocksDB currently supports two
+<li><code>Options::compaction_style</code> - VidarDB currently supports two
 compaction algorithms - Universal  style and Level style. This option switches
 between the two.  Can be kCompactionStyleUniversal or kCompactionStyleLevel.
 If this is kCompactionStyleUniversal, then you can configure universal style
@@ -647,13 +647,13 @@ the default LOW priority thread pool
 </ul>
 
 <p>
-You can learn more about all of those options in <code>rocksdb/options.h</code>
+You can learn more about all of those options in <code>vidardb/options.h</code>
 
 <h2> Universal style compaction specific settings</h2>
 <p>
 If you're using Universal style compaction, there is an object <code>CompactionOptionsUniversal</code>
 that hold all the different options for that compaction. The exact definition is in
-<code>rocksdb/universal_compaction.h</code> and you can set it in <code>Options::compaction_options_universal</code>.
+<code>vidardb/universal_compaction.h</code> and you can set it in <code>Options::compaction_options_universal</code>.
 Here we give short overview of options in <code>CompactionOptionsUniversal</code>:
 <ul>
 <p>
@@ -668,7 +668,7 @@ Here we give short overview of options in <code>CompactionOptionsUniversal</code
 <li> <code>CompactionOptionsUniversal::max_size_amplification_percent</code> - The size amplification is defined as the amount (in percentage) of
 additional storage needed to store a single byte of data in the database.  For example, a size amplification of 2% means that a database that
 contains 100 bytes of user-data may occupy upto 102 bytes of physical storage. By this definition, a fully compacted database has
-a size amplification of 0%. Rocksdb uses the following heuristic to calculate size amplification: it assumes that all files excluding
+a size amplification of 0%. VidarDB uses the following heuristic to calculate size amplification: it assumes that all files excluding
 the earliest file contribute to the size amplification.  Default: 200, which means that a 100 byte database could require upto
 300 bytes of storage.
 <p>
@@ -692,7 +692,7 @@ Default: kCompactionStopStyleTotalSize
 <h1>Thread pools</h1>
 <p>
 A thread pool is associated with Env environment object. The client has to create a thread pool by setting the number of background
-threads using method <code>Env::SetBackgroundThreads()</code> defined in <code>rocksdb/env.h</code>.
+threads using method <code>Env::SetBackgroundThreads()</code> defined in <code>vidardb/env.h</code>.
 We use the thread pool for compactions and memtable flushes.
 Since memtable flushes are in critical code path (stalling memtable flush can stall writes, increasing p99), we suggest
 having two thread pools - with priorities HIGH and LOW. Memtable flushes can be set up to be scheduled on HIGH thread pool.
@@ -710,18 +710,18 @@ potentially block memtable flush jobs of other db instances, leading to unnecess
 </ul>
 <p>
 <pre>
-  #include "rocksdb/env.h"
-  #include "rocksdb/db.h"
+  #include "vidardb/env.h"
+  #include "vidardb/db.h"
 
-  auto env = rocksdb::Env::Default();
-  env->SetBackgroundThreads(2, rocksdb::Env::LOW);
-  env->SetBackgroundThreads(1, rocksdb::Env::HIGH);
-  rocksdb::DB* db;
-  rocksdb::Options options;
+  auto env = vidardb::Env::Default();
+  env->SetBackgroundThreads(2, vidardb::Env::LOW);
+  env->SetBackgroundThreads(1, vidardb::Env::HIGH);
+  vidardb::DB* db;
+  vidardb::Options options;
   options.env = env;
   options.max_background_compactions = 2;
   options.max_background_flushes = 1;
-  rocksdb::Status status = rocksdb::DB::Open(options, "/tmp/testdb", &amp;db);
+  vidardb::Status status = vidardb::DB::Open(options, "/tmp/testdb", &amp;db);
   assert(status.ok());
   ...
 </pre>
@@ -731,11 +731,11 @@ The <code>GetApproximateSizes</code> method can used to get the approximate
 number of bytes of file system space used by one or more key ranges.
 <p>
 <pre>
-   rocksdb::Range ranges[2];
-   ranges[0] = rocksdb::Range("a", "c");
-   ranges[1] = rocksdb::Range("x", "z");
+   vidardb::Range ranges[2];
+   ranges[0] = vidardb::Range("a", "c");
+   ranges[1] = vidardb::Range("x", "z");
    uint64_t sizes[2];
-   rocksdb::Status s = db-&gt;GetApproximateSizes(ranges, 2, sizes);
+   vidardb::Status s = db-&gt;GetApproximateSizes(ranges, 2, sizes);
 </pre>
 The preceding call will set <code>sizes[0]</code> to the approximate number of
 bytes of file system space used by the key range <code>[a..c)</code> and
@@ -745,31 +745,31 @@ bytes of file system space used by the key range <code>[a..c)</code> and
 <h1>Environment</h1>
 <p>
 All file operations (and other operating system calls) issued by the
-<code>rocksdb</code> implementation are routed through a <code>rocksdb::Env</code> object.
+<code>vidardb</code> implementation are routed through a <code>vidardb::Env</code> object.
 Sophisticated clients may wish to provide their own <code>Env</code>
 implementation to get better control.  For example, an application may
 introduce artificial delays in the file IO paths to limit the impact
-of <code>rocksdb</code> on other activities in the system.
+of <code>vidardb</code> on other activities in the system.
 <p>
 <pre>
-  class SlowEnv : public rocksdb::Env {
+  class SlowEnv : public vidardb::Env {
     .. implementation of the Env interface ...
   };
 
   SlowEnv env;
-  rocksdb::Options options;
+  vidardb::Options options;
   options.env = &amp;env;
-  Status s = rocksdb::DB::Open(options, ...);
+  Status s = vidardb::DB::Open(options, ...);
 </pre>
 <h1>Porting</h1>
 <p>
-<code>rocksdb</code> may be ported to a new platform by providing platform
+<code>vidardb</code> may be ported to a new platform by providing platform
 specific implementations of the types/methods/functions exported by
-<code>rocksdb/port/port.h</code>.  See <code>rocksdb/port/port_example.h</code> for more
+<code>vidardb/port/port.h</code>.  See <code>vidardb/port/port_example.h</code> for more
 details.
 <p>
-In addition, the new platform may need a new default <code>rocksdb::Env</code>
-implementation.  See <code>rocksdb/util/env_posix.h</code> for an example.
+In addition, the new platform may need a new default <code>vidardb::Env</code>
+implementation.  See <code>vidardb/util/env_posix.h</code> for an example.
 
 <h1>Statistics</h1>
 <p>
@@ -777,7 +777,7 @@ To be able to efficiently tune your application, it is always helpful if you
 have access to usage statistics. You can collect those statistics by setting
 <code>Options::table_properties_collectors</code> or
 <code>Options::statistics</code>. For more information, refer to
-<code>rocksdb/table_properties.h</code> and <code>rocksdb/statistics.h</code>.
+<code>vidardb/table_properties.h</code> and <code>vidardb/statistics.h</code>.
 These should not add significant overhead to your application and we
 recommend exporting them to other monitoring tools.
 
@@ -813,12 +813,12 @@ checks will be performed with ttl being first.
 
 <h1>Other Information</h1>
 <p>
-Details about the <code>rocksdb</code> implementation may be found in
+Details about the <code>vidardb</code> implementation may be found in
 the following documents:
 <ul>
-<li> <a href="https://github.com/facebook/rocksdb/wiki/Rocksdb-Architecture-Guide">
-  RocksDB Architecture Guide</a>
-<li> <a href="https://github.com/facebook/rocksdb/wiki/Rocksdb-Table-Format">
+<li> <a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide">
+  VidarDB Architecture Guide</a>
+<li> <a href="https://github.com/facebook/vidardb/wiki/VidarDB-Table-Format">
     Format of an immutable Table file</a>
 <li> <a href="log_format.txt">Format of a log file</a>
 </ul>

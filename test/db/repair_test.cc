@@ -9,11 +9,11 @@
 
 #include "db/db_impl.h"
 #include "db/db_test_util.h"
-#include "rocksdb/db.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/db.h"
+#include "vidardb/transaction_log.h"
 #include "util/file_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class RepairTest : public DBTestBase {
  public:
@@ -169,7 +169,7 @@ TEST_F(RepairTest, UnflushedSst) {
   ASSERT_EQ(Get("key"), "val");
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

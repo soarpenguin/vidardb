@@ -36,11 +36,11 @@
 #include "db/version_set.h"
 #include "port/likely.h"
 #include "port/port.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/statistics.h"
+#include "vidardb/status.h"
+#include "vidardb/table.h"
 #include "table/block.h"
 #include "table/block_based_table_factory.h"
 #include "table/merger.h"
@@ -59,7 +59,7 @@
 #include "util/sync_point.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Maintains state for each sub-compaction
 struct CompactionJob::SubcompactionState {
@@ -1061,11 +1061,11 @@ Status CompactionJob::OpenCompactionOutputFile(
                                     sub_compact->compaction->output_path_id());
   // Fire events.
   ColumnFamilyData* cfd = sub_compact->compaction->column_family_data();
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   EventHelpers::NotifyTableFileCreationStarted(
       cfd->ioptions()->listeners, dbname_, cfd->GetName(), fname, job_id_,
       TableFileCreationReason::kCompaction);
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
   // Make the output file
   unique_ptr<WritableFile> writable_file;
   Status s = NewWritableFile(env_, fname, &writable_file, env_options_);
@@ -1141,7 +1141,7 @@ void CompactionJob::CleanupCompaction() {
   compact_ = nullptr;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 namespace {
 void CopyPrefix(
     const Slice& src, size_t prefix_length, std::string* dst) {
@@ -1151,7 +1151,7 @@ void CopyPrefix(
 }
 }  // namespace
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 void CompactionJob::UpdateCompactionStats() {
   Compaction* compaction = compact_->compaction;
@@ -1209,7 +1209,7 @@ void CompactionJob::UpdateCompactionInputStatsHelper(
 
 void CompactionJob::UpdateCompactionJobStats(
     const InternalStats::CompactionStats& stats) const {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (compaction_job_stats_) {
     compaction_job_stats_->elapsed_micros = stats.micros;
 
@@ -1242,7 +1242,7 @@ void CompactionJob::UpdateCompactionJobStats(
           &compaction_job_stats_->largest_output_key_prefix);
     }
   }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
 void CompactionJob::LogCompaction() {
@@ -1278,4 +1278,4 @@ void CompactionJob::LogCompaction() {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

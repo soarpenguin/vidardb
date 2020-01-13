@@ -9,11 +9,11 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/sst_file_manager.h"
-#include "rocksdb/sst_file_writer.h"
+#include "vidardb/sst_file_manager.h"
+#include "vidardb/sst_file_writer.h"
 #include "util/sst_file_manager_impl.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBSSTTest : public DBTestBase {
  public:
@@ -48,11 +48,11 @@ TEST_F(DBSSTTest, DontDeletePendingOutputs) {
   // If pending output guard does not work correctly, PurgeObsoleteFiles() will
   // delete the file that Compaction is trying to create, causing this: error
   // db/db_test.cc:975: IO error:
-  // /tmp/rocksdbtest-1552237650/db_test/000009.sst: No such file or directory
+  // /tmp/vidardbtest-1552237650/db_test/000009.sst: No such file or directory
   Compact("a", "b");
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBSSTTest, DontDeleteMovedFile) {
   // This test triggers move compaction and verifies that the file is not
   // deleted when it's part of move compaction
@@ -179,7 +179,7 @@ TEST_F(DBSSTTest, DeleteObsoleteFilesPendingOutputs) {
   listener->VerifyMatchedCount(1);
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBSSTTest, DBWithSstFileManager) {
   std::shared_ptr<SstFileManager> sst_file_manager(NewSstFileManager(env_));
@@ -188,13 +188,13 @@ TEST_F(DBSSTTest, DBWithSstFileManager) {
   int files_added = 0;
   int files_deleted = 0;
   int files_moved = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "SstFileManagerImpl::OnAddFile", [&](void* arg) { files_added++; });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "SstFileManagerImpl::OnDeleteFile", [&](void* arg) { files_deleted++; });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "SstFileManagerImpl::OnMoveFile", [&](void* arg) { files_moved++; });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Options options = CurrentOptions();
   options.sst_file_manager = sst_file_manager;
@@ -242,22 +242,22 @@ TEST_F(DBSSTTest, DBWithSstFileManager) {
   ASSERT_EQ(sfm->GetTrackedFiles(), files_in_db);
   ASSERT_EQ(sfm->GetTotalSize(), total_files_size);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBSSTTest, RateLimitedDelete) {
   Destroy(last_options_);
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"DBSSTTest::RateLimitedDelete:1",
        "DeleteScheduler::BackgroundEmptyTrash"},
   });
 
   std::vector<uint64_t> penalties;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DeleteScheduler::BackgroundEmptyTrash:Wait",
       [&](void* arg) { penalties.push_back(*(static_cast<int*>(arg))); });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Options options = CurrentOptions();
   options.disable_auto_compactions = true;
@@ -307,7 +307,7 @@ TEST_F(DBSSTTest, RateLimitedDelete) {
   }
   ASSERT_GT(time_spent_deleting, expected_penlty * 0.9);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 // Create a DB with 2 db_paths, and generate multiple files in the 2
@@ -316,10 +316,10 @@ TEST_F(DBSSTTest, RateLimitedDelete) {
 // files in the second path were not.
 TEST_F(DBSSTTest, DeleteSchedulerMultipleDBPaths) {
   int bg_delete_file = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DeleteScheduler::DeleteTrashFile:DeleteFile",
       [&](void* arg) { bg_delete_file++; });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Options options = CurrentOptions();
   options.disable_auto_compactions = true;
@@ -378,15 +378,15 @@ TEST_F(DBSSTTest, DeleteSchedulerMultipleDBPaths) {
   sfm->WaitForEmptyTrash();
   ASSERT_EQ(bg_delete_file, 8);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(DBSSTTest, DestroyDBWithRateLimitedDelete) {
   int bg_delete_file = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DeleteScheduler::DeleteTrashFile:DeleteFile",
       [&](void* arg) { bg_delete_file++; });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Options options = CurrentOptions();
   options.disable_auto_compactions = true;
@@ -416,7 +416,7 @@ TEST_F(DBSSTTest, DestroyDBWithRateLimitedDelete) {
   // We have deleted the 4 sst files in the delete_scheduler
   ASSERT_EQ(bg_delete_file, 4);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBSSTTest, DBWithMaxSpaceAllowed) {
   std::shared_ptr<SstFileManager> sst_file_manager(NewSstFileManager(env_));
@@ -460,7 +460,7 @@ TEST_F(DBSSTTest, DBWithMaxSpaceAllowedRandomized) {
 
   int reached_max_space_on_flush = 0;
   int reached_max_space_on_compaction = 0;
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::FlushMemTableToOutputFile:MaxAllowedSpaceReached",
       [&](void* arg) {
         bg_error_set = true;
@@ -468,7 +468,7 @@ TEST_F(DBSSTTest, DBWithMaxSpaceAllowedRandomized) {
         reached_max_space_on_flush++;
       });
 
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "CompactionJob::FinishCompactionOutputFile:MaxAllowedSpaceReached",
       [&](void* arg) {
         bg_error_set = true;
@@ -479,8 +479,8 @@ TEST_F(DBSSTTest, DBWithMaxSpaceAllowedRandomized) {
   for (auto limit_mb : max_space_limits_mbs) {
     bg_error_set = false;
     total_sst_files_size = 0;
-    rocksdb::SyncPoint::GetInstance()->ClearTrace();
-    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+    vidardb::SyncPoint::GetInstance()->ClearTrace();
+    vidardb::SyncPoint::GetInstance()->EnableProcessing();
     std::shared_ptr<SstFileManager> sst_file_manager(NewSstFileManager(env_));
     auto sfm = static_cast<SstFileManagerImpl*>(sst_file_manager.get());
 
@@ -507,14 +507,14 @@ TEST_F(DBSSTTest, DBWithMaxSpaceAllowedRandomized) {
     }
     ASSERT_TRUE(bg_error_set);
     ASSERT_GE(total_sst_files_size, limit_mb * 1024 * 1024);
-    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+    vidardb::SyncPoint::GetInstance()->DisableProcessing();
   }
 
   ASSERT_GT(reached_max_space_on_flush, 0);
   ASSERT_GT(reached_max_space_on_compaction, 0);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBSSTTest, OpenDBWithInfiniteMaxOpenFiles) {
   // Open DB with infinite max open files
   //  - First iteration use 1 thread to open files
@@ -597,7 +597,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSize) {
     live_sst_files_size += file_meta.size;
   }
 
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 5
   // Total SST files = 5
@@ -620,7 +620,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSize) {
   for (const auto& file_meta : live_files_meta) {
     live_sst_files_size += file_meta.size;
   }
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 1 (compacted file)
   // Total SST files = 6 (5 original files + compacted file)
@@ -642,21 +642,21 @@ TEST_F(DBSSTTest, GetTotalSstFilesSize) {
   dbfull()->GetLiveFilesMetaData(&live_files_meta);
   ASSERT_EQ(live_files_meta.size(), 0);
 
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 0
   // Total SST files = 6 (5 original files + compacted file)
   ASSERT_EQ(total_sst_files_size, 6 * single_file_size);
 
   iter1.reset();
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 0
   // Total SST files = 1 (compacted file)
   ASSERT_EQ(total_sst_files_size, 1 * single_file_size);
 
   iter2.reset();
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 0
   // Total SST files = 0
@@ -686,7 +686,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSizeVersionsFilesShared) {
     live_sst_files_size += file_meta.size;
   }
 
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
 
   // Live SST files = 5
@@ -710,7 +710,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSizeVersionsFilesShared) {
   for (const auto& file_meta : live_files_meta) {
     live_sst_files_size += file_meta.size;
   }
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 5
   // Total SST files = 5 (used in 2 version)
@@ -732,7 +732,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSizeVersionsFilesShared) {
   dbfull()->GetLiveFilesMetaData(&live_files_meta);
   ASSERT_EQ(live_files_meta.size(), 0);
 
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 0
   // Total SST files = 5 (used in 2 version)
@@ -741,7 +741,7 @@ TEST_F(DBSSTTest, GetTotalSstFilesSizeVersionsFilesShared) {
   iter1.reset();
   iter2.reset();
 
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.total-sst-files-size",
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.total-sst-files-size",
                                        &total_sst_files_size));
   // Live SST files = 0
   // Total SST files = 0
@@ -952,7 +952,7 @@ TEST_F(DBSSTTest, AddExternalSstFilePurgeObsoleteFilesBug) {
   options.disable_auto_compactions = true;
   DestroyAndReopen(options);
 
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::AddFile:FileCopied", [&](void* arg) {
         ASSERT_OK(Put("aaa", "bbb"));
         ASSERT_OK(Flush());
@@ -960,7 +960,7 @@ TEST_F(DBSSTTest, AddExternalSstFilePurgeObsoleteFilesBug) {
         ASSERT_OK(Flush());
         db_->CompactRange(CompactRangeOptions(), nullptr, nullptr);
       });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   s = db_->AddFile(sst_file_path);
   ASSERT_OK(s);
@@ -971,7 +971,7 @@ TEST_F(DBSSTTest, AddExternalSstFilePurgeObsoleteFilesBug) {
     ASSERT_EQ(Get(k), v);
   }
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(DBSSTTest, AddExternalSstFileNoCopy) {
@@ -1240,7 +1240,7 @@ TEST_F(DBSSTTest, AddExternalSstFileOverlappingRanges) {
   } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // 1 Create some SST files by inserting K-V pairs into DB
 // 2 Close DB and change suffix from ".sst" to ".ldb" for every other SST file
@@ -1269,7 +1269,7 @@ TEST_F(DBSSTTest, SSTsWithLdbSuffixHandling) {
       continue;
     }
     std::string const rdb_name = dbname_ + "/" + filenames[i];
-    std::string const ldb_name = Rocks2LevelTableFileName(rdb_name);
+    std::string const ldb_name = VidarDB2LevelTableFileName(rdb_name);
     ASSERT_TRUE(env_->RenameFile(rdb_name, ldb_name).ok());
     ++num_ldb_files;
   }
@@ -1283,10 +1283,10 @@ TEST_F(DBSSTTest, SSTsWithLdbSuffixHandling) {
   Destroy(options);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

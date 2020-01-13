@@ -5,7 +5,7 @@ before_build:
 - cmake -G "Visual Studio 12 Win64" -DOPTDBG=1 -DXPRESS=1 ..
 - cd ..
 build:
-  project: build\rocksdb.sln
+  project: build\vidardb.sln
   parallel: true
   verbosity: minimal
 test:

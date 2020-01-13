@@ -14,12 +14,12 @@
 #include <utility>
 #include <vector>
 #include "db/table_properties_collector.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/options.h"
+#include "vidardb/table_properties.h"
 #include "util/file_reader_writer.h"
 #include "util/mutable_cf_options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Slice;
 class Status;
@@ -126,4 +126,4 @@ class TableBuilder {
   virtual const char* Name() const { return ""; }  // Shichao
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

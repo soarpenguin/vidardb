@@ -10,12 +10,12 @@
 #endif
 
 #include <inttypes.h>
-#include "rocksdb/statistics.h"
+#include "vidardb/statistics.h"
 #include "port/likely.h"
 #include <algorithm>
 #include <cstdio>
 
-namespace rocksdb {
+namespace vidardb {
 
 std::shared_ptr<Statistics> CreateDBStatistics() {
   return std::make_shared<StatisticsImpl>(nullptr, false);
@@ -140,4 +140,4 @@ bool StatisticsImpl::HistEnabledForType(uint32_t type) const {
   return true;
 }
 
-} // namespace rocksdb
+} // namespace vidardb

@@ -12,7 +12,7 @@
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
@@ -31,9 +31,9 @@ int main() {
 #include "db/writebuffer.h"
 #include "port/port.h"
 #include "port/stack_trace.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/options.h"
+#include "vidardb/comparator.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/options.h"
 #include "util/arena.h"
 #include "util/mutexlock.h"
 #include "util/stop_watch.h"
@@ -131,7 +131,7 @@ DEFINE_int64(seed, 0,
              "Seed base for random number generators. "
              "When 0 it is deterministic.");
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 struct CallbackVerifyArgs {
@@ -563,7 +563,7 @@ class ReadWriteBenchmark : public Benchmark {
   }
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 void PrintWarnings() {
 #if defined(__GNUC__) && !defined(__OPTIMIZE__)
@@ -577,85 +577,85 @@ void PrintWarnings() {
 }
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   SetUsageMessage(std::string("\nUSAGE:\n") + std::string(argv[0]) +
                   " [OPTIONS]...");
   ParseCommandLineFlags(&argc, &argv, true);
 
   PrintWarnings();
 
-  rocksdb::Options options;
+  vidardb::Options options;
 
-  std::unique_ptr<rocksdb::MemTableRepFactory> factory;
+  std::unique_ptr<vidardb::MemTableRepFactory> factory;
   if (FLAGS_memtablerep == "skiplist") {
-    factory.reset(new rocksdb::SkipListFactory);
+    factory.reset(new vidardb::SkipListFactory);
   } else {
     fprintf(stdout, "Unknown memtablerep: %s\n", FLAGS_memtablerep.c_str());
     exit(1);
   }
 
-  rocksdb::InternalKeyComparator internal_key_comp(
-      rocksdb::BytewiseComparator());
-  rocksdb::MemTable::KeyComparator key_comp(internal_key_comp);
-  rocksdb::Arena arena;
-  rocksdb::WriteBuffer wb(FLAGS_write_buffer_size);
-  rocksdb::MemTableAllocator memtable_allocator(&arena, &wb);
+  vidardb::InternalKeyComparator internal_key_comp(
+      vidardb::BytewiseComparator());
+  vidardb::MemTable::KeyComparator key_comp(internal_key_comp);
+  vidardb::Arena arena;
+  vidardb::WriteBuffer wb(FLAGS_write_buffer_size);
+  vidardb::MemTableAllocator memtable_allocator(&arena, &wb);
   uint64_t sequence;
   auto createMemtableRep = [&] {
     sequence = 0;
     return factory->CreateMemTableRep(key_comp, &memtable_allocator,
                                       options.info_log.get());
   };
-  std::unique_ptr<rocksdb::MemTableRep> memtablerep;
-  rocksdb::Random64 rng(FLAGS_seed);
+  std::unique_ptr<vidardb::MemTableRep> memtablerep;
+  vidardb::Random64 rng(FLAGS_seed);
   const char* benchmarks = FLAGS_benchmarks.c_str();
   while (benchmarks != nullptr) {
-    std::unique_ptr<rocksdb::KeyGenerator> key_gen;
+    std::unique_ptr<vidardb::KeyGenerator> key_gen;
     const char* sep = strchr(benchmarks, ',');
-    rocksdb::Slice name;
+    vidardb::Slice name;
     if (sep == nullptr) {
       name = benchmarks;
       benchmarks = nullptr;
     } else {
-      name = rocksdb::Slice(benchmarks, sep - benchmarks);
+      name = vidardb::Slice(benchmarks, sep - benchmarks);
       benchmarks = sep + 1;
     }
-    std::unique_ptr<rocksdb::Benchmark> benchmark;
-    if (name == rocksdb::Slice("fillseq")) {
+    std::unique_ptr<vidardb::Benchmark> benchmark;
+    if (name == vidardb::Slice("fillseq")) {
       memtablerep.reset(createMemtableRep());
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::SEQUENTIAL,
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::SEQUENTIAL,
                                               FLAGS_num_operations));
-      benchmark.reset(new rocksdb::FillBenchmark(memtablerep.get(),
+      benchmark.reset(new vidardb::FillBenchmark(memtablerep.get(),
                                                  key_gen.get(), &sequence));
-    } else if (name == rocksdb::Slice("fillrandom")) {
+    } else if (name == vidardb::Slice("fillrandom")) {
       memtablerep.reset(createMemtableRep());
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::UNIQUE_RANDOM,
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::UNIQUE_RANDOM,
                                               FLAGS_num_operations));
-      benchmark.reset(new rocksdb::FillBenchmark(memtablerep.get(),
+      benchmark.reset(new vidardb::FillBenchmark(memtablerep.get(),
                                                  key_gen.get(), &sequence));
-    } else if (name == rocksdb::Slice("readrandom")) {
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::RANDOM,
+    } else if (name == vidardb::Slice("readrandom")) {
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::RANDOM,
                                               FLAGS_num_operations));
-      benchmark.reset(new rocksdb::ReadBenchmark(memtablerep.get(),
+      benchmark.reset(new vidardb::ReadBenchmark(memtablerep.get(),
                                                  key_gen.get(), &sequence));
-    } else if (name == rocksdb::Slice("readseq")) {
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::SEQUENTIAL,
+    } else if (name == vidardb::Slice("readseq")) {
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::SEQUENTIAL,
                                               FLAGS_num_operations));
       benchmark.reset(
-          new rocksdb::SeqReadBenchmark(memtablerep.get(), &sequence));
-    } else if (name == rocksdb::Slice("readwrite")) {
+          new vidardb::SeqReadBenchmark(memtablerep.get(), &sequence));
+    } else if (name == vidardb::Slice("readwrite")) {
       memtablerep.reset(createMemtableRep());
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::RANDOM,
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::RANDOM,
                                               FLAGS_num_operations));
-      benchmark.reset(new rocksdb::ReadWriteBenchmark<
-          rocksdb::ConcurrentReadBenchmarkThread>(memtablerep.get(),
+      benchmark.reset(new vidardb::ReadWriteBenchmark<
+          vidardb::ConcurrentReadBenchmarkThread>(memtablerep.get(),
                                                   key_gen.get(), &sequence));
-    } else if (name == rocksdb::Slice("seqreadwrite")) {
+    } else if (name == vidardb::Slice("seqreadwrite")) {
       memtablerep.reset(createMemtableRep());
-      key_gen.reset(new rocksdb::KeyGenerator(&rng, rocksdb::RANDOM,
+      key_gen.reset(new vidardb::KeyGenerator(&rng, vidardb::RANDOM,
                                               FLAGS_num_operations));
-      benchmark.reset(new rocksdb::ReadWriteBenchmark<
-          rocksdb::SeqConcurrentReadBenchmarkThread>(memtablerep.get(),
+      benchmark.reset(new vidardb::ReadWriteBenchmark<
+          vidardb::SeqConcurrentReadBenchmarkThread>(memtablerep.get(),
                                                      key_gen.get(), &sequence));
     } else {
       std::cout << "WARNING: skipping unknown benchmark '" << name.ToString()

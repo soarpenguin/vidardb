@@ -9,10 +9,10 @@
 
 #include "port/port.h"
 
-#include "rocksdb/sst_file_manager.h"
+#include "vidardb/sst_file_manager.h"
 #include "util/delete_scheduler.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Env;
 class Logger;
@@ -37,9 +37,9 @@ class SstFileManagerImpl : public SstFileManager {
   // DB will call OnMoveFile whenever an sst file is move to a new path.
   Status OnMoveFile(const std::string& old_path, const std::string& new_path);
 
-  // Update the maximum allowed space that should be used by RocksDB, if
+  // Update the maximum allowed space that should be used by VidarDB, if
   // the total size of the SST files exceeds max_allowed_space, writes to
-  // RocksDB will fail.
+  // VidarDB will fail.
   //
   // Setting max_allowed_space to 0 will disable this feature, maximum allowed
   // space will be infinite (Default value).
@@ -92,4 +92,4 @@ class SstFileManagerImpl : public SstFileManager {
   DeleteScheduler delete_scheduler_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

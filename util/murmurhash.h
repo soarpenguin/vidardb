@@ -11,7 +11,7 @@
 */
 #pragma once
 #include <stdint.h>
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
 #if defined(__x86_64__)
 #define MURMUR_HASH MurmurHash64A
@@ -33,10 +33,10 @@ typedef unsigned int murmur_t;
 #endif
 
 // Allow slice to be hashable by murmur hash.
-namespace rocksdb {
+namespace vidardb {
 struct murmur_hash {
   size_t operator()(const Slice& slice) const {
     return MurmurHash(slice.data(), static_cast<int>(slice.size()), 0);
   }
 };
-}  // rocksdb
+}  // vidardb

@@ -17,16 +17,16 @@
 #include <stdio.h>
 #include <vector>
 #include "db/dbformat.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/file_reader_writer.h"
 #include "util/logging.h"
 #include "util/stop_watch.h"
 #include "util/string_util.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-static const std::string kRocksDbTFileExt = "sst";
+static const std::string kVidarDbTFileExt = "sst";
 static const std::string kLevelDbTFileExt = "ldb";
 
 // Given a path, flatten the path name by replacing all chars not in
@@ -84,15 +84,15 @@ std::string ArchivedLogFileName(const std::string& name, uint64_t number) {
 }
 
 std::string MakeTableFileName(const std::string& path, uint64_t number) {
-  return MakeFileName(path, number, kRocksDbTFileExt.c_str());
+  return MakeFileName(path, number, kVidarDbTFileExt.c_str());
 }
 
-std::string Rocks2LevelTableFileName(const std::string& fullname) {
-  assert(fullname.size() > kRocksDbTFileExt.size() + 1);
-  if (fullname.size() <= kRocksDbTFileExt.size() + 1) {
+std::string VidarDB2LevelTableFileName(const std::string& fullname) {
+  assert(fullname.size() > kVidarDbTFileExt.size() + 1);
+  if (fullname.size() <= kVidarDbTFileExt.size() + 1) {
     return "";
   }
-  return fullname.substr(0, fullname.size() - kRocksDbTFileExt.size()) +
+  return fullname.substr(0, fullname.size() - kVidarDbTFileExt.size()) +
          kLevelDbTFileExt;
 }
 
@@ -342,10 +342,10 @@ bool ParseFileName(const std::string& fname, uint64_t* number,
       }
     } else if (archive_dir_found) {
       return false; // Archive dir can contain only log files
-    } else if (suffix == Slice(kRocksDbTFileExt) ||
+    } else if (suffix == Slice(kVidarDbTFileExt) ||
                suffix == Slice(kLevelDbTFileExt)) {
       *type = kTableFile;
-    } else if (suffix.starts_with(kRocksDbTFileExt)) {  // Shichao
+    } else if (suffix.starts_with(kVidarDbTFileExt)) {  // Shichao
       *type = kTableSubFile;                            // Shichao
     } else if (suffix == Slice(kTempFileNameSuffix)) {
       *type = kTempFile;
@@ -368,9 +368,9 @@ Status SetCurrentFile(Env* env, const std::string& dbname,
   std::string tmp = TempFileName(dbname, descriptor_number);
   Status s = WriteStringToFile(env, contents.ToString() + "\n", tmp, true);
   if (s.ok()) {
-    TEST_KILL_RANDOM("SetCurrentFile:0", rocksdb_kill_odds * REDUCE_ODDS2);
+    TEST_KILL_RANDOM("SetCurrentFile:0", vidardb_kill_odds * REDUCE_ODDS2);
     s = env->RenameFile(tmp, CurrentFileName(dbname));
-    TEST_KILL_RANDOM("SetCurrentFile:1", rocksdb_kill_odds * REDUCE_ODDS2);
+    TEST_KILL_RANDOM("SetCurrentFile:1", vidardb_kill_odds * REDUCE_ODDS2);
   }
   if (s.ok()) {
     if (directory_to_fsync != nullptr) {
@@ -399,7 +399,7 @@ Status SetIdentityFile(Env* env, const std::string& dbname) {
 
 Status SyncManifest(Env* env, const DBOptions* db_options,
                     WritableFileWriter* file) {
-  TEST_KILL_RANDOM("SyncManifest:0", rocksdb_kill_odds * REDUCE_ODDS2);
+  TEST_KILL_RANDOM("SyncManifest:0", vidardb_kill_odds * REDUCE_ODDS2);
   if (db_options->disableDataSync) {
     return Status::OK();
   } else {
@@ -408,4 +408,4 @@ Status SyncManifest(Env* env, const DBOptions* db_options,
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

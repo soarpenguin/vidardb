@@ -10,19 +10,19 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
-#ifdef ROCKSDB_MALLOC_USABLE_SIZE
+#ifdef VIDARDB_MALLOC_USABLE_SIZE
 #include <malloc.h>
 #endif
 
 #include "db/dbformat.h"
 #include "db/pinned_iterators_manager.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "vidardb/iterator.h"
+#include "vidardb/options.h"
 #include "table/internal_iterator.h"
 
 #include "format.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct BlockContents;
 class Comparator;
@@ -42,11 +42,11 @@ class Block {
   bool cachable() const { return contents_.cachable; }
 
   size_t usable_size() const {
-#ifdef ROCKSDB_MALLOC_USABLE_SIZE
+#ifdef VIDARDB_MALLOC_USABLE_SIZE
     if (contents_.allocation.get() != nullptr) {
       return malloc_usable_size(contents_.allocation.get());
     }
-#endif  // ROCKSDB_MALLOC_USABLE_SIZE
+#endif  // VIDARDB_MALLOC_USABLE_SIZE
     return size_;
   }
 
@@ -215,4 +215,4 @@ class ColumnBlockIter : public BlockIter {
                           uint32_t* index);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

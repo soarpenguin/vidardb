@@ -32,7 +32,7 @@
 #include "db/table_cache.h"
 #include "db/version_builder.h"
 #include "db/writebuffer.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "table/format.h"
 #include "table/get_context.h"
 #include "table/internal_iterator.h"
@@ -47,7 +47,7 @@
 #include "util/stop_watch.h"
 #include "util/sync_point.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 
@@ -1823,7 +1823,7 @@ bool VersionStorageInfo::HasOverlappingUserKey(
   }
 
   const Comparator* user_cmp = user_comparator_;
-  const rocksdb::LevelFilesBrief& file_level = level_files_brief_[level];
+  const vidardb::LevelFilesBrief& file_level = level_files_brief_[level];
   const FdWithKeyRange* files = level_files_brief_[level].files;
   const size_t kNumFiles = file_level.num_files;
 
@@ -1892,7 +1892,7 @@ const char* VersionStorageInfo::LevelSummary(
 
   if (!files_marked_for_compaction_.empty()) {
     snprintf(scratch->buffer + len, sizeof(scratch->buffer) - len,
-             " (%" ROCKSDB_PRIszt " files need compaction)",
+             " (%" VIDARDB_PRIszt " files need compaction)",
              files_marked_for_compaction_.size());
   }
 
@@ -2349,7 +2349,7 @@ Status VersionSet::LogAndApply(ColumnFamilyData* column_family_data,
           break;
         }
         TEST_KILL_RANDOM("VersionSet::LogAndApply:BeforeAddRecord",
-                         rocksdb_kill_odds * REDUCE_ODDS2);
+                         vidardb_kill_odds * REDUCE_ODDS2);
         s = descriptor_log_->AddRecord(record);
         if (!s.ok()) {
           break;
@@ -2868,7 +2868,7 @@ Status VersionSet::ListColumnFamilies(std::vector<std::string>* column_families,
   return s;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status VersionSet::ReduceNumberOfLevels(const std::string& dbname,
                                         const Options* options,
                                         const EnvOptions& env_options,
@@ -3143,7 +3143,7 @@ Status VersionSet::DumpManifest(Options& options, std::string& dscname,
 
   return s;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 void VersionSet::MarkFileNumberUsedDuringRecovery(uint64_t number) {
   // only called during recovery which is single threaded, so this works because
@@ -3580,4 +3580,4 @@ uint64_t VersionSet::GetTotalSstFilesSize(Version* dummy_versions) {
   return total_files_size;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

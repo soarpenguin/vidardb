@@ -12,7 +12,7 @@
 #include <string>
 #include <inttypes.h>
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "table/block.h"
 #include "table/block_based_table_reader.h"
 #include "util/coding.h"
@@ -22,7 +22,7 @@
 #include "util/perf_context_imp.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 extern const uint64_t kBlockBasedTableMagicNumber;
 
@@ -121,7 +121,7 @@ std::string Footer::ToString() const {
   result.append("metaindex handle: " + metaindex_handle_.ToString() + "\n  ");
   result.append("index handle: " + index_handle_.ToString() + "\n  ");
   result.append("table_magic_number: " +
-                rocksdb::ToString(table_magic_number_) + "\n  ");
+                vidardb::ToString(table_magic_number_) + "\n  ");
   return result;
 }
 
@@ -219,7 +219,7 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
   std::unique_ptr<char[]> heap_buf;
   char stack_buf[DefaultStackBufferSize];
   char* used_buf = nullptr;
-  rocksdb::CompressionType compression_type;
+  vidardb::CompressionType compression_type;
 
   status = Status::NotFound();
 
@@ -242,7 +242,7 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
 
   PERF_TIMER_GUARD(block_decompress_time);
 
-  compression_type = static_cast<rocksdb::CompressionType>(slice.data()[n]);
+  compression_type = static_cast<vidardb::CompressionType>(slice.data()[n]);
 
   if (decompression_requested && compression_type != kNoCompression) {
     // compressed page, uncompress, update cache
@@ -269,7 +269,7 @@ Status ReadBlockContents(RandomAccessFileReader* file, const Footer& footer,
 // contents are uncompresed into this buffer. This
 // buffer is returned via 'result' and it is upto the caller to
 // free this buffer.
-// format_version is the block format as defined in include/rocksdb/table.h
+// format_version is the block format as defined in include/vidardb/table.h
 Status UncompressBlockContents(const char* data, size_t n,
                                BlockContents* contents,
                                const Slice& compression_dict) {
@@ -369,4 +369,4 @@ Status UncompressBlockContents(const char* data, size_t n,
   return Status::OK();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

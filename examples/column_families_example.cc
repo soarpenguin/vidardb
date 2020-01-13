@@ -6,13 +6,13 @@
 #include <string>
 #include <vector>
 
-#include "rocksdb/db.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/options.h"
+#include "vidardb/db.h"
+#include "vidardb/slice.h"
+#include "vidardb/options.h"
 
-using namespace rocksdb;
+using namespace vidardb;
 
-std::string kDBPath = "/tmp/rocksdb_column_families_example";
+std::string kDBPath = "/tmp/vidardb_column_families_example";
 
 int main() {
   // open DB

@@ -4,7 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 // Install a signal handler to print callstack on the following signals:
@@ -16,4 +16,4 @@ void InstallStackTraceHandler();
 void PrintStack(int first_frames_to_skip = 0);
 
 }  // namespace port
-}  // namespace rocksdb
+}  // namespace vidardb

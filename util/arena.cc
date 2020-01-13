@@ -8,7 +8,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/arena.h"
-#ifdef ROCKSDB_MALLOC_USABLE_SIZE
+#ifdef VIDARDB_MALLOC_USABLE_SIZE
 #include <malloc.h>
 #endif
 #ifndef OS_WIN
@@ -16,9 +16,9 @@
 #endif
 #include "port/port.h"
 #include <algorithm>
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // MSVC complains that it is already defined since it is static in the header.
 #ifndef OS_WIN
@@ -183,14 +183,14 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
 
   char* block = new char[block_bytes];
 
-#ifdef ROCKSDB_MALLOC_USABLE_SIZE
+#ifdef VIDARDB_MALLOC_USABLE_SIZE
   blocks_memory_ += malloc_usable_size(block);
 #else
   blocks_memory_ += block_bytes;
-#endif  // ROCKSDB_MALLOC_USABLE_SIZE
+#endif  // VIDARDB_MALLOC_USABLE_SIZE
   // the following shouldn't throw because of the above reserve()
   blocks_.push_back(block);
   return block;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

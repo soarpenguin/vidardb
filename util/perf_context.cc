@@ -7,7 +7,7 @@
 #include <sstream>
 #include "util/perf_context_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #if defined(NPERF_CONTEXT) || defined(IOS_CROSS_COMPILE)
   PerfContext perf_context;

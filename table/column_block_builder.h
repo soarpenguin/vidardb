@@ -3,10 +3,10 @@
 #include <vector>
 
 #include <stdint.h>
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 #include "table/block_builder.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class ColumnBlockBuilder : public BlockBuilder {
  public:
@@ -30,4 +30,4 @@ class ColumnBlockBuilder : public BlockBuilder {
   }
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

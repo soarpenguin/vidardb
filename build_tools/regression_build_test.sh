@@ -14,8 +14,8 @@ fi
 # On the production build servers, set data and stat
 # files/directories not in /tmp or else the tempdir cleaning
 # scripts will make you very unhappy.
-DATA_DIR=${DATA_DIR:-$(mktemp -t -d rocksdb_XXXX)}
-STAT_FILE=${STAT_FILE:-$(mktemp -t -u rocksdb_test_stats_XXXX)}
+DATA_DIR=${DATA_DIR:-$(mktemp -t -d vidardb_XXXX)}
+STAT_FILE=${STAT_FILE:-$(mktemp -t -u vidardb_test_stats_XXXX)}
 
 function cleanup {
   rm -rf $DATA_DIR
@@ -276,7 +276,7 @@ make release
     --value_size=10 \
     --threads=16 > ${STAT_FILE}.memtablefillreadrandom
 
-common_in_mem_args="--db=/dev/shm/rocksdb \
+common_in_mem_args="--db=/dev/shm/vidardb \
     --num_levels=6 \
     --key_size=20 \
     --prefix_size=12 \
@@ -293,7 +293,7 @@ common_in_mem_args="--db=/dev/shm/rocksdb \
     --target_file_size_base=134217728 \
     --max_bytes_for_level_base=1073741824 \
     --disable_wal=0 \
-    --wal_dir=/dev/shm/rocksdb \
+    --wal_dir=/dev/shm/vidardb \
     --sync=0 \
     --disable_data_sync=1 \
     --verify_checksum=1 \
@@ -392,7 +392,7 @@ function send_to_ods {
     echo >&2 "ERROR: Key $key doesn't have a value."
     return
   fi
-  curl -s "https://www.intern.facebook.com/intern/agent/ods_set.php?entity=rocksdb_build$git_br&key=$key&value=$value" \
+  curl -s "https://www.intern.facebook.com/intern/agent/ods_set.php?entity=vidardb_build$git_br&key=$key&value=$value" \
     --connect-timeout 60
 }
 
@@ -406,10 +406,10 @@ function send_benchmark_to_ods {
   P75_MICROS=$(grep $bench $file -A 6 | grep "Percentiles" | awk '{print $5}' )
   P99_MICROS=$(grep $bench $file -A 6 | grep "Percentiles" | awk '{print $7}' )
 
-  send_to_ods rocksdb.build.$bench_key.qps $QPS
-  send_to_ods rocksdb.build.$bench_key.p50_micros $P50_MICROS
-  send_to_ods rocksdb.build.$bench_key.p75_micros $P75_MICROS
-  send_to_ods rocksdb.build.$bench_key.p99_micros $P99_MICROS
+  send_to_ods vidardb.build.$bench_key.qps $QPS
+  send_to_ods vidardb.build.$bench_key.p50_micros $P50_MICROS
+  send_to_ods vidardb.build.$bench_key.p75_micros $P75_MICROS
+  send_to_ods vidardb.build.$bench_key.p99_micros $P99_MICROS
 }
 
 send_benchmark_to_ods overwrite overwrite $STAT_FILE.overwrite

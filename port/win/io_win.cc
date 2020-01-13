@@ -16,7 +16,7 @@
 #include "util/aligned_buffer.h"
 
 
-namespace rocksdb {
+namespace vidardb {
 namespace port {
 
 std::string GetWindowsErrSz(DWORD err) {
@@ -494,7 +494,7 @@ Status WinMmapFile::InvalidateCache(size_t offset, size_t length) {
 
 Status WinMmapFile::Allocate(uint64_t offset, uint64_t len) {
   Status status;
-  TEST_KILL_RANDOM("WinMmapFile::Allocate", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WinMmapFile::Allocate", vidardb_kill_odds);
 
   // Make sure that we reserve an aligned amount of space
   // since the reservation block size is driven outside so we want
@@ -932,7 +932,7 @@ uint64_t WinWritableFile::GetFileSize() {
 
 Status WinWritableFile::Allocate(uint64_t offset, uint64_t len) {
   Status status;
-  TEST_KILL_RANDOM("WinWritableFile::Allocate", rocksdb_kill_odds);
+  TEST_KILL_RANDOM("WinWritableFile::Allocate", vidardb_kill_odds);
 
   // Make sure that we reserve an aligned amount of space
   // since the reservation block size is driven outside so we want

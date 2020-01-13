@@ -9,7 +9,7 @@
 #include "port/port.h"
 #include "util/perf_level_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 #if defined(IOS_CROSS_COMPILE)
 PerfLevel perf_level = kEnableCount;
@@ -27,4 +27,4 @@ PerfLevel GetPerfLevel() {
   return perf_level;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

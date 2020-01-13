@@ -10,12 +10,12 @@
 #pragma once
 #include <stdint.h>
 #include <string>
-#include "rocksdb/db.h"
-#include "rocksdb/iterator.h"
+#include "vidardb/db.h"
+#include "vidardb/iterator.h"
 #include "db/dbformat.h"
 #include "util/arena.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Arena;
 class DBIter;
@@ -76,4 +76,4 @@ extern ArenaWrappedDBIter* NewArenaWrappedDbIterator(
     uint64_t max_sequential_skip_in_iterations, uint64_t version_number,
     const Slice* iterate_upper_bound = nullptr, bool pin_data = false);
 
-}  // namespace rocksdb
+}  // namespace vidardb

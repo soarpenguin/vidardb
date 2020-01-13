@@ -34,10 +34,10 @@
 #include "db/writebuffer.h"
 #include "memtable/memtable_list.h"
 #include "port/port.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/transaction_log.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/memtablerep.h"
+#include "vidardb/transaction_log.h"
 #include "table/scoped_arena_iterator.h"
 #include "util/event_logger.h"
 #include "util/hash.h"
@@ -45,7 +45,7 @@
 #include "util/stop_watch.h"
 #include "util/thread_local.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTable;
 class TableCache;
@@ -157,7 +157,7 @@ class DBImpl : public DB {
 
   virtual SequenceNumber GetLatestSequenceNumber() const override;
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   virtual Status DisableFileDeletions() override;
   virtual Status EnableFileDeletions(bool force) override;
   virtual int IsFileDeletionsEnabled() const;
@@ -238,7 +238,7 @@ class DBImpl : public DB {
   virtual Status AddFile(ColumnFamilyHandle* column_family,
                          const std::string& file_path, bool move_file) override;
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Similar to GetSnapshot(), but also lets the db know that this snapshot
   // will be used for transaction write-conflict checking.  The DB can then
@@ -517,7 +517,7 @@ class DBImpl : public DB {
   friend class DB;
   friend class InternalStats;
   friend class TransactionImpl;
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   friend class ForwardIterator;
 #endif
   friend struct SuperVersion;
@@ -597,13 +597,13 @@ class DBImpl : public DB {
   // Wait for memtable flushed
   Status WaitForFlushMemTable(ColumnFamilyData* cfd);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   Status CompactFilesImpl(
       const CompactionOptions& compact_options, ColumnFamilyData* cfd,
       Version* version, const std::vector<std::string>& input_file_names,
       const int output_level, int output_path_id, JobContext* job_context,
       LogBuffer* log_buffer);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   ColumnFamilyData* GetColumnFamilyDataByName(const std::string& cf_name);
 
@@ -625,7 +625,7 @@ class DBImpl : public DB {
 
   void PrintStatistics();
 
-  // dump rocksdb.stats to LOG
+  // dump vidardb.stats to LOG
   void MaybeDumpStats();
 
   // Return the minimum empty level that could hold the total data in the
@@ -876,7 +876,7 @@ class DBImpl : public DB {
   // they're unique
   std::atomic<int> next_job_id_;
 
-  // A flag indicating whether the current rocksdb database has any
+  // A flag indicating whether the current vidardb database has any
   // data that is not yet persisted into either WAL or SST file.
   // Used when disableWAL is true.
   bool has_unpersisted_data_;
@@ -890,9 +890,9 @@ class DBImpl : public DB {
   // The options to access storage files
   const EnvOptions env_options_;
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   WalManager wal_manager_;
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Unified interface for logging events
   EventLogger event_logger_;
@@ -957,7 +957,7 @@ class DBImpl : public DB {
       ColumnFamilyData* cfd, SuperVersion* new_sv,
       const MutableCFOptions& mutable_cf_options);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   using DB::GetPropertiesOfAllTables;
   virtual Status GetPropertiesOfAllTables(ColumnFamilyHandle* column_family,
                                           TablePropertiesCollection* props)
@@ -966,7 +966,7 @@ class DBImpl : public DB {
       ColumnFamilyHandle* column_family, const Range* range, std::size_t n,
       TablePropertiesCollection* props) override;
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Function that Get and KeyMayExist call with no_io true or false
   // Note: 'value_found' from KeyMayExist propagates here
@@ -1001,4 +1001,4 @@ static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
   if (static_cast<V>(*ptr) < minvalue) *ptr = minvalue;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

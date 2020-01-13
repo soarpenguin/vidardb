@@ -24,7 +24,7 @@
 #endif
 
 
-namespace rocksdb {
+namespace vidardb {
 
 void ThreadPool::PthreadCall(const char* label, int result) {
   if (result != 0) {
@@ -34,7 +34,7 @@ void ThreadPool::PthreadCall(const char* label, int result) {
 }
 
 namespace {
-#ifdef ROCKSDB_STD_THREADPOOL
+#ifdef VIDARDB_STD_THREADPOOL
 
 struct Lock {
   std::unique_lock<std::mutex> ul_;
@@ -132,7 +132,7 @@ ThreadPool::ThreadPool()
       exit_all_threads_(false),
       low_io_priority_(false),
       env_(nullptr) {
-#ifndef ROCKSDB_STD_THREADPOOL
+#ifndef VIDARDB_STD_THREADPOOL
   PthreadCall("mutex_init", pthread_mutex_init(&mu_, nullptr));
   PthreadCall("cvar_init", pthread_cond_init(&bgsignal_, nullptr));
 #endif
@@ -243,7 +243,7 @@ static void* BGThreadWrapper(void* arg) {
   BGThreadMetadata* meta = reinterpret_cast<BGThreadMetadata*>(arg);
   size_t thread_id = meta->thread_id_;
   ThreadPool* tp = meta->thread_pool_;
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   // for thread-status
   ThreadStatusUtil::RegisterThread(
       tp->GetHostEnv(), (tp->GetThreadPriority() == Env::Priority::HIGH
@@ -252,7 +252,7 @@ static void* BGThreadWrapper(void* arg) {
 #endif
   delete meta;
   tp->BGThread(thread_id);
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
   ThreadStatusUtil::UnregisterThread();
 #endif
   return nullptr;
@@ -289,7 +289,7 @@ void ThreadPool::SetBackgroundThreads(int num) {
 void ThreadPool::StartBGThreads() {
   // Start background thread if necessary
   while ((int)bgthreads_.size() < total_threads_limit_) {
-#ifdef ROCKSDB_STD_THREADPOOL
+#ifdef VIDARDB_STD_THREADPOOL
     std::thread p_t(&BGThreadWrapper,
       new BGThreadMetadata(this, bgthreads_.size()));
     bgthreads_.push_back(std::move(p_t));
@@ -302,7 +302,7 @@ void ThreadPool::StartBGThreads() {
 #if defined(_GNU_SOURCE) && defined(__GLIBC_PREREQ)
 #if __GLIBC_PREREQ(2, 12)
     char name_buf[16];
-    snprintf(name_buf, sizeof name_buf, "rocksdb:bg%" ROCKSDB_PRIszt,
+    snprintf(name_buf, sizeof name_buf, "vidardb:bg%" VIDARDB_PRIszt,
              bgthreads_.size());
     name_buf[sizeof name_buf - 1] = '\0';
     pthread_setname_np(t, name_buf);
@@ -374,4 +374,4 @@ int ThreadPool::UnSchedule(void* arg) {
   return count;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

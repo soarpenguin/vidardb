@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Set environment variables so that we can compile rocksdb using
+# Set environment variables so that we can compile vidardb using
 # fbcode settings.  It uses the latest g++ compiler and also
 # uses jemalloc
 
@@ -89,7 +89,7 @@ else
 fi
 
 CFLAGS+=" $DEPS_INCLUDE"
-CFLAGS+=" -DROCKSDB_PLATFORM_POSIX -DROCKSDB_LIB_IO_POSIX -DROCKSDB_FALLOCATE_PRESENT -DROCKSDB_MALLOC_USABLE_SIZE"
+CFLAGS+=" -DVIDARDB_PLATFORM_POSIX -DVIDARDB_LIB_IO_POSIX -DVIDARDB_FALLOCATE_PRESENT -DVIDARDB_MALLOC_USABLE_SIZE"
 CFLAGS+=" -DSNAPPY -DGFLAGS=google -DZLIB -DBZIP2 -DLZ4 -DZSTD -DNUMA"
 CXXFLAGS+=" $CFLAGS"
 

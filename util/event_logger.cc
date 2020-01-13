@@ -16,7 +16,7 @@
 
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 
 EventLoggerStream::EventLoggerStream(Logger* logger)
@@ -28,7 +28,7 @@ EventLoggerStream::EventLoggerStream(LogBuffer* log_buffer)
 EventLoggerStream::~EventLoggerStream() {
   if (json_writer_) {
     json_writer_->EndObject();
-#ifdef ROCKSDB_PRINT_EVENTS_TO_STDOUT
+#ifdef VIDARDB_PRINT_EVENTS_TO_STDOUT
     printf("%s\n", json_writer_->Get().c_str());
 #else
     if (logger_) {
@@ -46,21 +46,21 @@ void EventLogger::Log(const JSONWriter& jwriter) {
 }
 
 void EventLogger::Log(Logger* logger, const JSONWriter& jwriter) {
-#ifdef ROCKSDB_PRINT_EVENTS_TO_STDOUT
+#ifdef VIDARDB_PRINT_EVENTS_TO_STDOUT
   printf("%s\n", jwriter.Get().c_str());
 #else
-  rocksdb::Log(logger, "%s %s", Prefix(), jwriter.Get().c_str());
+  vidardb::Log(logger, "%s %s", Prefix(), jwriter.Get().c_str());
 #endif
 }
 
 void EventLogger::LogToBuffer(
     LogBuffer* log_buffer, const JSONWriter& jwriter) {
-#ifdef ROCKSDB_PRINT_EVENTS_TO_STDOUT
+#ifdef VIDARDB_PRINT_EVENTS_TO_STDOUT
   printf("%s\n", jwriter.Get().c_str());
 #else
   assert(log_buffer);
-  rocksdb::LogToBuffer(log_buffer, "%s %s", Prefix(), jwriter.Get().c_str());
+  vidardb::LogToBuffer(log_buffer, "%s %s", Prefix(), jwriter.Get().c_str());
 #endif
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

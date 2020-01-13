@@ -5,7 +5,7 @@
 
 #include "db/event_helpers.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 template<class T>
@@ -20,7 +20,7 @@ void EventHelpers::AppendCurrentTime(JSONWriter* jwriter) {
                   std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 void EventHelpers::NotifyTableFileCreationStarted(
     const std::vector<std::shared_ptr<EventListener>>& listeners,
     const std::string& db_name, const std::string& cf_name,
@@ -35,7 +35,7 @@ void EventHelpers::NotifyTableFileCreationStarted(
     listener->OnTableFileCreationStarted(info);
   }
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 void EventHelpers::LogAndNotifyTableFileCreationFinished(
     EventLogger* event_logger,
@@ -82,7 +82,7 @@ void EventHelpers::LogAndNotifyTableFileCreationFinished(
     event_logger->Log(jwriter);
   }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (listeners.size() == 0) {
     return;
   }
@@ -98,7 +98,7 @@ void EventHelpers::LogAndNotifyTableFileCreationFinished(
   for (auto& listener : listeners) {
     listener->OnTableFileCreated(info);
   }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
 void EventHelpers::LogAndNotifyTableFileDeletion(
@@ -121,7 +121,7 @@ void EventHelpers::LogAndNotifyTableFileDeletion(
 
   event_logger->Log(jwriter);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   TableFileDeletionInfo info;
   info.db_name = dbname;
   info.job_id = job_id;
@@ -130,7 +130,7 @@ void EventHelpers::LogAndNotifyTableFileDeletion(
   for (auto listener : listeners) {
     listener->OnTableFileDeleted(info);
   }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

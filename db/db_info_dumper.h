@@ -6,8 +6,8 @@
 
 #include <string>
 
-#include "rocksdb/options.h"
+#include "vidardb/options.h"
 
-namespace rocksdb {
+namespace vidardb {
 void DumpDBFileSummary(const DBOptions& options, const std::string& dbname);
-}  // namespace rocksdb
+}  // namespace vidardb

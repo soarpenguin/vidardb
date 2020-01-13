@@ -9,11 +9,11 @@
 #include <string>
 #include <map>     // Shichao
 #include <vector>  // Shichao
-#include "rocksdb/iterator.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h" // Quanzhao
+#include "vidardb/iterator.h"
+#include "vidardb/status.h"
+#include "vidardb/options.h" // Quanzhao
 
-namespace rocksdb {
+namespace vidardb {
 
 class PinnedIteratorsManager;
 
@@ -115,4 +115,4 @@ extern InternalIterator* NewEmptyInternalIterator();
 // Return an empty iterator with the specified status.
 extern InternalIterator* NewErrorInternalIterator(const Status& status);
 
-}  // namespace rocksdb
+}  // namespace vidardb

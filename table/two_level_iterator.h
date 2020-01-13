@@ -8,11 +8,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/iterator.h"
-#include "rocksdb/env.h"
+#include "vidardb/iterator.h"
+#include "vidardb/env.h"
 #include "table/iterator_wrapper.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct ReadOptions;
 class InternalKeyComparator;
@@ -44,4 +44,4 @@ extern InternalIterator* NewTwoLevelIterator(
     TwoLevelIteratorState* state, InternalIterator* first_level_iter,
     Arena* arena = nullptr, bool need_free_iter_and_state = true);
 
-}  // namespace rocksdb
+}  // namespace vidardb

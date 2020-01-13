@@ -16,9 +16,9 @@
 #include "db/dbformat.h"
 #include "db/pinned_iterators_manager.h"
 #include "db/writebuffer.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/iterator.h"
 #include "table/internal_iterator.h"
 #include "table/merger.h"
 #include "util/arena.h"
@@ -29,7 +29,7 @@
 #include "util/statistics.h"
 #include "util/stop_watch.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 MemTableOptions::MemTableOptions(
     const ImmutableCFOptions& ioptions,
@@ -631,4 +631,4 @@ uint64_t MemTable::GetMinLogContainingPrepSection() {
   return min_prep_log_referenced_.load();
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

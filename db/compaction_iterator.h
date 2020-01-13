@@ -14,7 +14,7 @@
 #include "db/compaction.h"
 #include "util/log_buffer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct CompactionIteratorStats {
   // Compaction statistics
@@ -140,4 +140,4 @@ class CompactionIterator {
   std::vector<size_t> level_ptrs_;
   CompactionIteratorStats iter_stats_;
 };
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -5,10 +5,10 @@
 //
 #include "db/write_controller.h"
 
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class WriteControllerTest : public testing::Test {};
 
@@ -123,7 +123,7 @@ TEST_F(WriteControllerTest, SanityTest) {
   ASSERT_FALSE(controller.IsStopped());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

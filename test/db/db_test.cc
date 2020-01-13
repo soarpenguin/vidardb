@@ -31,17 +31,17 @@
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
 #include "port/stack_trace.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/convenience.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/snapshot.h"
-#include "rocksdb/table.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/thread_status.h"
+#include "vidardb/cache.h"
+#include "vidardb/convenience.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/perf_context.h"
+#include "vidardb/slice.h"
+#include "vidardb/snapshot.h"
+#include "vidardb/table.h"
+#include "vidardb/table_properties.h"
+#include "vidardb/thread_status.h"
 #include "table/block_based_table_factory.h"
 #include "table/mock_table.h"
 #include "table/scoped_arena_iterator.h"
@@ -57,7 +57,7 @@
 #include "util/testutil.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBTest : public DBTestBase {
  public:
@@ -113,8 +113,8 @@ TEST_F(DBTest, MockEnvTest) {
   ASSERT_TRUE(!iterator->Valid());
   delete iterator;
 
-// TEST_FlushMemTable() is not supported in ROCKSDB_LITE
-#ifndef ROCKSDB_LITE
+// TEST_FlushMemTable() is not supported in VIDARDB_LITE
+#ifndef VIDARDB_LITE
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db);
   ASSERT_OK(dbi->TEST_FlushMemTable());
 
@@ -123,7 +123,7 @@ TEST_F(DBTest, MockEnvTest) {
     ASSERT_OK(db->Get(ReadOptions(), keys[i], &res));
     ASSERT_TRUE(res == vals[i]);
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   delete db;
 }
@@ -146,7 +146,7 @@ TEST_F(DBTest, WriteEmptyBatch) {
   ASSERT_EQ("bar", Get(1, "foo"));
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, ReadOnlyDB) {
   ASSERT_OK(Put("foo", "v1"));
   ASSERT_OK(Put("bar", "v2"));
@@ -200,7 +200,7 @@ TEST_F(DBTest, LevelLimitReopen) {
   options.max_bytes_for_level_multiplier_additional.resize(10, 1);
   ASSERT_OK(TryReopenWithColumnFamilies({"default", "pikachu"}, options));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, PutDeleteGet) {
   do {
@@ -298,7 +298,7 @@ TEST_F(DBTest, GetFromVersions) {
   } while (ChangeOptions());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, GetSnapshot) {
   anon::OptionsOverride options_override;
 //  options_override.skip_policy = kSkipNoSnapshot;
@@ -319,7 +319,7 @@ TEST_F(DBTest, GetSnapshot) {
     }
   } while (ChangeOptions());
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, GetLevel0Ordering) {
   do {
@@ -347,7 +347,7 @@ TEST_F(DBTest, WrongLevel0Config) {
   ASSERT_OK(DB::Open(options, dbname_, &db_));
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, GetOrderedByLevels) {
   do {
     CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
@@ -419,7 +419,7 @@ TEST_F(DBTest, GetEncountersEmptyLevel) {
     ASSERT_EQ(NumTableFilesAtLevel(0, 1), 1);  // XXX
   } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, CheckLock) {
   do {
@@ -541,7 +541,7 @@ TEST_F(DBTest, FLUSH) {
   } while (ChangeCompactOptions());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, FlushSchedule) {
   Options options = CurrentOptions();
   options.disable_auto_compactions = true;
@@ -582,7 +582,7 @@ TEST_F(DBTest, FlushSchedule) {
   ASSERT_LE(pikachu_tables, static_cast<uint64_t>(10));
   ASSERT_GT(pikachu_tables, static_cast<uint64_t>(0));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, ManifestRollOver) {
   do {
@@ -630,14 +630,14 @@ TEST_F(DBTest, IdentityAcrossRestarts) {
   } while (ChangeCompactOptions());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 static std::string CompressibleString(Random* rnd, int len) {
   std::string r;
   test::CompressibleString(rnd, 0.8, len, &r);
   return r;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, FailMoreDbPaths) {
   Options options = CurrentOptions();
@@ -668,7 +668,7 @@ void CheckColumnFamilyMeta(const ColumnFamilyMetaData& cf_meta) {
   ASSERT_EQ(cf_meta.size, cf_size);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, ColumnFamilyMetaDataTest) {
   Options options = CurrentOptions();
   options.create_if_missing = true;
@@ -815,7 +815,7 @@ TEST_F(DBTest, RepeatedWritesToSameKey) {
     }
   } while (ChangeCompactOptions());
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, SparseMerge) {
   do {
@@ -862,7 +862,7 @@ TEST_F(DBTest, SparseMerge) {
   } while (ChangeCompactOptions());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   bool result = (val >= low) && (val <= high);
   if (!result) {
@@ -1032,9 +1032,9 @@ TEST_F(DBTest, ApproximateSizes) {
     // ApproximateOffsetOf() is not yet implemented in plain table format.
   } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 TEST_F(DBTest, HiddenValuesAreRemoved) {
   anon::OptionsOverride options_override;
@@ -1073,7 +1073,7 @@ TEST_F(DBTest, HiddenValuesAreRemoved) {
     // skip HashCuckooRep as it does not support snapshot
   } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, CompactBetweenSnapshots) {
   anon::OptionsOverride options_override;
@@ -1129,7 +1129,7 @@ TEST_F(DBTest, CompactBetweenSnapshots) {
   } while (ChangeOptions(kSkipFIFOCompaction));
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, DeletionMarkers1) {
   Options options = CurrentOptions();
   options.max_background_flushes = 0;
@@ -1240,13 +1240,13 @@ TEST_F(DBTest, OverlapInLevel0) {
     ASSERT_EQ("NOT_FOUND", Get(1, "600"));
   } while (ChangeOptions(kSkipUniversalCompaction | kSkipFIFOCompaction));
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
     virtual const char* Name() const override {
-      return "rocksdb.NewComparator";
+      return "vidardb.NewComparator";
     }
     virtual int Compare(const Slice& a, const Slice& b) const override {
       return BytewiseComparator()->Compare(a, b);
@@ -1434,7 +1434,7 @@ TEST_F(DBTest, DestroyDBMetaDatabase) {
   ASSERT_TRUE(!(DB::Open(options, metametadbname, &db)).ok());
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, SnapshotFiles) {
   do {
     Options options = CurrentOptions();
@@ -1679,7 +1679,7 @@ TEST_F(DBTest, FlushOneColumnFamily) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, SharedWriteBuffer) {
   Options options = CurrentOptions();
   options.db_write_buffer_size = 100000;  // this is the real limit
@@ -1801,7 +1801,7 @@ TEST_F(DBTest, SharedWriteBuffer) {
               static_cast<uint64_t>(3));
   }
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, PurgeInfoLogs) {
   Options options = CurrentOptions();
@@ -1849,7 +1849,7 @@ TEST_F(DBTest, PurgeInfoLogs) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 // Multi-threaded test:
 namespace {
 
@@ -1966,7 +1966,7 @@ TEST_P(MultiThreadedDBTest, MultiThreaded) {
 INSTANTIATE_TEST_CASE_P(
     MultiThreaded, MultiThreadedDBTest,
     ::testing::ValuesIn(MultiThreadedDBTest::GenerateOptionConfigs()));
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // Group commit test:
 namespace {
@@ -2000,7 +2000,7 @@ TEST_F(DBTest, GroupCommitTest) {
     Options options = CurrentOptions();
     options.env = env_;
     env_->log_write_slowdown_.store(100);
-    options.statistics = rocksdb::CreateDBStatistics();
+    options.statistics = vidardb::CreateDBStatistics();
     Reopen(options);
 
     // Start threads
@@ -2082,7 +2082,7 @@ class ModelDB : public DB {
     return Status::NotSupported(key);
   }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   using DB::AddFile;
   virtual Status AddFile(ColumnFamilyHandle* column_family,
                          const ExternalSstFileInfo* file_path,
@@ -2107,7 +2107,7 @@ class ModelDB : public DB {
       TablePropertiesCollection* props) override {
     return Status();
   }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   using DB::NewIterator;
   virtual Iterator* NewIterator(const ReadOptions& options,
@@ -2237,7 +2237,7 @@ class ModelDB : public DB {
   virtual const DBOptions& GetDBOptions() const override { return options_; }
 
   using DB::Flush;
-  virtual Status Flush(const rocksdb::FlushOptions& options,
+  virtual Status Flush(const vidardb::FlushOptions& options,
                        ColumnFamilyHandle* column_family) override {
     Status ret;
     return ret;
@@ -2245,7 +2245,7 @@ class ModelDB : public DB {
 
   virtual Status SyncWAL() override { return Status::OK(); }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   virtual Status DisableFileDeletions() override { return Status::OK(); }
 
   virtual Status EnableFileDeletions(bool force) override {
@@ -2263,7 +2263,7 @@ class ModelDB : public DB {
   virtual Status DeleteFile(std::string name) override { return Status::OK(); }
 
   virtual Status GetUpdatesSince(
-      rocksdb::SequenceNumber, unique_ptr<rocksdb::TransactionLogIterator>*,
+      vidardb::SequenceNumber, unique_ptr<vidardb::TransactionLogIterator>*,
       const TransactionLogIterator::ReadOptions& read_options =
           TransactionLogIterator::ReadOptions()) override {
     return Status::NotSupported("Not supported in Model DB");
@@ -2272,7 +2272,7 @@ class ModelDB : public DB {
   virtual void GetColumnFamilyMetaData(
       ColumnFamilyHandle* column_family,
       ColumnFamilyMetaData* metadata) override {}
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   virtual Status GetDbIdentity(std::string& identity) const override {
     return Status::OK();
@@ -2474,7 +2474,7 @@ TEST_P(DBTestRandomized, Randomized) {
   if (db_snap != nullptr) db_->ReleaseSnapshot(db_snap);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_P(DBTestWithParam, FIFOCompactionTest) {
   for (int iter = 0; iter < 2; ++iter) {
     // first iteration -- auto compaction
@@ -2516,7 +2516,7 @@ TEST_P(DBTestWithParam, FIFOCompactionTest) {
     }
   }
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // verify that we correctly deprecated timeout_hint_us
 TEST_F(DBTest, SimpleWriteTimeoutTest) {
@@ -2527,7 +2527,7 @@ TEST_F(DBTest, SimpleWriteTimeoutTest) {
   ASSERT_NOK(Put(Key(1), Key(1) + std::string(100, 'v'), write_opt));
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 
 TEST_F(DBTest, TableOptionsSanitizeTest) {
@@ -2573,7 +2573,7 @@ TEST_F(DBTest, MmapAndBufferOptions) {
 }
 #endif
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, SanitizeNumThreads) {
   for (int attempt = 0; attempt < 2; attempt++) {
@@ -2658,7 +2658,7 @@ TEST_F(DBTest, DisableDataSyncTest) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, DynamicMemtableOptions) {
   const uint64_t k64KB = 1 << 16;
   const uint64_t k128KB = 1 << 17;
@@ -2737,10 +2737,10 @@ TEST_F(DBTest, DynamicMemtableOptions) {
   int count = 0;
   Random rnd(301);
 
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::DelayWrite:Wait",
       [&](void* arg) { sleeping_task_low.WakeUp(); });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   while (!sleeping_task_low.WokenUp() && count < 256) {
     ASSERT_OK(Put(Key(count), RandomString(&rnd, 1024), WriteOptions()));
@@ -2798,11 +2798,11 @@ TEST_F(DBTest, DynamicMemtableOptions) {
 #endif
   sleeping_task_low.WaitUntilDone();
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 namespace {
 void VerifyOperationCount(Env* env, ThreadStatus::OperationType op_type,
                           int expected_count) {
@@ -2892,11 +2892,11 @@ TEST_F(DBTest, ThreadStatusFlush) {
   options.enable_thread_tracking = true;
   options = CurrentOptions(options);
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"FlushJob::FlushJob()", "DBTest::ThreadStatusFlush:1"},
       {"DBTest::ThreadStatusFlush:2", "FlushJob::WriteLevel0Table"},
   });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   CreateAndReopenWithCF({"pikachu"}, options);
   VerifyOperationCount(env_, ThreadStatus::OP_FLUSH, 0);
@@ -2921,7 +2921,7 @@ TEST_F(DBTest, ThreadStatusFlush) {
   // This second sync point is to ensure the flush job will not
   // be completed until we already perform VerifyOperationCount().
   TEST_SYNC_POINT("DBTest::ThreadStatusFlush:2");
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_P(DBTestWithParam, ThreadStatusSingleCompaction) {
@@ -2944,15 +2944,15 @@ TEST_P(DBTestWithParam, ThreadStatusSingleCompaction) {
   options.level0_file_num_compaction_trigger = kNumL0Files;
   options.max_subcompactions = max_subcompactions_;
 
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({
+  vidardb::SyncPoint::GetInstance()->LoadDependency({
       {"DBTest::ThreadStatusSingleCompaction:0", "DBImpl::BGWorkCompaction"},
       {"CompactionJob::Run():Start", "DBTest::ThreadStatusSingleCompaction:1"},
       {"DBTest::ThreadStatusSingleCompaction:2", "CompactionJob::Run():End"},
   });
   for (int tests = 0; tests < 2; ++tests) {
     DestroyAndReopen(options);
-    rocksdb::SyncPoint::GetInstance()->ClearTrace();
-    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+    vidardb::SyncPoint::GetInstance()->ClearTrace();
+    vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
     Random rnd(301);
     // The Put Phase.
@@ -2991,7 +2991,7 @@ TEST_P(DBTestWithParam, ThreadStatusSingleCompaction) {
 
     // repeat the test with disabling thread tracking.
     options.enable_thread_tracking = false;
-    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+    vidardb::SyncPoint::GetInstance()->DisableProcessing();
   }
 }
 
@@ -3091,7 +3091,7 @@ TEST_P(DBTestWithParam, PreShutdownMultipleCompaction) {
 
   std::vector<ThreadStatus> thread_list;
   // Delay both flush and compaction
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+  vidardb::SyncPoint::GetInstance()->LoadDependency(
       {{"FlushJob::FlushJob()", "CompactionJob::Run():Start"},
        {"CompactionJob::Run():Start",
         "DBTest::PreShutdownMultipleCompaction:Preshutdown"},
@@ -3102,9 +3102,9 @@ TEST_P(DBTestWithParam, PreShutdownMultipleCompaction) {
        {"CompactionJob::Run():End",
         "DBTest::PreShutdownMultipleCompaction:VerifyPreshutdown"}});
 
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
-  // Make rocksdb busy
+  // Make vidardb busy
   int key = 0;
   // check how many threads are doing compaction using GetThreadList
   int operation_count[ThreadStatus::NUM_OP_TYPES] = {0};
@@ -3180,7 +3180,7 @@ TEST_P(DBTestWithParam, PreShutdownCompactionMiddle) {
 
   std::vector<ThreadStatus> thread_list;
   // Delay both flush and compaction
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+  vidardb::SyncPoint::GetInstance()->LoadDependency(
       {{"DBTest::PreShutdownCompactionMiddle:Preshutdown",
         "CompactionJob::Run():Inprogress"},
        {"CompactionJob::Run():Start",
@@ -3189,9 +3189,9 @@ TEST_P(DBTestWithParam, PreShutdownCompactionMiddle) {
        {"CompactionJob::Run():End",
         "DBTest::PreShutdownCompactionMiddle:VerifyPreshutdown"}});
 
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
-  // Make rocksdb busy
+  // Make vidardb busy
   int key = 0;
   // check how many threads are doing compaction using GetThreadList
   int operation_count[ThreadStatus::NUM_OP_TYPES] = {0};
@@ -3232,9 +3232,9 @@ TEST_P(DBTestWithParam, PreShutdownCompactionMiddle) {
   ASSERT_EQ(operation_count[ThreadStatus::OP_COMPACTION], 0);
 }
 
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, FlushOnDestroy) {
   WriteOptions wo;
   wo.disableWAL = true;
@@ -3369,7 +3369,7 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
   std::atomic<int> num_zlib(0);
   std::atomic<int> num_lz4(0);
   std::atomic<int> num_no(0);
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "LevelCompactionPicker::PickCompaction:Return", [&](void* arg) {
         Compaction* compaction = reinterpret_cast<Compaction*>(arg);
         if (compaction->output_level() == 4) {
@@ -3377,13 +3377,13 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
           num_lz4.fetch_add(1);
         }
       });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "FlushJob::WriteLevel0Table:output_compression", [&](void* arg) {
         auto* compression = reinterpret_cast<CompressionType*>(arg);
         ASSERT_TRUE(*compression == kNoCompression);
         num_no.fetch_add(1);
       });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   for (int i = 0; i < 100; i++) {
     ASSERT_OK(Put(Key(keys[i]), RandomString(&rnd, 200)));
@@ -3396,8 +3396,8 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
   Flush();
   dbfull()->TEST_WaitForFlushMemTable();
   dbfull()->TEST_WaitForCompact();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   ASSERT_EQ(NumTableFilesAtLevel(1), 0);
   ASSERT_EQ(NumTableFilesAtLevel(2), 0);
@@ -3410,7 +3410,7 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
   // After base level turn L4->L3, L3 becomes LZ4 and L4 becomes Zlib
   num_lz4.store(0);
   num_no.store(0);
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "LevelCompactionPicker::PickCompaction:Return", [&](void* arg) {
         Compaction* compaction = reinterpret_cast<Compaction*>(arg);
         if (compaction->output_level() == 4 && compaction->start_level() == 3) {
@@ -3421,13 +3421,13 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
           num_lz4.fetch_add(1);
         }
       });
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "FlushJob::WriteLevel0Table:output_compression", [&](void* arg) {
         auto* compression = reinterpret_cast<CompressionType*>(arg);
         ASSERT_TRUE(*compression == kNoCompression);
         num_no.fetch_add(1);
       });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   for (int i = 101; i < 500; i++) {
     ASSERT_OK(Put(Key(keys[i]), RandomString(&rnd, 200)));
@@ -3437,8 +3437,8 @@ TEST_F(DBTest, DynamicLevelCompressionPerLevel2) {
     }
   }
 
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   ASSERT_EQ(NumTableFilesAtLevel(1), 0);
   ASSERT_EQ(NumTableFilesAtLevel(2), 0);
   ASSERT_GT(NumTableFilesAtLevel(3), 0);
@@ -3649,7 +3649,7 @@ TEST_F(DBTest, DynamicCompactionOptions) {
   dbfull()->TEST_WaitForCompact();
   ASSERT_LT(NumTableFilesAtLevel(0), 4);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, FileCreationRandomFailure) {
   Options options;
@@ -3692,7 +3692,7 @@ TEST_F(DBTest, FileCreationRandomFailure) {
     }
   }
 
-  // If rocksdb does not do the correct job, internal assert will fail here.
+  // If vidardb does not do the correct job, internal assert will fail here.
   dbfull()->TEST_WaitForFlushMemTable();
   dbfull()->TEST_WaitForCompact();
 
@@ -3711,7 +3711,7 @@ TEST_F(DBTest, FileCreationRandomFailure) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, DynamicMiscOptions) {
   // Test max_sequential_skip_in_iterations
   Options options;
@@ -3719,7 +3719,7 @@ TEST_F(DBTest, DynamicMiscOptions) {
   options.create_if_missing = true;
   options.max_sequential_skip_in_iterations = 16;
   options.compression = kNoCompression;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   DestroyAndReopen(options);
 
   auto assert_reseek_count = [this, &options](int key_start, int num_reseek) {
@@ -3800,7 +3800,7 @@ TEST_F(DBTest, DynamicMiscOptions) {
                                                      &mutable_cf_options));
   ASSERT_EQ(true, mutable_cf_options.report_bg_io_stats);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, L0L1L2AndUpHitCounter) {
   Options options = CurrentOptions();
@@ -3813,7 +3813,7 @@ TEST_F(DBTest, L0L1L2AndUpHitCounter) {
   options.max_write_buffer_number = 2;
   options.max_background_compactions = 8;
   options.max_background_flushes = 8;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   CreateAndReopenWithCF({"mypikachu"}, options);
 
   int numkeys = 20000;
@@ -3887,12 +3887,12 @@ TEST_F(DBTest, EncodeDecompressedBlockSizeTest) {
 TEST_F(DBTest, MutexWaitStatsDisabledByDefault) {
   Options options = CurrentOptions();
   options.create_if_missing = true;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   CreateAndReopenWithCF({"pikachu"}, options);
   const uint64_t kMutexWaitDelay = 100;
   ThreadStatusUtil::TEST_SetStateDelay(ThreadStatus::STATE_MUTEX_WAIT,
                                        kMutexWaitDelay);
-  ASSERT_OK(Put("hello", "rocksdb"));
+  ASSERT_OK(Put("hello", "vidardb"));
   ASSERT_EQ(TestGetTickerCount(options, DB_MUTEX_WAIT_MICROS), 0);
   ThreadStatusUtil::TEST_SetStateDelay(ThreadStatus::STATE_MUTEX_WAIT, 0);
 }
@@ -3900,13 +3900,13 @@ TEST_F(DBTest, MutexWaitStatsDisabledByDefault) {
 TEST_F(DBTest, MutexWaitStats) {
   Options options = CurrentOptions();
   options.create_if_missing = true;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   options.statistics->stats_level_ = StatsLevel::kAll;
   CreateAndReopenWithCF({"pikachu"}, options);
   const uint64_t kMutexWaitDelay = 100;
   ThreadStatusUtil::TEST_SetStateDelay(ThreadStatus::STATE_MUTEX_WAIT,
                                        kMutexWaitDelay);
-  ASSERT_OK(Put("hello", "rocksdb"));
+  ASSERT_OK(Put("hello", "vidardb"));
   ASSERT_GE(TestGetTickerCount(options, DB_MUTEX_WAIT_MICROS), kMutexWaitDelay);
   ThreadStatusUtil::TEST_SetStateDelay(ThreadStatus::STATE_MUTEX_WAIT, 0);
 }
@@ -3940,7 +3940,7 @@ TEST_F(DBTest, CloseSpeedup) {
   env_->DeleteDir(dbname_);
   DestroyAndReopen(options);
 
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   env_->SetBackgroundThreads(1, Env::LOW);
   env_->SetBackgroundThreads(1, Env::HIGH);
   Random rnd(301);
@@ -3981,7 +3981,7 @@ TEST_F(DBTest, TestLogCleanup) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, EmptyCompactedDB) {
   Options options = CurrentOptions();
   options.max_open_files = -1;
@@ -3991,7 +3991,7 @@ TEST_F(DBTest, EmptyCompactedDB) {
   ASSERT_TRUE(s.IsNotSupported());
   Close();
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // Github issue #596
 TEST_F(DBTest, HugeNumberOfLevels) {
@@ -4028,15 +4028,15 @@ TEST_F(DBTest, AutomaticConflictsWithManualCompaction) {
   }
 
   std::atomic<int> callback_count(0);
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BackgroundCompaction()::Conflict",
       [&](void* arg) { callback_count.fetch_add(1); });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
   CompactRangeOptions croptions;
   croptions.exclusive_manual_compaction = false;
   ASSERT_OK(db_->CompactRange(croptions, nullptr, nullptr));
   ASSERT_GE(callback_count.load(), 1);
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   for (int i = 0; i < 300000; ++i) {
     ASSERT_NE("NOT_FOUND", Get(Key(i)));
   }
@@ -4054,7 +4054,7 @@ TEST_F(DBTest, LargeBatchWithColumnFamilies) {
     for (int pass = 1; pass <= 3; pass++) {
       WriteBatch batch;
       size_t write_size = 1024 * 1024 * (5 + i);
-      fprintf(stderr, "prepare: %" ROCKSDB_PRIszt " MB, pass:%d\n",
+      fprintf(stderr, "prepare: %" VIDARDB_PRIszt " MB, pass:%d\n",
               (write_size / 1024 / 1024), pass);
       for (;;) {
         std::string data(3000, j++ % 127 + 20);
@@ -4064,7 +4064,7 @@ TEST_F(DBTest, LargeBatchWithColumnFamilies) {
           break;
         }
       }
-      fprintf(stderr, "write: %" ROCKSDB_PRIszt " MB\n",
+      fprintf(stderr, "write: %" VIDARDB_PRIszt " MB\n",
               (batch.GetDataSize() / 1024 / 1024));
       ASSERT_OK(dbfull()->Write(WriteOptions(), &batch));
       fprintf(stderr, "done\n");
@@ -4102,19 +4102,19 @@ TEST_F(DBTest, FlushesInParallelWithCompactRange) {
     }
 
     if (iter == 1) {
-      rocksdb::SyncPoint::GetInstance()->LoadDependency(
+      vidardb::SyncPoint::GetInstance()->LoadDependency(
           {{"DBImpl::RunManualCompaction()::1",
             "DBTest::FlushesInParallelWithCompactRange:1"},
            {"DBTest::FlushesInParallelWithCompactRange:2",
             "DBImpl::RunManualCompaction()::2"}});
     } else {
-      rocksdb::SyncPoint::GetInstance()->LoadDependency(
+      vidardb::SyncPoint::GetInstance()->LoadDependency(
           {{"CompactionJob::Run():Start",
             "DBTest::FlushesInParallelWithCompactRange:1"},
            {"DBTest::FlushesInParallelWithCompactRange:2",
             "CompactionJob::Run():End"}});
     }
-    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+    vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
     std::vector<std::thread> threads;
     threads.emplace_back([&]() { Compact("a", "z"); });
@@ -4133,7 +4133,7 @@ TEST_F(DBTest, FlushesInParallelWithCompactRange) {
     for (auto& t : threads) {
       t.join();
     }
-    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+    vidardb::SyncPoint::GetInstance()->DisableProcessing();
   }
 }
 
@@ -4199,7 +4199,7 @@ TEST_F(DBTest, DelayedWriteRate) {
             static_cast<int64_t>(estimated_sleep_time * 2));
 
   env_->no_sleep_ = false;
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   sleeping_task_low.WakeUp();
   sleeping_task_low.WaitUntilDone();
 }
@@ -4228,12 +4228,12 @@ TEST_F(DBTest, HardLimit) {
   CreateAndReopenWithCF({"pikachu"}, options);
 
   std::atomic<int> callback_count(0);
-  rocksdb::SyncPoint::GetInstance()->SetCallBack("DBImpl::DelayWrite:Wait",
+  vidardb::SyncPoint::GetInstance()->SetCallBack("DBImpl::DelayWrite:Wait",
                                                  [&](void* arg) {
                                                    callback_count.fetch_add(1);
                                                    sleeping_task_low.WakeUp();
                                                  });
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   Random rnd(301);
   int key_idx = 0;
@@ -4250,11 +4250,11 @@ TEST_F(DBTest, HardLimit) {
   }
   ASSERT_GE(callback_count.load(), 1);
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   sleeping_task_low.WaitUntilDone();
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, SoftLimit) {
   Options options = CurrentOptions();
   options.env = env_;
@@ -4321,7 +4321,7 @@ TEST_F(DBTest, SoftLimit) {
   ASSERT_TRUE(!dbfull()->TEST_write_controler().NeedsDelay());
 
   // Only allow one compactin going through.
-  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+  vidardb::SyncPoint::GetInstance()->SetCallBack(
       "BackgroundCallCompaction:0", [&](void* arg) {
         // Schedule a sleeping task.
         sleeping_task_low.Reset();
@@ -4329,7 +4329,7 @@ TEST_F(DBTest, SoftLimit) {
                        &sleeping_task_low, Env::Priority::LOW);
       });
 
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   env_->Schedule(&test::SleepingBackgroundTask::DoSleepTask, &sleeping_task_low,
                  Env::Priority::LOW);
@@ -4389,7 +4389,7 @@ TEST_F(DBTest, SoftLimit) {
   ASSERT_TRUE(dbfull()->TEST_write_controler().NeedsDelay());
 
   sleeping_task_low.WaitUntilSleeping();
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   sleeping_task_low.WakeUp();
   sleeping_task_low.WaitUntilDone();
 }
@@ -4428,7 +4428,7 @@ TEST_F(DBTest, LastWriteBufferDelay) {
   sleeping_task.WakeUp();
   sleeping_task.WaitUntilDone();
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, FailWhenCompressionNotSupportedTest) {
   CompressionType compressions[] = {kZlibCompression, kBZip2Compression,
@@ -4451,10 +4451,10 @@ TEST_F(DBTest, FailWhenCompressionNotSupportedTest) {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBTest, RowCache) {
   Options options = CurrentOptions();
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   options.row_cache = NewLRUCache(8192);
   DestroyAndReopen(options);
 
@@ -4470,15 +4470,15 @@ TEST_F(DBTest, RowCache) {
   ASSERT_EQ(TestGetTickerCount(options, ROW_CACHE_HIT), 1);
   ASSERT_EQ(TestGetTickerCount(options, ROW_CACHE_MISS), 1);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBTest, DeletingOldWalAfterDrop) {
-  rocksdb::SyncPoint::GetInstance()->LoadDependency(
+  vidardb::SyncPoint::GetInstance()->LoadDependency(
       {{"Test:AllowFlushes", "DBImpl::BGWorkFlush"},
        {"DBImpl::BGWorkFlush:done", "Test:WaitForFlush"}});
-  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  vidardb::SyncPoint::GetInstance()->ClearTrace();
 
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
   Options options = CurrentOptions();
   options.max_total_wal_size = 8192;
   options.compression = kNoCompression;
@@ -4488,7 +4488,7 @@ TEST_F(DBTest, DeletingOldWalAfterDrop) {
   options.level0_stop_writes_trigger = (1 << 30);
   options.disable_auto_compactions = true;
   DestroyAndReopen(options);
-  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  vidardb::SyncPoint::GetInstance()->EnableProcessing();
 
   CreateColumnFamilies({"cf1", "cf2"}, options);
   ASSERT_OK(Put(0, "key1", DummyString(8192)));
@@ -4543,10 +4543,10 @@ TEST_F(DBTest, PauseBackgroundWorkTest) {
   ASSERT_EQ(true, done.load());
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

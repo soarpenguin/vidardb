@@ -31,7 +31,7 @@
 #include "util/options_helper.h"
 #include "util/thread_status_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 ColumnFamilyHandleImpl::ColumnFamilyHandleImpl(
     ColumnFamilyData* column_family_data, DBImpl* db, InstrumentedMutex* mutex)
@@ -66,7 +66,7 @@ const std::string& ColumnFamilyHandleImpl::GetName() const {
 }
 
 Status ColumnFamilyHandleImpl::GetDescriptor(ColumnFamilyDescriptor* desc) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   // accessing mutable cf-options requires db mutex.
   InstrumentedMutexLock l(mutex_);
   *desc = ColumnFamilyDescriptor(
@@ -76,7 +76,7 @@ Status ColumnFamilyHandleImpl::GetDescriptor(ColumnFamilyDescriptor* desc) {
   return Status::OK();
 #else
   return Status::NotSupported();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
 const Comparator* ColumnFamilyHandleImpl::user_comparator() const {
@@ -345,7 +345,7 @@ ColumnFamilyData::ColumnFamilyData(
     if (ioptions_.compaction_style == kCompactionStyleLevel) {
       compaction_picker_.reset(
           new LevelCompactionPicker(ioptions_, &internal_comparator_));
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     } else if (ioptions_.compaction_style == kCompactionStyleUniversal) {
       compaction_picker_.reset(
           new UniversalCompactionPicker(ioptions_, &internal_comparator_));
@@ -359,7 +359,7 @@ ColumnFamilyData::ColumnFamilyData(
           "Column family %s does not use any background compaction. "
           "Compactions can only be done via CompactFiles\n",
           GetName().c_str());
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
     } else {
       Log(InfoLogLevel::ERROR_LEVEL, ioptions_.info_log,
           "Unable to recognize the specified compaction style %d. "
@@ -811,7 +811,7 @@ void ColumnFamilyData::ResetThreadLocalSuperVersions() {
   }
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status ColumnFamilyData::SetOptions(
       const std::unordered_map<std::string, std::string>& options_map) {
   MutableCFOptions new_mutable_cf_options;
@@ -823,7 +823,7 @@ Status ColumnFamilyData::SetOptions(
   }
   return s;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 ColumnFamilySet::ColumnFamilySet(const std::string& dbname,
                                  const DBOptions* db_options,
@@ -989,4 +989,4 @@ const Comparator* GetColumnFamilyUserComparator(
   return nullptr;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

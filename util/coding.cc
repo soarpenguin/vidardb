@@ -10,9 +10,9 @@
 #include "util/coding.h"
 
 #include <algorithm>
-#include "rocksdb/slice.h"
+#include "vidardb/slice.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 char* EncodeVarint32(char* dst, uint32_t v) {
   // Operate on characters as unsigneds
@@ -77,4 +77,4 @@ const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
   return nullptr;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -16,7 +16,7 @@
 
 class ColumnFamilyData;
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTableList;
 class DBImpl;
@@ -31,7 +31,7 @@ struct DBPropertyInfo {
 
   // @param value Value-result argument for storing the property's string value
   // @param suffix Argument portion of the property. For example, suffix would
-  //      be "5" for the property "rocksdb.num-files-at-level5". So far, only
+  //      be "5" for the property "vidardb.num-files-at-level5". So far, only
   //      certain string properties take an argument.
   bool (InternalStats::*handle_string)(std::string* value, Slice suffix);
 
@@ -45,7 +45,7 @@ struct DBPropertyInfo {
 
 extern const DBPropertyInfo* GetPropertyInfo(const Slice& property);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 class InternalStats {
  public:
   enum InternalCFStatsType {
@@ -456,6 +456,6 @@ class InternalStats {
     return false;
   }
 };
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

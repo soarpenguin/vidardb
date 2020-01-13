@@ -9,18 +9,18 @@
 #include <string>
 #include <vector>
 
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
 #include "util/options_helper.h"
 #include "util/options_sanity_check.h"
 #include "table/block_based_table_factory.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-#define ROCKSDB_OPTION_FILE_MAJOR 1
-#define ROCKSDB_OPTION_FILE_MINOR 1
+#define VIDARDB_OPTION_FILE_MAJOR 1
+#define VIDARDB_OPTION_FILE_MINOR 1
 
 enum OptionSection : char {
   kOptionSectionVersion = 0,
@@ -33,15 +33,15 @@ enum OptionSection : char {
 static const std::string opt_section_titles[] = {
     "Version", "DBOptions", "CFOptions", "TableOptions/", "Unknown"};
 
-Status PersistRocksDBOptions(const DBOptions& db_opt,
+Status PersistVidarDBOptions(const DBOptions& db_opt,
                              const std::vector<std::string>& cf_names,
                              const std::vector<ColumnFamilyOptions>& cf_opts,
                              const std::string& file_name, Env* env);
 
-class RocksDBOptionsParser {
+class VidarDBOptionsParser {
  public:
-  explicit RocksDBOptionsParser();
-  ~RocksDBOptionsParser() {}
+  explicit VidarDBOptionsParser();
+  ~VidarDBOptionsParser() {}
   void Reset();
 
   Status Parse(const std::string& file_name, Env* env);
@@ -64,7 +64,7 @@ class RocksDBOptionsParser {
   }
   size_t NumColumnFamilies() { return cf_opts_.size(); }
 
-  static Status VerifyRocksDBOptionsFromFile(
+  static Status VerifyVidarDBOptionsFromFile(
       const DBOptions& db_opt, const std::vector<std::string>& cf_names,
       const std::vector<ColumnFamilyOptions>& cf_opts,
       const std::string& file_name, Env* env,
@@ -89,7 +89,7 @@ class RocksDBOptionsParser {
       const BlockBasedTableFactory* file_tf,
       OptionsSanityCheckLevel sanity_check_level);
 
-  static Status ExtraParserCheck(const RocksDBOptionsParser& input_parser);
+  static Status ExtraParserCheck(const VidarDBOptionsParser& input_parser);
 
  protected:
   bool IsSection(const std::string& line);
@@ -139,6 +139,6 @@ class RocksDBOptionsParser {
   int opt_file_version[3];
 };
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

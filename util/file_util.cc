@@ -8,12 +8,12 @@
 #include <string>
 #include <algorithm>
 
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
 #include "util/sst_file_manager_impl.h"
 #include "util/file_reader_writer.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Utility function to copy a file up to a specified length
 Status CopyFile(Env* env, const std::string& source,
@@ -94,4 +94,4 @@ Status DeleteSSTFile(const DBOptions* db_options, const std::string& fname,
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

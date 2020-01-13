@@ -17,7 +17,7 @@
 #ifdef OS_SOLARIS
 #include <alloca.h>
 #endif
-#ifdef ROCKSDB_JEMALLOC
+#ifdef VIDARDB_JEMALLOC
 #include "jemalloc/jemalloc.h"
 #endif
 
@@ -58,15 +58,15 @@
 #include "db/writebuffer.h"
 #include "port/likely.h"
 #include "port/port.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/sst_file_writer.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
-#include "rocksdb/version.h"
-#include "rocksdb/wal_filter.h"
+#include "vidardb/cache.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/sst_file_writer.h"
+#include "vidardb/statistics.h"
+#include "vidardb/status.h"
+#include "vidardb/table.h"
+#include "vidardb/version.h"
+#include "vidardb/wal_filter.h"
 #include "table/block.h"
 #include "table/block_based_table_factory.h"
 #include "table/merger.h"
@@ -91,13 +91,13 @@
 #include "util/sync_point.h"
 #include "util/thread_status_updater.h"
 #include "util/thread_status_util.h"
-#include "rocksdb/utilities/json.hpp"  // Shichao
+#include "vidardb/utilities/json.hpp"  // Shichao
 
-namespace rocksdb {
+namespace vidardb {
 
 const std::string kDefaultColumnFamilyName("default");
 
-void DumpRocksDBBuildVersion(Logger * log);
+void DumpVidarDBBuildVersion(Logger * log);
 
 struct DBImpl::WriteContext {
   std::vector<SuperVersion*> superversions_to_free_;
@@ -316,9 +316,9 @@ DBImpl::DBImpl(const DBOptions& options, const std::string& dbname)
       next_job_id_(1),
       has_unpersisted_data_(false),
       env_options_(db_options_),
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
       wal_manager_(db_options_, env_options_),
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
       event_logger_(db_options_.info_log.get()),
       bg_work_paused_(0),
       bg_compaction_paused_(0),
@@ -339,7 +339,7 @@ DBImpl::DBImpl(const DBOptions& options, const std::string& dbname)
   column_family_memtables_.reset(
       new ColumnFamilyMemTablesImpl(versions_->GetColumnFamilySet()));
 
-  DumpRocksDBBuildVersion(db_options_.info_log.get());
+  DumpVidarDBBuildVersion(db_options_.info_log.get());
   DumpDBFileSummary(db_options_, dbname_);
   db_options_.Dump(db_options_.info_log.get());
   DumpSupportInfo(db_options_.info_log.get());
@@ -542,8 +542,8 @@ void DBImpl::PrintStatistics() {
   }
 }
 
-#ifndef ROCKSDB_LITE
-#ifdef ROCKSDB_JEMALLOC
+#ifndef VIDARDB_LITE
+#ifdef VIDARDB_JEMALLOC
 typedef struct {
   char* cur;
   char* end;
@@ -560,10 +560,10 @@ static void GetJemallocStatus(void* mstat_arg, const char* status) {
   snprintf(mstat->cur, buf_size, "%s", status);
   mstat->cur += status_len;
 }
-#endif  // ROCKSDB_JEMALLOC
+#endif  // VIDARDB_JEMALLOC
 
 static void DumpMallocStats(std::string* stats) {
-#ifdef ROCKSDB_JEMALLOC
+#ifdef VIDARDB_JEMALLOC
   MallocStatus mstat;
   const uint kMallocStatusLen = 1000000;
   std::unique_ptr<char> buf{new char[kMallocStatusLen + 1]};
@@ -571,9 +571,9 @@ static void DumpMallocStats(std::string* stats) {
   mstat.end = buf.get() + kMallocStatusLen;
   malloc_stats_print(GetJemallocStatus, &mstat, "");
   stats->append(buf.get());
-#endif  // ROCKSDB_JEMALLOC
+#endif  // VIDARDB_JEMALLOC
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 void DBImpl::MaybeDumpStats() {
   if (db_options_.stats_dump_period_sec == 0) return;
@@ -589,7 +589,7 @@ void DBImpl::MaybeDumpStats() {
     // period in rare cases.
     last_stats_dump_time_microsec_ = now_micros;
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     const DBPropertyInfo* cf_property_info =
         GetPropertyInfo(DB::Properties::kCFStats);
     assert(cf_property_info != nullptr);
@@ -614,7 +614,7 @@ void DBImpl::MaybeDumpStats() {
         db_options_.info_log, "------- DUMPING STATS -------");
     Log(InfoLogLevel::WARN_LEVEL,
         db_options_.info_log, "%s", stats.c_str());
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
     PrintStatistics();
   }
@@ -993,13 +993,13 @@ void DBImpl::PurgeObsoleteFiles(const JobContext& state) {
           db_options_.wal_dir : dbname_) + "/" + to_delete;
     }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     if (type == kLogFile && (db_options_.WAL_ttl_seconds > 0 ||
                               db_options_.WAL_size_limit_MB > 0)) {
       wal_manager_.ArchiveWALFile(fname, number);
       continue;
     }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
     Status file_deletion_status;
     if (type == kTableFile) {
       file_deletion_status = DeleteSSTFile(&db_options_, fname, path_id);
@@ -1059,9 +1059,9 @@ void DBImpl::PurgeObsoleteFiles(const JobContext& state) {
       }
     }
   }
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   wal_manager_.PurgeObsoleteWALFiles();
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
   LogFlush(db_options_.info_log);
 }
 
@@ -1209,7 +1209,7 @@ Status DBImpl::Recover(
     //
     // Note that prev_log_number() is no longer used, but we pay
     // attention to it in case we are recovering a database
-    // produced by an older version of rocksdb.
+    // produced by an older version of vidardb.
     std::vector<std::string> filenames;
     s = env_->GetChildren(db_options_.wal_dir, &filenames);
     if (!s.ok()) {
@@ -1320,7 +1320,7 @@ Status DBImpl::RecoverLogFiles(const std::vector<uint64_t>& log_numbers,
     stream.EndArray();
   }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (db_options_.wal_filter != nullptr) {
     std::map<std::string, uint32_t> cf_name_id_map;
     std::map<uint32_t, uint64_t> cf_lognumber_map;
@@ -1410,7 +1410,7 @@ Status DBImpl::RecoverLogFiles(const std::vector<uint64_t>& log_numbers,
       }
       WriteBatchInternal::SetContents(&batch, record);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
       if (db_options_.wal_filter != nullptr) {
         WriteBatch new_batch;
         bool batch_changed = false;
@@ -1482,7 +1482,7 @@ Status DBImpl::RecoverLogFiles(const std::vector<uint64_t>& log_numbers,
           batch = new_batch;
         }
       }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
       if (*next_sequence == kMaxSequenceNumber) {
         *next_sequence = WriteBatchInternal::Sequence(&batch);
@@ -1714,7 +1714,7 @@ Status DBImpl::FlushMemTableToOutputFile(
 
   FileMetaData file_meta;
 
-  // Within flush_job.Run, rocksdb may call event listener to notify
+  // Within flush_job.Run, vidardb may call event listener to notify
   // file creation and deletion.
   //
   // Note that flush_job.Run will unlock and lock the db_mutex,
@@ -1740,11 +1740,11 @@ Status DBImpl::FlushMemTableToOutputFile(
     bg_error_ = s;
   }
   if (s.ok()) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     // may temporarily unlock and lock the mutex.
     NotifyOnFlushCompleted(cfd, &file_meta, mutable_cf_options,
                            job_context->job_id, flush_job.GetTableProperties());
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
     auto sfm =
         static_cast<SstFileManagerImpl*>(db_options_.sst_file_manager.get());
     if (sfm) {
@@ -1766,7 +1766,7 @@ void DBImpl::NotifyOnFlushCompleted(ColumnFamilyData* cfd,
                                     FileMetaData* file_meta,
                                     const MutableCFOptions& mutable_cf_options,
                                     int job_id, TableProperties prop) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (db_options_.listeners.size() == 0U) {
     return;
   }
@@ -1803,7 +1803,7 @@ void DBImpl::NotifyOnFlushCompleted(ColumnFamilyData* cfd,
   mutex_.Lock();
   // no need to signal bg_cv_ as it will be signaled at the end of the
   // flush process.
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
 Status DBImpl::CompactRange(const CompactRangeOptions& options,
@@ -1918,9 +1918,9 @@ Status DBImpl::CompactFiles(
     ColumnFamilyHandle* column_family,
     const std::vector<std::string>& input_file_names,
     const int output_level, const int output_path_id) {
-#ifdef ROCKSDB_LITE
+#ifdef VIDARDB_LITE
     // not supported in lite version
-  return Status::NotSupported("Not supported in ROCKSDB LITE");
+  return Status::NotSupported("Not supported in VIDARDB LITE");
 #else
   if (column_family == nullptr) {
     return Status::InvalidArgument("ColumnFamilyHandle must be non-null.");
@@ -1971,10 +1971,10 @@ Status DBImpl::CompactFiles(
   }
 
   return s;
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status DBImpl::CompactFilesImpl(
     const CompactionOptions& compact_options, ColumnFamilyData* cfd,
     Version* version, const std::vector<std::string>& input_file_names,
@@ -2119,7 +2119,7 @@ Status DBImpl::CompactFilesImpl(
 
   return status;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 Status DBImpl::PauseBackgroundWork() {
   InstrumentedMutexLock guard_lock(&mutex_);
@@ -2152,7 +2152,7 @@ void DBImpl::NotifyOnCompactionCompleted(
     ColumnFamilyData* cfd, Compaction *c, const Status &st,
     const CompactionJobStats& compaction_job_stats,
     const int job_id) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   if (db_options_.listeners.size() == 0U) {
     return;
   }
@@ -2202,13 +2202,13 @@ void DBImpl::NotifyOnCompactionCompleted(
   mutex_.Lock();
   // no need to signal bg_cv_ as it will be signaled at the end of the
   // flush process.
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
 Status DBImpl::SetOptions(ColumnFamilyHandle* column_family,
     const std::unordered_map<std::string, std::string>& options_map) {
-#ifdef ROCKSDB_LITE
-  return Status::NotSupported("Not supported in ROCKSDB LITE");
+#ifdef VIDARDB_LITE
+  return Status::NotSupported("Not supported in VIDARDB LITE");
 #else
   auto* cfd = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family)->cfd();
   if (options_map.empty()) {
@@ -2228,7 +2228,7 @@ Status DBImpl::SetOptions(ColumnFamilyHandle* column_family,
       new_options = *cfd->GetLatestMutableCFOptions();
     }
     if (s.ok()) {
-      // Persist RocksDB options under the single write thread
+      // Persist VidarDB options under the single write thread
       WriteThread::Writer w;
       write_thread_.EnterUnbatched(&w, &mutex_);
 
@@ -2266,7 +2266,7 @@ Status DBImpl::SetOptions(ColumnFamilyHandle* column_family,
   }
   LogFlush(db_options_.info_log);
   return s;
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 }
 
 // return the same level if it cannot be moved
@@ -3755,7 +3755,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 }
 /***************************** Shichao ******************************/
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status DBImpl::AddFile(ColumnFamilyHandle* column_family,
                        const std::string& file_path, bool move_file) {
   Status status;
@@ -3975,7 +3975,7 @@ Status DBImpl::AddFile(ColumnFamilyHandle* column_family,
   }
   return status;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 Status DBImpl::CreateColumnFamily(const ColumnFamilyOptions& cf_options,
                                   const std::string& column_family_name,
@@ -4020,7 +4020,7 @@ Status DBImpl::CreateColumnFamily(const ColumnFamilyOptions& cf_options,
 
       if (s.ok()) {
         // If the column family was created successfully, we then persist
-        // the updated RocksDB options under the same single write thread
+        // the updated VidarDB options under the same single write thread
         persist_options_status = WriteOptionsFile();
       }
       write_thread_.ExitUnbatched(&w);
@@ -4095,7 +4095,7 @@ Status DBImpl::DropColumnFamily(ColumnFamilyHandle* column_family) {
                                  &edit, &mutex_);
       if (s.ok()) {
         // If the column family was dropped successfully, we then persist
-        // the updated RocksDB options under the same single write thread
+        // the updated VidarDB options under the same single write thread
         options_persist_status = WriteOptionsFile();
       }
       write_thread_.ExitUnbatched(&w);
@@ -4158,7 +4158,7 @@ Iterator* DBImpl::NewIterator(const ReadOptions& read_options,
   auto cfd = cfh->cfd();
 
   if (read_options.tailing) {
-#ifdef ROCKSDB_LITE
+#ifdef VIDARDB_LITE
     // not supported in lite version
     return nullptr;
 #else
@@ -4241,11 +4241,11 @@ Iterator* DBImpl::NewIterator(const ReadOptions& read_options,
 
 const Snapshot* DBImpl::GetSnapshot() { return GetSnapshotImpl(false); }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 const Snapshot* DBImpl::GetSnapshotForWriteConflictBoundary() {
   return GetSnapshotImpl(true);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 const Snapshot* DBImpl::GetSnapshotImpl(bool is_write_conflict_boundary) {
   int64_t unix_time = 0;
@@ -4749,7 +4749,7 @@ Status DBImpl::ScheduleFlushes(WriteContext* context) {
   return Status::OK();
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 void DBImpl::NotifyOnMemTableSealed(ColumnFamilyData* cfd,
                                     const MemTableInfo& mem_table_info) {
   if (db_options_.listeners.size() == 0U) {
@@ -4763,7 +4763,7 @@ void DBImpl::NotifyOnMemTableSealed(ColumnFamilyData* cfd,
     listener->OnMemTableSealed(mem_table_info);
   }
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 // REQUIRES: mutex_ is held
 // REQUIRES: this thread is currently at the front of the writer queue
@@ -4789,14 +4789,14 @@ Status DBImpl::SwitchMemtable(ColumnFamilyData* cfd, WriteContext* context) {
   const MutableCFOptions mutable_cf_options = *cfd->GetLatestMutableCFOptions();
 
   // Set current_memtble_info for memtable sealed callback
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   MemTableInfo memtable_info;
   memtable_info.cf_name = cfd->GetName();
   memtable_info.first_seqno = cfd->mem()->GetFirstSequenceNumber();
   memtable_info.earliest_seqno = cfd->mem()->GetEarliestSequenceNumber();
   memtable_info.num_entries = cfd->mem()->num_entries();
   memtable_info.num_deletes = cfd->mem()->num_deletes();
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
   // Log this later after lock release. It may be outdated, e.g., if background
   // flush happens before logging, but that should be ok.
   int num_imm_unflushed = cfd->imm()->NumNotFlushed();
@@ -4837,12 +4837,12 @@ Status DBImpl::SwitchMemtable(ColumnFamilyData* cfd, WriteContext* context) {
       new_superversion = new SuperVersion();
     }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     // PLEASE NOTE: We assume that there are no failable operations
     // after lock is acquired below since we are already notifying
     // client about mem table becoming immutable.
     NotifyOnMemTableSealed(cfd, memtable_info);
-#endif //ROCKSDB_LITE
+#endif //VIDARDB_LITE
   }
   Log(InfoLogLevel::INFO_LEVEL, db_options_.info_log,
       "[%s] New memtable created with log file: #%" PRIu64
@@ -4883,7 +4883,7 @@ Status DBImpl::SwitchMemtable(ColumnFamilyData* cfd, WriteContext* context) {
   return s;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status DBImpl::GetPropertiesOfAllTables(ColumnFamilyHandle* column_family,
                                         TablePropertiesCollection* props) {
   auto cfh = reinterpret_cast<ColumnFamilyHandleImpl*>(column_family);
@@ -4927,7 +4927,7 @@ Status DBImpl::GetPropertiesOfTablesInRange(ColumnFamilyHandle* column_family,
   return s;
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 const std::string& DBImpl::GetName() const {
   return dbname_;
@@ -5179,7 +5179,7 @@ void DBImpl::ReleaseFileNumberFromPendingOutputs(
   pending_outputs_.erase(v);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status DBImpl::GetUpdatesSince(
     SequenceNumber seq, unique_ptr<TransactionLogIterator>* iter,
     const TransactionLogIterator::ReadOptions& read_options) {
@@ -5383,7 +5383,7 @@ void DBImpl::GetColumnFamilyMetaData(
   ReturnAndCleanupSuperVersion(cfd, sv);
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 Status DBImpl::CheckConsistency() {
   mutex_.AssertHeld();
@@ -5398,7 +5398,7 @@ Status DBImpl::CheckConsistency() {
     uint64_t fsize = 0;
     Status s = env_->GetFileSize(file_path, &fsize);
     if (!s.ok() &&
-        env_->GetFileSize(Rocks2LevelTableFileName(file_path), &fsize).ok()) {
+        env_->GetFileSize(VidarDB2LevelTableFileName(file_path), &fsize).ok()) {
       s = Status::OK();
     }
     if (!s.ok()) {
@@ -5628,7 +5628,7 @@ Status DB::Open(const DBOptions& db_options, const std::string& dbname,
   TEST_SYNC_POINT("DBImpl::Open:Opened");
   Status persist_options_status;
   if (s.ok()) {
-    // Persist RocksDB Options before scheduling the compaction.
+    // Persist VidarDB Options before scheduling the compaction.
     // The WriteOptionsFile() will release and lock the mutex internally.
     persist_options_status = impl->WriteOptionsFile();
 
@@ -5786,7 +5786,7 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
 }
 
 Status DBImpl::WriteOptionsFile() {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   mutex_.AssertHeld();
 
   std::vector<std::string> cf_names;
@@ -5808,7 +5808,7 @@ Status DBImpl::WriteOptionsFile() {
 
   std::string file_name =
       TempOptionsFileName(GetName(), versions_->NewFileNumber());
-  Status s = PersistRocksDBOptions(GetDBOptions(), cf_names, cf_opts, file_name,
+  Status s = PersistVidarDBOptions(GetDBOptions(), cf_names, cf_opts, file_name,
                                    GetEnv());
 
   if (s.ok()) {
@@ -5818,10 +5818,10 @@ Status DBImpl::WriteOptionsFile() {
   return s;
 #else
   return Status::OK();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 namespace {
 void DeleteOptionsFilesHelper(const std::map<uint64_t, std::string>& filenames,
                               const size_t num_files_to_keep,
@@ -5838,10 +5838,10 @@ void DeleteOptionsFilesHelper(const std::map<uint64_t, std::string>& filenames,
   }
 }
 }  // namespace
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
 Status DBImpl::DeleteObsoleteOptionsFiles() {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   std::vector<std::string> filenames;
   // use ordered map to store keep the filenames sorted from the newest
   // to the oldest.
@@ -5868,11 +5868,11 @@ Status DBImpl::DeleteObsoleteOptionsFiles() {
   return Status::OK();
 #else
   return Status::OK();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
 Status DBImpl::RenameTempFileToOptionsFile(const std::string& file_name) {
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   Status s;
   std::string options_file_name =
       OptionsFileName(GetName(), versions_->NewFileNumber());
@@ -5883,10 +5883,10 @@ Status DBImpl::RenameTempFileToOptionsFile(const std::string& file_name) {
   return s;
 #else
   return Status::OK();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 }
 
-#ifdef ROCKSDB_USING_THREAD_STATUS
+#ifdef VIDARDB_USING_THREAD_STATUS
 
 void DBImpl::NewThreadStatusCfInfo(
     ColumnFamilyData* cfd) const {
@@ -5920,22 +5920,22 @@ void DBImpl::EraseThreadStatusCfInfo(
 
 void DBImpl::EraseThreadStatusDbInfo() const {
 }
-#endif  // ROCKSDB_USING_THREAD_STATUS
+#endif  // VIDARDB_USING_THREAD_STATUS
 
 //
 // A global method that can dump out the build version
-void DumpRocksDBBuildVersion(Logger * log) {
+void DumpVidarDBBuildVersion(Logger * log) {
 #if !defined(IOS_CROSS_COMPILE)
   // if we compile with Xcode, we don't run build_detect_vesion, so we don't
   // generate util/build_version.cc
-  Header(log, "RocksDB version: %d.%d.%d\n", ROCKSDB_MAJOR, ROCKSDB_MINOR,
-         ROCKSDB_PATCH);
-  Header(log, "Git sha %s", rocksdb_build_git_sha);
-  Header(log, "Compile date %s", rocksdb_build_compile_date);
+  Header(log, "VidarDB version: %d.%d.%d\n", VIDARDB_MAJOR, VIDARDB_MINOR,
+         VIDARDB_PATCH);
+  Header(log, "Git sha %s", vidardb_build_git_sha);
+  Header(log, "Compile date %s", vidardb_build_compile_date);
 #endif
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 SequenceNumber DBImpl::GetEarliestMemTableSequenceNumber(SuperVersion* sv,
                                                          bool include_history) {
   // Find the earliest sequence number that we know we can rely on reading
@@ -5949,9 +5949,9 @@ SequenceNumber DBImpl::GetEarliestMemTableSequenceNumber(SuperVersion* sv,
 
   return earliest_seq;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
                                        bool cache_only, SequenceNumber* seq,
                                        bool* found_record_for_key) {
@@ -6038,6 +6038,6 @@ Status DBImpl::GetLatestSequenceForKey(SuperVersion* sv, const Slice& key,
 
   return Status::OK();
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

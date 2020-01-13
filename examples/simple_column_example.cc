@@ -2,14 +2,14 @@
 #include <iostream>
 using namespace std;
 
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/db.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 #include "../table/adaptive_table_factory.h"
-using namespace rocksdb;
+using namespace vidardb;
 
 unsigned int M = 2;
-string kDBPath = "/tmp/rocksdb_simple_example" + to_string(M);
+string kDBPath = "/tmp/vidardb_simple_example" + to_string(M);
 
 int main() {
   system(string("rm -rf " + kDBPath).c_str());

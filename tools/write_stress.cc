@@ -23,7 +23,7 @@
 // interesting compaction features like trivial moves and bottommost level
 // calculation
 // * There is a thread that creates an iterator, holds it for couple of seconds
-// and then iterates over all keys. This is supposed to test RocksDB's abilities
+// and then iterates over all keys. This is supposed to test VidarDB's abilities
 // to keep the files alive when there are references to them.
 // * Some writes trigger WAL sync. This is stress testing our WAL sync code.
 // * At the end of the run, we make sure that we didn't leak any of the sst
@@ -51,7 +51,7 @@
 
 #ifndef GFLAGS
 int main() {
-  fprintf(stderr, "Please install gflags to run rocksdb tools\n");
+  fprintf(stderr, "Please install gflags to run vidardb tools\n");
   return 1;
 }
 #else
@@ -66,10 +66,10 @@ int main() {
 #include <string>
 #include <thread>
 
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
 
 #include "db/filename.h"
 
@@ -106,7 +106,7 @@ DEFINE_bool(low_open_files_mode, false,
             "If true, we set max_open_files to 20, so that every file access "
             "needs to reopen it");
 
-namespace rocksdb {
+namespace vidardb {
 
 static const int kPrefixSize = 3;
 
@@ -241,9 +241,9 @@ class WriteStress {
     }
     threads_.clear();
 
-// Skip checking for leaked files in ROCKSDB_LITE since we don't have access to
+// Skip checking for leaked files in VIDARDB_LITE since we don't have access to
 // function GetLiveFilesMetaData
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
     // let's see if we leaked some files
     db_->PauseBackgroundWork();
     std::vector<LiveFileMetaData> metadata;
@@ -279,7 +279,7 @@ class WriteStress {
       }
     }
     db_->ContinueBackgroundWork();
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
     return 0;
   }
@@ -294,13 +294,13 @@ class WriteStress {
   std::unique_ptr<DB> db_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   SetUsageMessage(std::string("\nUSAGE:\n") + std::string(argv[0]) +
                   " [OPTIONS]...");
   ParseCommandLineFlags(&argc, &argv, true);
-  rocksdb::WriteStress write_stress;
+  vidardb::WriteStress write_stress;
   return write_stress.Run();
 }
 

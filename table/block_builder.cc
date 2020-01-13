@@ -35,11 +35,11 @@
 
 #include <algorithm>
 #include <assert.h>
-#include "rocksdb/comparator.h"
+#include "vidardb/comparator.h"
 #include "db/dbformat.h"
 #include "util/coding.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 BlockBuilder::BlockBuilder(int block_restart_interval)
     : block_restart_interval_(block_restart_interval),
@@ -123,4 +123,4 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   counter_++;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

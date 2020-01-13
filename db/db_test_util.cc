@@ -9,7 +9,7 @@
 
 #include "db/db_test_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // Special Env used to delay background operations
 
@@ -60,9 +60,9 @@ DBTestBase::DBTestBase(const std::string path)
 }
 
 DBTestBase::~DBTestBase() {
-  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
-  rocksdb::SyncPoint::GetInstance()->LoadDependency({});
-  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  vidardb::SyncPoint::GetInstance()->DisableProcessing();
+  vidardb::SyncPoint::GetInstance()->LoadDependency({});
+  vidardb::SyncPoint::GetInstance()->ClearAllCallBacks();
   Close();
   Options options;
   options.db_paths.emplace_back(dbname_, 0);
@@ -74,8 +74,8 @@ DBTestBase::~DBTestBase() {
 }
 
 bool DBTestBase::ShouldSkipOptions(int option_config, int skip_mask) {
-#ifdef ROCKSDB_LITE
-    // These options are not supported in ROCKSDB_LITE
+#ifdef VIDARDB_LITE
+    // These options are not supported in VIDARDB_LITE
   if (option_config == kHashSkipList ||
       option_config == kPlainTableFirstBytePrefix ||
       option_config == kPlainTableCappedPrefix ||
@@ -431,14 +431,14 @@ std::string DBTestBase::Get(int cf, const std::string& k,
 
 uint64_t DBTestBase::GetNumSnapshots() {
   uint64_t int_num;
-  EXPECT_TRUE(dbfull()->GetIntProperty("rocksdb.num-snapshots", &int_num));
+  EXPECT_TRUE(dbfull()->GetIntProperty("vidardb.num-snapshots", &int_num));
   return int_num;
 }
 
 uint64_t DBTestBase::GetTimeOldestSnapshots() {
   uint64_t int_num;
   EXPECT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.oldest-snapshot-time", &int_num));
+      dbfull()->GetIntProperty("vidardb.oldest-snapshot-time", &int_num));
   return int_num;
 }
 
@@ -523,7 +523,7 @@ std::string DBTestBase::AllEntriesFor(const Slice& user_key, int cf) {
   return result;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 int DBTestBase::NumSortedRuns(int cf) {
   ColumnFamilyMetaData cf_meta;
   if (cf == 0) {
@@ -581,17 +581,17 @@ size_t DBTestBase::CountLiveFiles() {
   db_->GetLiveFilesMetaData(&metadata);
   return metadata.size();
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 int DBTestBase::NumTableFilesAtLevel(int level, int cf) {
   std::string property;
   if (cf == 0) {
     // default cfd
     EXPECT_TRUE(db_->GetProperty(
-        "rocksdb.num-files-at-level" + NumberToString(level), &property));
+        "vidardb.num-files-at-level" + NumberToString(level), &property));
   } else {
     EXPECT_TRUE(db_->GetProperty(
-        handles_[cf], "rocksdb.num-files-at-level" + NumberToString(level),
+        handles_[cf], "vidardb.num-files-at-level" + NumberToString(level),
         &property));
   }
   return atoi(property.c_str());
@@ -602,12 +602,12 @@ double DBTestBase::CompressionRatioAtLevel(int level, int cf) {
   if (cf == 0) {
     // default cfd
     EXPECT_TRUE(db_->GetProperty(
-        "rocksdb.compression-ratio-at-level" + NumberToString(level),
+        "vidardb.compression-ratio-at-level" + NumberToString(level),
         &property));
   } else {
     EXPECT_TRUE(db_->GetProperty(
         handles_[cf],
-        "rocksdb.compression-ratio-at-level" + NumberToString(level),
+        "vidardb.compression-ratio-at-level" + NumberToString(level),
         &property));
   }
   return std::stod(property);
@@ -725,7 +725,7 @@ void DBTestBase::DumpFileCounts(const char* label) {
 
 std::string DBTestBase::DumpSSTableList() {
   std::string property;
-  db_->GetProperty("rocksdb.sstables", &property);
+  db_->GetProperty("vidardb.sstables", &property);
   return property;
 }
 
@@ -959,7 +959,7 @@ std::vector<std::uint64_t> DBTestBase::ListTableFiles(Env* env,
   return file_numbers;
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 uint64_t DBTestBase::GetNumberOfSstFilesForColumnFamily(
     DB* db, std::string column_family_name) {
   std::vector<LiveFileMetaData> metadata;
@@ -970,6 +970,6 @@ uint64_t DBTestBase::GetNumberOfSstFilesForColumnFamily(
   }
   return result;
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

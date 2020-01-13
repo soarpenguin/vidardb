@@ -10,12 +10,12 @@
 #pragma once
 #include <vector>
 #include "db/write_thread.h"
-#include "rocksdb/types.h"
-#include "rocksdb/write_batch.h"
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
+#include "vidardb/types.h"
+#include "vidardb/write_batch.h"
+#include "vidardb/db.h"
+#include "vidardb/options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class MemTable;
 class FlushScheduler;
@@ -169,4 +169,4 @@ class WriteBatchInternal {
   static size_t AppendedByteSize(size_t leftByteSize, size_t rightByteSize);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

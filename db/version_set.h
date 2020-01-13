@@ -39,10 +39,10 @@
 #include "db/log_reader.h"
 #include "db/file_indexer.h"
 #include "db/write_controller.h"
-#include "rocksdb/env.h"
+#include "vidardb/env.h"
 #include "util/instrumented_mutex.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace log {
 class Writer;
@@ -220,7 +220,7 @@ class VersionStorageInfo {
     return files_[level];
   }
 
-  const rocksdb::LevelFilesBrief& LevelFilesBrief(int level) const {
+  const vidardb::LevelFilesBrief& LevelFilesBrief(int level) const {
     assert(level < static_cast<int>(level_files_brief_.size()));
     return level_files_brief_[level];
   }
@@ -340,7 +340,7 @@ class VersionStorageInfo {
   std::vector<uint64_t> level_max_bytes_;
 
   // A short brief metadata of files per level
-  std::vector<rocksdb::LevelFilesBrief> level_files_brief_;
+  std::vector<vidardb::LevelFilesBrief> level_files_brief_;
   FileIndexer file_indexer_;
   Arena arena_;  // Used to allocate space for file_levels_
 
@@ -606,12 +606,12 @@ class VersionSet {
   static Status ListColumnFamilies(std::vector<std::string>* column_families,
                                    const std::string& dbname, Env* env);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   // Try to reduce the number of levels. This call is valid when
   // only one level from the new max level to the old
   // max level containing files.
   // The call is static, since number of levels is immutable during
-  // the lifetime of a RocksDB instance. It reduces number of levels
+  // the lifetime of a VidarDB instance. It reduces number of levels
   // in a DB by applying changes to manifest.
   // For example, a db currently has 7 levels [0-6], and a call to
   // to reduce to 5 [0-4] can only be executed when only one level
@@ -625,7 +625,7 @@ class VersionSet {
   Status DumpManifest(Options& options, std::string& manifestFileName,
                       bool verbose, bool hex = false, bool json = false);
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   // Return the current manifest file number
   uint64_t manifest_file_number() const { return manifest_file_number_; }
@@ -781,4 +781,4 @@ class VersionSet {
                          VersionEdit* edit, InstrumentedMutex* mu);
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

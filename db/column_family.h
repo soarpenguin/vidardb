@@ -19,14 +19,14 @@
 #include "db/write_controller.h"
 #include "db/table_cache.h"
 #include "db/table_properties_collector.h"
-#include "rocksdb/compaction_job_stats.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
+#include "vidardb/compaction_job_stats.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
 #include "util/mutable_cf_options.h"
 #include "util/thread_local.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class Version;
 class VersionSet;
@@ -218,11 +218,11 @@ class ColumnFamilyData {
   const MutableCFOptions* GetLatestMutableCFOptions() const {
     return &mutable_cf_options_;
   }
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   // REQUIRES: DB mutex held
   Status SetOptions(
       const std::unordered_map<std::string, std::string>& options_map);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   InternalStats* internal_stats() { return internal_stats_.get(); }
 
@@ -447,7 +447,7 @@ class ColumnFamilySet {
   ColumnFamilyData* GetColumnFamily(const std::string& name) const;
   // this call will return the next available column family ID. it guarantees
   // that there is no column family with id greater than or equal to the
-  // returned value in the current running instance or anytime in RocksDB
+  // returned value in the current running instance or anytime in VidarDB
   // instance history.
   uint32_t GetNextColumnFamilyID();
   uint32_t GetMaxColumnFamily();
@@ -547,4 +547,4 @@ extern uint32_t GetColumnFamilyID(ColumnFamilyHandle* column_family);
 extern const Comparator* GetColumnFamilyUserComparator(
     ColumnFamilyHandle* column_family);
 
-}  // namespace rocksdb
+}  // namespace vidardb

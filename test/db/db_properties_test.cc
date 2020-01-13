@@ -14,21 +14,21 @@
 
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-#include "rocksdb/options.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/perf_level.h"
-#include "rocksdb/table.h"
+#include "vidardb/options.h"
+#include "vidardb/perf_context.h"
+#include "vidardb/perf_level.h"
+#include "vidardb/table.h"
 #include "util/random.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class DBPropertiesTest : public DBTestBase {
  public:
   DBPropertiesTest() : DBTestBase("/db_properties_test") {}
 };
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBPropertiesTest, Empty) {
   do {
     Options options;
@@ -39,25 +39,25 @@ TEST_F(DBPropertiesTest, Empty) {
 
     std::string num;
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ("0", num);
 
     ASSERT_OK(Put(1, "foo", "v1"));
     ASSERT_EQ("v1", Get(1, "foo"));
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ("1", num);
 
     // Block sync calls
     env_->delay_sstable_sync_.store(true, std::memory_order_release);
     Put(1, "k1", std::string(100000, 'x'));  // Fill memtable
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ("2", num);
 
     Put(1, "k2", std::string(100000, 'y'));  // Trigger compaction
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ("1", num);
 
     ASSERT_EQ("v1", Get(1, "foo"));
@@ -66,27 +66,27 @@ TEST_F(DBPropertiesTest, Empty) {
 
     ASSERT_OK(db_->DisableFileDeletions());
     ASSERT_TRUE(
-        dbfull()->GetProperty("rocksdb.is-file-deletions-enabled", &num));
+        dbfull()->GetProperty("vidardb.is-file-deletions-enabled", &num));
     ASSERT_EQ("1", num);
 
     ASSERT_OK(db_->DisableFileDeletions());
     ASSERT_TRUE(
-        dbfull()->GetProperty("rocksdb.is-file-deletions-enabled", &num));
+        dbfull()->GetProperty("vidardb.is-file-deletions-enabled", &num));
     ASSERT_EQ("2", num);
 
     ASSERT_OK(db_->DisableFileDeletions());
     ASSERT_TRUE(
-        dbfull()->GetProperty("rocksdb.is-file-deletions-enabled", &num));
+        dbfull()->GetProperty("vidardb.is-file-deletions-enabled", &num));
     ASSERT_EQ("3", num);
 
     ASSERT_OK(db_->EnableFileDeletions(false));
     ASSERT_TRUE(
-        dbfull()->GetProperty("rocksdb.is-file-deletions-enabled", &num));
+        dbfull()->GetProperty("vidardb.is-file-deletions-enabled", &num));
     ASSERT_EQ("2", num);
 
     ASSERT_OK(db_->EnableFileDeletions());
     ASSERT_TRUE(
-        dbfull()->GetProperty("rocksdb.is-file-deletions-enabled", &num));
+        dbfull()->GetProperty("vidardb.is-file-deletions-enabled", &num));
     ASSERT_EQ("0", num);
   } while (ChangeOptions());
 }
@@ -94,13 +94,13 @@ TEST_F(DBPropertiesTest, Empty) {
 TEST_F(DBPropertiesTest, CurrentVersionNumber) {
   uint64_t v1, v2, v3;
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.current-super-version-number", &v1));
+      dbfull()->GetIntProperty("vidardb.current-super-version-number", &v1));
   Put("12345678", "");
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.current-super-version-number", &v2));
+      dbfull()->GetIntProperty("vidardb.current-super-version-number", &v2));
   Flush();
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.current-super-version-number", &v3));
+      dbfull()->GetIntProperty("vidardb.current-super-version-number", &v3));
 
   ASSERT_EQ(v1, v2);
   ASSERT_GT(v3, v2);
@@ -256,7 +256,7 @@ TEST_F(DBPropertiesTest, ValidatePropertyInfo) {
 
 TEST_F(DBPropertiesTest, ValidateSampleNumber) {
   // When "max_open_files" is -1, we read all the files for
-  // "rocksdb.estimate-num-keys" computation, which is the ground truth.
+  // "vidardb.estimate-num-keys" computation, which is the ground truth.
   // Otherwise, we sample 20 newest files to make an estimation.
   // Formula: lastest_20_files_active_key_ratio * total_files
   Options options = CurrentOptions();
@@ -275,11 +275,11 @@ TEST_F(DBPropertiesTest, ValidateSampleNumber) {
   }
   std::string num;
   Reopen(options);
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.estimate-num-keys", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.estimate-num-keys", &num));
   ASSERT_EQ("45", num);
   options.max_open_files = -1;
   Reopen(options);
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.estimate-num-keys", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.estimate-num-keys", &num));
   ASSERT_EQ("50", num);
 }
 
@@ -333,7 +333,7 @@ TEST_F(DBPropertiesTest, ReadLatencyHistogramByLevel) {
   options.max_bytes_for_level_base = 4500 << 10;
   options.target_file_size_base = 98 << 10;
   options.max_write_buffer_number = 2;
-  options.statistics = rocksdb::CreateDBStatistics();
+  options.statistics = vidardb::CreateDBStatistics();
   options.max_open_files = 100;
 
   BlockBasedTableOptions table_options;
@@ -350,13 +350,13 @@ TEST_F(DBPropertiesTest, ReadLatencyHistogramByLevel) {
   dbfull()->TEST_WaitForCompact();
 
   std::string prop;
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
 
   // Get() after flushes, See latency histogram tracked.
   for (int key = 0; key < key_index; key++) {
     Get(Key(key));
   }
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_NE(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_NE(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
@@ -367,14 +367,14 @@ TEST_F(DBPropertiesTest, ReadLatencyHistogramByLevel) {
   for (int key = 0; key < key_index; key++) {
     Get(Key(key));
   }
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_NE(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_NE(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
 
   // Reopen and issue iterating. See thee latency tracked
   Reopen(options);
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_EQ(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
@@ -383,7 +383,7 @@ TEST_F(DBPropertiesTest, ReadLatencyHistogramByLevel) {
     for (iter->Seek(Key(0)); iter->Valid(); iter->Next()) {
     }
   }
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_NE(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_NE(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
@@ -391,14 +391,14 @@ TEST_F(DBPropertiesTest, ReadLatencyHistogramByLevel) {
   // options.max_open_files preloads table readers.
   options.max_open_files = -1;
   Reopen(options);
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_NE(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_NE(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
   for (int key = 0; key < key_index; key++) {
     Get(Key(key));
   }
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.dbstats", &prop));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.dbstats", &prop));
   ASSERT_NE(std::string::npos, prop.find("** Level 0 read latency histogram"));
   ASSERT_NE(std::string::npos, prop.find("** Level 1 read latency histogram"));
   ASSERT_EQ(std::string::npos, prop.find("** Level 2 read latency histogram"));
@@ -492,13 +492,13 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
 
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k1", big_value));
     ASSERT_TRUE(dbfull()->GetProperty(handles_[1],
-                                      "rocksdb.num-immutable-mem-table", &num));
+                                      "vidardb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
         handles_[1], DB::Properties::kNumImmutableMemTableFlushed, &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ(num, "1");
     perf_context.Reset();
     Get(1, "k1");
@@ -506,13 +506,13 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
 
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k2", big_value));
     ASSERT_TRUE(dbfull()->GetProperty(handles_[1],
-                                      "rocksdb.num-immutable-mem-table", &num));
+                                      "vidardb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "1");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ(num, "1");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-imm-mem-tables", &num));
+        handles_[1], "vidardb.num-entries-imm-mem-tables", &num));
     ASSERT_EQ(num, "1");
 
     perf_context.Reset();
@@ -524,15 +524,15 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
 
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k3", big_value));
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.cur-size-active-mem-table", &num));
+        handles_[1], "vidardb.cur-size-active-mem-table", &num));
     ASSERT_TRUE(dbfull()->GetProperty(handles_[1],
-                                      "rocksdb.num-immutable-mem-table", &num));
+                                      "vidardb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "2");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &num));
     ASSERT_EQ(num, "1");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.num-entries-imm-mem-tables", &num));
+        handles_[1], "vidardb.num-entries-imm-mem-tables", &num));
     ASSERT_EQ(num, "2");
     perf_context.Reset();
     Get(1, "k2");
@@ -546,13 +546,13 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
 
     ASSERT_OK(Flush(1));
     ASSERT_TRUE(dbfull()->GetProperty(handles_[1],
-                                      "rocksdb.num-immutable-mem-table", &num));
+                                      "vidardb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
         handles_[1], DB::Properties::kNumImmutableMemTableFlushed, &num));
     ASSERT_EQ(num, "3");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], "rocksdb.cur-size-active-mem-table", &num));
+        handles_[1], "vidardb.cur-size-active-mem-table", &num));
     // "192" is the size of the metadata of an empty skiplist, this would
     // break if we change the default skiplist implementation
     ASSERT_EQ(num, "192");
@@ -560,29 +560,29 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
     uint64_t int_num;
     uint64_t base_total_size;
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.estimate-num-keys", &base_total_size));
+        handles_[1], "vidardb.estimate-num-keys", &base_total_size));
 
     ASSERT_OK(dbfull()->Delete(writeOpt, handles_[1], "k2"));
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k3", ""));
     ASSERT_OK(dbfull()->Delete(writeOpt, handles_[1], "k3"));
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.num-deletes-active-mem-table", &int_num));
+        handles_[1], "vidardb.num-deletes-active-mem-table", &int_num));
     ASSERT_EQ(int_num, 2U);
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.num-entries-active-mem-table", &int_num));
+        handles_[1], "vidardb.num-entries-active-mem-table", &int_num));
     ASSERT_EQ(int_num, 3U);
 
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k2", big_value));
     ASSERT_OK(dbfull()->Put(writeOpt, handles_[1], "k2", big_value));
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.num-entries-imm-mem-tables", &int_num));
+        handles_[1], "vidardb.num-entries-imm-mem-tables", &int_num));
     ASSERT_EQ(int_num, 4U);
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.num-deletes-imm-mem-tables", &int_num));
+        handles_[1], "vidardb.num-deletes-imm-mem-tables", &int_num));
     ASSERT_EQ(int_num, 2U);
 
     ASSERT_TRUE(dbfull()->GetIntProperty(
-        handles_[1], "rocksdb.estimate-num-keys", &int_num));
+        handles_[1], "vidardb.estimate-num-keys", &int_num));
     ASSERT_EQ(int_num, base_total_size + 1);
 
     SetPerfLevel(kDisable);
@@ -621,50 +621,50 @@ TEST_F(DBPropertiesTest, GetProperty) {
   SetPerfLevel(kEnableTime);
 
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-table-readers-mem", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-table-readers-mem", &int_num));
   ASSERT_EQ(int_num, 0U);
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-live-data-size", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-live-data-size", &int_num));
   ASSERT_EQ(int_num, 0U);
 
   ASSERT_OK(dbfull()->Put(writeOpt, "k1", big_value));
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.num-immutable-mem-table", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.num-immutable-mem-table", &num));
   ASSERT_EQ(num, "0");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.mem-table-flush-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.mem-table-flush-pending", &num));
   ASSERT_EQ(num, "0");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.compaction-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.compaction-pending", &num));
   ASSERT_EQ(num, "0");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.estimate-num-keys", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.estimate-num-keys", &num));
   ASSERT_EQ(num, "1");
   perf_context.Reset();
 
   ASSERT_OK(dbfull()->Put(writeOpt, "k2", big_value));
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.num-immutable-mem-table", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.num-immutable-mem-table", &num));
   ASSERT_EQ(num, "1");
   ASSERT_OK(dbfull()->Delete(writeOpt, "k-non-existing"));
   ASSERT_OK(dbfull()->Put(writeOpt, "k3", big_value));
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.num-immutable-mem-table", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.num-immutable-mem-table", &num));
   ASSERT_EQ(num, "2");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.mem-table-flush-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.mem-table-flush-pending", &num));
   ASSERT_EQ(num, "1");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.compaction-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.compaction-pending", &num));
   ASSERT_EQ(num, "0");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.estimate-num-keys", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.estimate-num-keys", &num));
   ASSERT_EQ(num, "2");
   // Verify the same set of properties through GetIntProperty
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.num-immutable-mem-table", &int_num));
+      dbfull()->GetIntProperty("vidardb.num-immutable-mem-table", &int_num));
   ASSERT_EQ(int_num, 2U);
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.mem-table-flush-pending", &int_num));
+      dbfull()->GetIntProperty("vidardb.mem-table-flush-pending", &int_num));
   ASSERT_EQ(int_num, 1U);
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.compaction-pending", &int_num));
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.compaction-pending", &int_num));
   ASSERT_EQ(int_num, 0U);
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.estimate-num-keys", &int_num));
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.estimate-num-keys", &int_num));
   ASSERT_EQ(int_num, 2U);
 
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-table-readers-mem", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-table-readers-mem", &int_num));
   ASSERT_EQ(int_num, 0U);
 
   sleeping_task_high.WakeUp();
@@ -674,21 +674,21 @@ TEST_F(DBPropertiesTest, GetProperty) {
   ASSERT_OK(dbfull()->Put(writeOpt, "k4", big_value));
   ASSERT_OK(dbfull()->Put(writeOpt, "k5", big_value));
   dbfull()->TEST_WaitForFlushMemTable();
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.mem-table-flush-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.mem-table-flush-pending", &num));
   ASSERT_EQ(num, "0");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.compaction-pending", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.compaction-pending", &num));
   ASSERT_EQ(num, "1");
-  ASSERT_TRUE(dbfull()->GetProperty("rocksdb.estimate-num-keys", &num));
+  ASSERT_TRUE(dbfull()->GetProperty("vidardb.estimate-num-keys", &num));
   ASSERT_EQ(num, "4");
 
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-table-readers-mem", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-table-readers-mem", &int_num));
   ASSERT_GT(int_num, 0U);
 
   sleeping_task_low.WakeUp();
   sleeping_task_low.WaitUntilDone();
 
-  // Wait for compaction to be done. This is important because otherwise RocksDB
+  // Wait for compaction to be done. This is important because otherwise VidarDB
   // might schedule a compaction when reopening the database, failing assertion
   // (A) as a result.
   dbfull()->TEST_WaitForCompact();
@@ -696,23 +696,23 @@ TEST_F(DBPropertiesTest, GetProperty) {
   Reopen(options);
   // After reopening, no table reader is loaded, so no memory for table readers
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-table-readers-mem", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-table-readers-mem", &int_num));
   ASSERT_EQ(int_num, 0U);  // (A)
-  ASSERT_TRUE(dbfull()->GetIntProperty("rocksdb.estimate-num-keys", &int_num));
+  ASSERT_TRUE(dbfull()->GetIntProperty("vidardb.estimate-num-keys", &int_num));
   ASSERT_GT(int_num, 0U);
 
   // After reading a key, at least one table reader is loaded.
   Get("k5");
   ASSERT_TRUE(
-      dbfull()->GetIntProperty("rocksdb.estimate-table-readers-mem", &int_num));
+      dbfull()->GetIntProperty("vidardb.estimate-table-readers-mem", &int_num));
   ASSERT_GT(int_num, 0U);
 
-  // Test rocksdb.num-live-versions
+  // Test vidardb.num-live-versions
   {
     options.level0_file_num_compaction_trigger = 20;
     Reopen(options);
     ASSERT_TRUE(
-        dbfull()->GetIntProperty("rocksdb.num-live-versions", &int_num));
+        dbfull()->GetIntProperty("vidardb.num-live-versions", &int_num));
     ASSERT_EQ(int_num, 1U);
 
     // Use an iterator to hold current version
@@ -721,7 +721,7 @@ TEST_F(DBPropertiesTest, GetProperty) {
     ASSERT_OK(dbfull()->Put(writeOpt, "k6", big_value));
     Flush();
     ASSERT_TRUE(
-        dbfull()->GetIntProperty("rocksdb.num-live-versions", &int_num));
+        dbfull()->GetIntProperty("vidardb.num-live-versions", &int_num));
     ASSERT_EQ(int_num, 2U);
 
     // Use an iterator to hold current version
@@ -730,17 +730,17 @@ TEST_F(DBPropertiesTest, GetProperty) {
     ASSERT_OK(dbfull()->Put(writeOpt, "k7", big_value));
     Flush();
     ASSERT_TRUE(
-        dbfull()->GetIntProperty("rocksdb.num-live-versions", &int_num));
+        dbfull()->GetIntProperty("vidardb.num-live-versions", &int_num));
     ASSERT_EQ(int_num, 3U);
 
     iter2.reset();
     ASSERT_TRUE(
-        dbfull()->GetIntProperty("rocksdb.num-live-versions", &int_num));
+        dbfull()->GetIntProperty("vidardb.num-live-versions", &int_num));
     ASSERT_EQ(int_num, 2U);
 
     iter1.reset();
     ASSERT_TRUE(
-        dbfull()->GetIntProperty("rocksdb.num-live-versions", &int_num));
+        dbfull()->GetIntProperty("vidardb.num-live-versions", &int_num));
     ASSERT_EQ(int_num, 1U);
   }
 }
@@ -772,9 +772,9 @@ TEST_F(DBPropertiesTest, ApproximateMemoryUsage) {
 
   // Phase 0. The verify the initial value of all these properties are the same
   // as we have no mem-tables.
-  dbfull()->GetIntProperty("rocksdb.cur-size-active-mem-table", &active_mem);
-  dbfull()->GetIntProperty("rocksdb.cur-size-all-mem-tables", &unflushed_mem);
-  dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-active-mem-table", &active_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-all-mem-tables", &unflushed_mem);
+  dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
   ASSERT_EQ(all_mem, active_mem);
   ASSERT_EQ(all_mem, unflushed_mem);
 
@@ -788,8 +788,8 @@ TEST_F(DBPropertiesTest, ApproximateMemoryUsage) {
     }
     // Make sure that there is no flush between getting the two properties.
     dbfull()->TEST_WaitForFlushMemTable();
-    dbfull()->GetIntProperty("rocksdb.cur-size-all-mem-tables", &unflushed_mem);
-    dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+    dbfull()->GetIntProperty("vidardb.cur-size-all-mem-tables", &unflushed_mem);
+    dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
     // in no iterator case, these two number should be the same.
     ASSERT_EQ(unflushed_mem, all_mem);
   }
@@ -809,9 +809,9 @@ TEST_F(DBPropertiesTest, ApproximateMemoryUsage) {
     Flush();
 
     // In the second round, add iterators.
-    dbfull()->GetIntProperty("rocksdb.cur-size-active-mem-table", &active_mem);
-    dbfull()->GetIntProperty("rocksdb.cur-size-all-mem-tables", &unflushed_mem);
-    dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+    dbfull()->GetIntProperty("vidardb.cur-size-active-mem-table", &active_mem);
+    dbfull()->GetIntProperty("vidardb.cur-size-all-mem-tables", &unflushed_mem);
+    dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
     ASSERT_GT(all_mem, active_mem);
     ASSERT_GT(all_mem, unflushed_mem);
     ASSERT_GT(all_mem, prev_all_mem);
@@ -822,24 +822,24 @@ TEST_F(DBPropertiesTest, ApproximateMemoryUsage) {
   // whenever we release an iterator.
   for (auto* iter : iters) {
     delete iter;
-    dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+    dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
     // Expect the size shrinking
     ASSERT_LT(all_mem, prev_all_mem);
     prev_all_mem = all_mem;
   }
 
   // Expect all these three counters to be the same.
-  dbfull()->GetIntProperty("rocksdb.cur-size-active-mem-table", &active_mem);
-  dbfull()->GetIntProperty("rocksdb.cur-size-all-mem-tables", &unflushed_mem);
-  dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-active-mem-table", &active_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-all-mem-tables", &unflushed_mem);
+  dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
   ASSERT_EQ(active_mem, unflushed_mem);
   ASSERT_EQ(unflushed_mem, all_mem);
 
   // Phase 5. Reopen, and expect all these three counters to be the same again.
   Reopen(options);
-  dbfull()->GetIntProperty("rocksdb.cur-size-active-mem-table", &active_mem);
-  dbfull()->GetIntProperty("rocksdb.cur-size-all-mem-tables", &unflushed_mem);
-  dbfull()->GetIntProperty("rocksdb.size-all-mem-tables", &all_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-active-mem-table", &active_mem);
+  dbfull()->GetIntProperty("vidardb.cur-size-all-mem-tables", &unflushed_mem);
+  dbfull()->GetIntProperty("vidardb.size-all-mem-tables", &all_mem);
   ASSERT_EQ(active_mem, unflushed_mem);
   ASSERT_EQ(unflushed_mem, all_mem);
 }
@@ -872,19 +872,19 @@ TEST_F(DBPropertiesTest, EstimatePendingCompBytes) {
   ASSERT_OK(dbfull()->Put(writeOpt, "k1", big_value));
   Flush();
   ASSERT_TRUE(dbfull()->GetIntProperty(
-      "rocksdb.estimate-pending-compaction-bytes", &int_num));
+      "vidardb.estimate-pending-compaction-bytes", &int_num));
   ASSERT_EQ(int_num, 0U);
 
   ASSERT_OK(dbfull()->Put(writeOpt, "k2", big_value));
   Flush();
   ASSERT_TRUE(dbfull()->GetIntProperty(
-      "rocksdb.estimate-pending-compaction-bytes", &int_num));
+      "vidardb.estimate-pending-compaction-bytes", &int_num));
   ASSERT_EQ(int_num, 0U);
 
   ASSERT_OK(dbfull()->Put(writeOpt, "k3", big_value));
   Flush();
   ASSERT_TRUE(dbfull()->GetIntProperty(
-      "rocksdb.estimate-pending-compaction-bytes", &int_num));
+      "vidardb.estimate-pending-compaction-bytes", &int_num));
   ASSERT_GT(int_num, 0U);
 
   sleeping_task_low.WakeUp();
@@ -892,7 +892,7 @@ TEST_F(DBPropertiesTest, EstimatePendingCompBytes) {
 
   dbfull()->TEST_WaitForCompact();
   ASSERT_TRUE(dbfull()->GetIntProperty(
-      "rocksdb.estimate-pending-compaction-bytes", &int_num));
+      "vidardb.estimate-pending-compaction-bytes", &int_num));
   ASSERT_EQ(int_num, 0U);
 }
 
@@ -937,7 +937,7 @@ TEST_F(DBPropertiesTest, EstimateCompressionRatio) {
   ASSERT_GT(CompressionRatioAtLevel(1), 10.0);
 }
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 class CountingUserTblPropCollector : public TablePropertiesCollector {
  public:
@@ -963,7 +963,7 @@ class CountingUserTblPropCollector : public TablePropertiesCollector {
   }
 
  private:
-  std::string message_ = "Rocksdb";
+  std::string message_ = "VidarDB";
   uint32_t count_ = 0;
 };
 
@@ -1030,7 +1030,7 @@ class CountingDeleteTabPropCollectorFactory
   }
 };
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBPropertiesTest, GetUserDefinedTableProperties) {
   Options options = CurrentOptions();
   options.level0_file_num_compaction_trigger = (1 << 30);
@@ -1056,7 +1056,7 @@ TEST_F(DBPropertiesTest, GetUserDefinedTableProperties) {
     auto& user_collected = item.second->user_collected_properties;
     ASSERT_TRUE(user_collected.find("CountingUserTblPropCollector") !=
                 user_collected.end());
-    ASSERT_EQ(user_collected.at("CountingUserTblPropCollector"), "Rocksdb");
+    ASSERT_EQ(user_collected.at("CountingUserTblPropCollector"), "VidarDB");
     ASSERT_TRUE(user_collected.find("Count") != user_collected.end());
     Slice key(user_collected.at("Count"));
     uint32_t count;
@@ -1070,7 +1070,7 @@ TEST_F(DBPropertiesTest, GetUserDefinedTableProperties) {
   dbfull()->TEST_CompactRange(0, nullptr, nullptr);
   ASSERT_GT(collector_factory->num_created_, 0U);
 }
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
 TEST_F(DBPropertiesTest, UserDefinedTablePropertiesContext) {
   Options options = CurrentOptions();
@@ -1133,7 +1133,7 @@ TEST_F(DBPropertiesTest, UserDefinedTablePropertiesContext) {
   ASSERT_GT(collector_factory->num_created_, 0U);
 }
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 TEST_F(DBPropertiesTest, TablePropertiesNeedCompactTest) {
   Random rnd(301);
 
@@ -1264,11 +1264,11 @@ TEST_F(DBPropertiesTest, NeedCompactHintPersistentTest) {
     SetPerfLevel(kDisable);
   }
 }
-#endif  // ROCKSDB_LITE
-}  // namespace rocksdb
+#endif  // VIDARDB_LITE
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
-  rocksdb::port::InstallStackTraceHandler();
+  vidardb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

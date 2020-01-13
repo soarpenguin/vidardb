@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "rocksdb/comparator.h"
+#include "vidardb/comparator.h"
 #include "table/iterator_wrapper.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // When used with std::priority_queue, this comparison functor puts the
 // iterator with the max/largest key on top.
@@ -39,4 +39,4 @@ class MinIteratorComparator {
   const Comparator* comparator_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -22,9 +22,9 @@
 #include "db/db_impl.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 namespace {
 const double kMB = 1048576.0;
 const double kGB = kMB * 1024;
@@ -98,7 +98,7 @@ std::pair<Slice, Slice> GetPropertyNameAndArg(const Slice& property) {
 }
 }  // anonymous namespace
 
-static const std::string rocksdb_prefix = "rocksdb.";
+static const std::string vidardb_prefix = "vidardb.";
 
 static const std::string num_files_at_level_prefix = "num-files-at-level";
 static const std::string compression_ratio_at_level_prefix =
@@ -149,67 +149,67 @@ static const std::string num_running_compactions = "num-running-compactions";
 static const std::string num_running_flushes = "num-running-flushes";
 
 const std::string DB::Properties::kNumFilesAtLevelPrefix =
-                      rocksdb_prefix + num_files_at_level_prefix;
+                      vidardb_prefix + num_files_at_level_prefix;
 const std::string DB::Properties::kCompressionRatioAtLevelPrefix =
-                      rocksdb_prefix + compression_ratio_at_level_prefix;
-const std::string DB::Properties::kStats = rocksdb_prefix + allstats;
-const std::string DB::Properties::kSSTables = rocksdb_prefix + sstables;
-const std::string DB::Properties::kCFStats = rocksdb_prefix + cfstats;
-const std::string DB::Properties::kDBStats = rocksdb_prefix + dbstats;
-const std::string DB::Properties::kLevelStats = rocksdb_prefix + levelstats;
+                      vidardb_prefix + compression_ratio_at_level_prefix;
+const std::string DB::Properties::kStats = vidardb_prefix + allstats;
+const std::string DB::Properties::kSSTables = vidardb_prefix + sstables;
+const std::string DB::Properties::kCFStats = vidardb_prefix + cfstats;
+const std::string DB::Properties::kDBStats = vidardb_prefix + dbstats;
+const std::string DB::Properties::kLevelStats = vidardb_prefix + levelstats;
 const std::string DB::Properties::kNumImmutableMemTable =
-                      rocksdb_prefix + num_immutable_mem_table;
+                      vidardb_prefix + num_immutable_mem_table;
 const std::string DB::Properties::kNumImmutableMemTableFlushed =
-    rocksdb_prefix + num_immutable_mem_table_flushed;
+    vidardb_prefix + num_immutable_mem_table_flushed;
 const std::string DB::Properties::kMemTableFlushPending =
-                      rocksdb_prefix + mem_table_flush_pending;
+                      vidardb_prefix + mem_table_flush_pending;
 const std::string DB::Properties::kCompactionPending =
-                      rocksdb_prefix + compaction_pending;
+                      vidardb_prefix + compaction_pending;
 const std::string DB::Properties::kNumRunningCompactions =
-    rocksdb_prefix + num_running_compactions;
+    vidardb_prefix + num_running_compactions;
 const std::string DB::Properties::kNumRunningFlushes =
-    rocksdb_prefix + num_running_flushes;
+    vidardb_prefix + num_running_flushes;
 const std::string DB::Properties::kBackgroundErrors =
-                      rocksdb_prefix + background_errors;
+                      vidardb_prefix + background_errors;
 const std::string DB::Properties::kCurSizeActiveMemTable =
-                      rocksdb_prefix + cur_size_active_mem_table;
+                      vidardb_prefix + cur_size_active_mem_table;
 const std::string DB::Properties::kCurSizeAllMemTables =
-    rocksdb_prefix + cur_size_all_mem_tables;
+    vidardb_prefix + cur_size_all_mem_tables;
 const std::string DB::Properties::kSizeAllMemTables =
-    rocksdb_prefix + size_all_mem_tables;
+    vidardb_prefix + size_all_mem_tables;
 const std::string DB::Properties::kNumEntriesActiveMemTable =
-                      rocksdb_prefix + num_entries_active_mem_table;
+                      vidardb_prefix + num_entries_active_mem_table;
 const std::string DB::Properties::kNumEntriesImmMemTables =
-                      rocksdb_prefix + num_entries_imm_mem_tables;
+                      vidardb_prefix + num_entries_imm_mem_tables;
 const std::string DB::Properties::kNumDeletesActiveMemTable =
-                      rocksdb_prefix + num_deletes_active_mem_table;
+                      vidardb_prefix + num_deletes_active_mem_table;
 const std::string DB::Properties::kNumDeletesImmMemTables =
-                      rocksdb_prefix + num_deletes_imm_mem_tables;
+                      vidardb_prefix + num_deletes_imm_mem_tables;
 const std::string DB::Properties::kEstimateNumKeys =
-                      rocksdb_prefix + estimate_num_keys;
+                      vidardb_prefix + estimate_num_keys;
 const std::string DB::Properties::kEstimateTableReadersMem =
-                      rocksdb_prefix + estimate_table_readers_mem;
+                      vidardb_prefix + estimate_table_readers_mem;
 const std::string DB::Properties::kIsFileDeletionsEnabled =
-                      rocksdb_prefix + is_file_deletions_enabled;
+                      vidardb_prefix + is_file_deletions_enabled;
 const std::string DB::Properties::kNumSnapshots =
-                      rocksdb_prefix + num_snapshots;
+                      vidardb_prefix + num_snapshots;
 const std::string DB::Properties::kOldestSnapshotTime =
-                      rocksdb_prefix + oldest_snapshot_time;
+                      vidardb_prefix + oldest_snapshot_time;
 const std::string DB::Properties::kNumLiveVersions =
-                      rocksdb_prefix + num_live_versions;
+                      vidardb_prefix + num_live_versions;
 const std::string DB::Properties::kCurrentSuperVersionNumber =
-    rocksdb_prefix + current_version_number;
+    vidardb_prefix + current_version_number;
 const std::string DB::Properties::kEstimateLiveDataSize =
-                      rocksdb_prefix + estimate_live_data_size;
+                      vidardb_prefix + estimate_live_data_size;
 const std::string DB::Properties::kTotalSstFilesSize =
-                      rocksdb_prefix + total_sst_files_size;
-const std::string DB::Properties::kBaseLevel = rocksdb_prefix + base_level;
+                      vidardb_prefix + total_sst_files_size;
+const std::string DB::Properties::kBaseLevel = vidardb_prefix + base_level;
 const std::string DB::Properties::kEstimatePendingCompactionBytes =
-    rocksdb_prefix + estimate_pending_comp_bytes;
+    vidardb_prefix + estimate_pending_comp_bytes;
 const std::string DB::Properties::kAggregatedTableProperties =
-    rocksdb_prefix + aggregated_table_properties;
+    vidardb_prefix + aggregated_table_properties;
 const std::string DB::Properties::kAggregatedTablePropertiesAtLevel =
-    rocksdb_prefix + aggregated_table_properties_at_level;
+    vidardb_prefix + aggregated_table_properties_at_level;
 
 const std::unordered_map<std::string,
                          DBPropertyInfo> InternalStats::ppt_name_to_info = {
@@ -883,6 +883,6 @@ void InternalStats::DumpCFStats(std::string* value) {
 
 const DBPropertyInfo* GetPropertyInfo(const Slice& property) { return nullptr; }
 
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}  // namespace rocksdb
+}  // namespace vidardb

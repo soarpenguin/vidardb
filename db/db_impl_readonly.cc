@@ -10,9 +10,9 @@
 #include "db/db_iter.h"
 #include "util/perf_context_imp.h"
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
 DBImplReadOnly::DBImplReadOnly(const DBOptions& db_options,
                                const std::string& dbname)
@@ -131,11 +131,11 @@ Status DB::OpenForReadOnly(
   return s;
 }
 
-#else  // !ROCKSDB_LITE
+#else  // !VIDARDB_LITE
 
 Status DB::OpenForReadOnly(const Options& options, const std::string& dbname,
                            DB** dbptr, bool error_if_log_file_exist) {
-  return Status::NotSupported("Not supported in ROCKSDB_LITE.");
+  return Status::NotSupported("Not supported in VIDARDB_LITE.");
 }
 
 Status DB::OpenForReadOnly(
@@ -143,8 +143,8 @@ Status DB::OpenForReadOnly(
     const std::vector<ColumnFamilyDescriptor>& column_families,
     std::vector<ColumnFamilyHandle*>* handles, DB** dbptr,
     bool error_if_log_file_exist) {
-  return Status::NotSupported("Not supported in ROCKSDB_LITE.");
+  return Status::NotSupported("Not supported in VIDARDB_LITE.");
 }
-#endif  // !ROCKSDB_LITE
+#endif  // !VIDARDB_LITE
 
-}   // namespace rocksdb
+}   // namespace vidardb

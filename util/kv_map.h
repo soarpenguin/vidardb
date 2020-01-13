@@ -7,12 +7,12 @@
 #include <map>
 #include <string>
 
-#include "rocksdb/comparator.h"
-#include "rocksdb/slice.h"
+#include "vidardb/comparator.h"
+#include "vidardb/slice.h"
 #include "util/coding.h"
 #include "util/murmurhash.h"
 
-namespace rocksdb {
+namespace vidardb {
 namespace stl_wrappers {
 
 struct LessOfComparator {

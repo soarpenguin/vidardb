@@ -5,7 +5,7 @@
 #     Run the build commands from within the Developer Command Prompt window to have paths to the compiler and runtime libraries set.
 #     You must have git.exe in your %PATH% environment variable.
 #
-# To build Rocksdb for Windows is as easy as 1-2-3-4-5:
+# To build VidarDB for Windows is as easy as 1-2-3-4-5:
 #
 # 1. Update paths to third-party libraries in thirdparty.inc file
 # 2. Create a new directory for build artifacts
@@ -17,17 +17,17 @@
 #        OR for VS Studio 15 cmake -G "Visual Studio 14 Win64" -DGFLAGS=1 -DSNAPPY=1 -DJEMALLOC=1 -DJNI=1 ..
 # 4. Then build the project in debug mode (you may want to add /m[:<N>] flag to run msbuild in <N> parallel threads
 #                                          or simply /m ot use all avail cores)
-#        msbuild rocksdb.sln
+#        msbuild vidardb.sln
 #
-#        rocksdb.sln build features exclusions of test only code in Release. If you build ALL_BUILD then everything
+#        vidardb.sln build features exclusions of test only code in Release. If you build ALL_BUILD then everything
 #        will be attempted but test only code does not build in Release mode.
 #
 # 5. And release mode (/m[:<N>] is also supported)
-#        msbuild rocksdb.sln /p:Configuration=Release
+#        msbuild vidardb.sln /p:Configuration=Release
 #
 
 cmake_minimum_required(VERSION 2.6)
-project(rocksdb)
+project(vidardb)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty.inc)
 execute_process(COMMAND powershell -Command "Get-Date -format MM_dd_yyyy" OUTPUT_VARIABLE DATE)
@@ -50,9 +50,9 @@ set(BUILD_VERSION_CC ${CMAKE_CURRENT_SOURCE_DIR}/util/build_version.cc)
 
 add_custom_command(OUTPUT ${BUILD_VERSION_CC}
     COMMAND echo "#include \"build_version.h\"" > ${BUILD_VERSION_CC}
-    COMMAND echo "const char* rocksdb_build_git_sha = \"rocksdb_build_git_sha:${GIT_SHA}\";" >> ${BUILD_VERSION_CC}
-    COMMAND echo "const char* rocksdb_build_git_datetime = \"rocksdb_build_git_datetime:${GIT_DATE_TIME}\";" >> ${BUILD_VERSION_CC}
-    COMMAND echo const char* rocksdb_build_compile_date = __DATE__\; >> ${BUILD_VERSION_CC}
+    COMMAND echo "const char* vidardb_build_git_sha = \"vidardb_build_git_sha:${GIT_SHA}\";" >> ${BUILD_VERSION_CC}
+    COMMAND echo "const char* vidardb_build_git_datetime = \"vidardb_build_git_datetime:${GIT_DATE_TIME}\";" >> ${BUILD_VERSION_CC}
+    COMMAND echo const char* vidardb_build_compile_date = __DATE__\; >> ${BUILD_VERSION_CC}
 )
 
 add_custom_target(GenerateBuildVersion DEPENDS ${BUILD_VERSION_CC})
@@ -88,11 +88,11 @@ include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/third-party/gtest-1.7.0/fused-src)
 
-set(ROCKSDB_LIBS rocksdblib${ARTIFACT_SUFFIX})
+set(VIDARDB_LIBS vidardblib${ARTIFACT_SUFFIX})
 set(THIRDPARTY_LIBS ${THIRDPARTY_LIBS} gtest)
 set(SYSTEM_LIBS ${SYSTEM_LIBS} Shlwapi.lib Rpcrt4.lib)
 
-set(LIBS ${ROCKSDB_LIBS} ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
+set(LIBS ${VIDARDB_LIBS} ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
 
 add_subdirectory(third-party/gtest-1.7.0/fused-src/gtest)
 
@@ -292,14 +292,14 @@ set(TESTUTIL_SOURCE
     util/thread_status_updater_debug.cc
 )
 
-add_library(rocksdblib${ARTIFACT_SUFFIX} ${SOURCES})
-set_target_properties(rocksdblib${ARTIFACT_SUFFIX} PROPERTIES COMPILE_FLAGS "/Fd${CMAKE_CFG_INTDIR}/rocksdblib${ARTIFACT_SUFFIX}.pdb")
-add_dependencies(rocksdblib${ARTIFACT_SUFFIX} GenerateBuildVersion)
+add_library(vidardblib${ARTIFACT_SUFFIX} ${SOURCES})
+set_target_properties(vidardblib${ARTIFACT_SUFFIX} PROPERTIES COMPILE_FLAGS "/Fd${CMAKE_CFG_INTDIR}/vidardblib${ARTIFACT_SUFFIX}.pdb")
+add_dependencies(vidardblib${ARTIFACT_SUFFIX} GenerateBuildVersion)
 
-add_library(rocksdb${ARTIFACT_SUFFIX} SHARED ${SOURCES})
-set_target_properties(rocksdb${ARTIFACT_SUFFIX} PROPERTIES COMPILE_FLAGS "-DROCKSDB_DLL -DROCKSDB_LIBRARY_EXPORTS /Fd${CMAKE_CFG_INTDIR}/rocksdb${ARTIFACT_SUFFIX}.pdb")
-add_dependencies(rocksdb${ARTIFACT_SUFFIX} GenerateBuildVersion)
-target_link_libraries(rocksdb${ARTIFACT_SUFFIX} ${LIBS})
+add_library(vidardb${ARTIFACT_SUFFIX} SHARED ${SOURCES})
+set_target_properties(vidardb${ARTIFACT_SUFFIX} PROPERTIES COMPILE_FLAGS "-DVIDARDB_DLL -DVIDARDB_LIBRARY_EXPORTS /Fd${CMAKE_CFG_INTDIR}/vidardb${ARTIFACT_SUFFIX}.pdb")
+add_dependencies(vidardb${ARTIFACT_SUFFIX} GenerateBuildVersion)
+target_link_libraries(vidardb${ARTIFACT_SUFFIX} ${LIBS})
 
 if (DEFINED JNI)
   if (${JNI} EQUAL 1)
@@ -321,8 +321,8 @@ set(APPS
         tools/db_repl_stress.cc
         tools/ldb.cc
         tools/sst_dump.cc
-        tools/dump/rocksdb_dump.cc
-        tools/dump/rocksdb_undump.cc
+        tools/dump/vidardb_dump.cc
+        tools/dump/vidardb_undump.cc
         util/cache_bench.cc
         utilities/persistent_cache/hash_table_bench.cc
 )
@@ -467,5 +467,5 @@ foreach(sourcefile ${C_TEST_EXES})
       EXCLUDE_FROM_DEFAULT_BUILD_MINRELEASE 1
       EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO 1
       )
-    target_link_libraries(${exename}${ARTIFACT_SUFFIX} rocksdb${ARTIFACT_SUFFIX} testutillib${ARTIFACT_SUFFIX})
+    target_link_libraries(${exename}${ARTIFACT_SUFFIX} vidardb${ARTIFACT_SUFFIX} testutillib${ARTIFACT_SUFFIX})
 endforeach(sourcefile ${C_TEST_EXES})

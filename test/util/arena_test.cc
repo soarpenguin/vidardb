@@ -11,7 +11,7 @@
 #include "util/random.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace {
 const size_t kHugePageSize = 2 * 1024 * 1024;
@@ -189,7 +189,7 @@ TEST_F(ArenaTest, Simple) {
   SimpleTest(0);
   SimpleTest(kHugePageSize);
 }
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

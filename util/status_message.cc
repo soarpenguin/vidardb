@@ -3,9 +3,9 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/status.h"
+#include "vidardb/status.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 const char* Status::msgs[] = {
     "",                                                  // kNone
@@ -14,4 +14,4 @@ const char* Status::msgs[] = {
     "Failed to acquire lock due to max_num_locks limit"  // kLockLimit
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

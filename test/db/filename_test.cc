@@ -14,7 +14,7 @@
 #include "util/logging.h"
 #include "util/testharness.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class FileNameTest : public testing::Test {};
 
@@ -47,14 +47,14 @@ TEST_F(FileNameTest, Parse) {
         {"LOG", 0, kInfoLogFile, kDefautInfoLogDir},
         {"LOG.old", 0, kInfoLogFile, kDefautInfoLogDir},
         {"LOG.old.6688", 6688, kInfoLogFile, kDefautInfoLogDir},
-        {"rocksdb_dir_LOG", 0, kInfoLogFile, kDifferentInfoLogDir},
-        {"rocksdb_dir_LOG.old", 0, kInfoLogFile, kDifferentInfoLogDir},
-        {"rocksdb_dir_LOG.old.6688", 6688, kInfoLogFile, kDifferentInfoLogDir},
+        {"vidardb_dir_LOG", 0, kInfoLogFile, kDifferentInfoLogDir},
+        {"vidardb_dir_LOG.old", 0, kInfoLogFile, kDifferentInfoLogDir},
+        {"vidardb_dir_LOG.old.6688", 6688, kInfoLogFile, kDifferentInfoLogDir},
         {"18446744073709551615.log", 18446744073709551615ull, kLogFile,
          kAllMode}, };
   for (char mode : {kDifferentInfoLogDir, kDefautInfoLogDir, kNoCheckLogDir}) {
     for (unsigned int i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-      InfoLogPrefix info_log_prefix(mode != kDefautInfoLogDir, "/rocksdb/dir");
+      InfoLogPrefix info_log_prefix(mode != kDefautInfoLogDir, "/vidardb/dir");
       if (cases[i].mode & mode) {
         std::string f = cases[i].fname;
         if (mode == kNoCheckLogDir) {
@@ -106,19 +106,19 @@ TEST_F(FileNameTest, Parse) {
 }
 
 TEST_F(FileNameTest, InfoLogFileName) {
-  std::string dbname = ("/data/rocksdb");
+  std::string dbname = ("/data/vidardb");
   std::string db_absolute_path;
   Env::Default()->GetAbsolutePath(dbname, &db_absolute_path);
 
-  ASSERT_EQ("/data/rocksdb/LOG", InfoLogFileName(dbname, db_absolute_path, ""));
-  ASSERT_EQ("/data/rocksdb/LOG.old.666",
+  ASSERT_EQ("/data/vidardb/LOG", InfoLogFileName(dbname, db_absolute_path, ""));
+  ASSERT_EQ("/data/vidardb/LOG.old.666",
             OldInfoLogFileName(dbname, 666u, db_absolute_path, ""));
 
-  ASSERT_EQ("/data/rocksdb_log/data_rocksdb_LOG",
-            InfoLogFileName(dbname, db_absolute_path, "/data/rocksdb_log"));
+  ASSERT_EQ("/data/vidardb_log/data_vidardb_LOG",
+            InfoLogFileName(dbname, db_absolute_path, "/data/vidardb_log"));
   ASSERT_EQ(
-      "/data/rocksdb_log/data_rocksdb_LOG.old.666",
-      OldInfoLogFileName(dbname, 666u, db_absolute_path, "/data/rocksdb_log"));
+      "/data/vidardb_log/data_vidardb_LOG.old.666",
+      OldInfoLogFileName(dbname, 666u, db_absolute_path, "/data/vidardb_log"));
 }
 
 TEST_F(FileNameTest, Construction) {
@@ -172,7 +172,7 @@ TEST_F(FileNameTest, Construction) {
   ASSERT_EQ(kMetaDatabase, type);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

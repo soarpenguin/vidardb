@@ -4,14 +4,14 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 
 #include "table/table_properties_internal.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/env.h"
+#include "vidardb/table_properties.h"
+#include "vidardb/iterator.h"
+#include "vidardb/env.h"
 #include "port/port.h"
 #include "table/internal_iterator.h"
 #include "util/string_util.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 const uint32_t TablePropertiesCollectorFactory::Context::kUnknownColumnFamily =
     port::kMaxInt32;
@@ -83,10 +83,10 @@ std::string TableProperties::ToString(
   AppendProperty(result, "(estimated) table size",
                  data_size + index_size + filter_size, prop_delim, kv_delim);
   AppendProperty(result, "column family ID",
-                 column_family_id == rocksdb::TablePropertiesCollectorFactory::
+                 column_family_id == vidardb::TablePropertiesCollectorFactory::
                                          Context::kUnknownColumnFamily
                      ? std::string("N/A")
-                     : rocksdb::ToString(column_family_id),
+                     : vidardb::ToString(column_family_id),
                  prop_delim, kv_delim);
   AppendProperty(
       result, "column family name",
@@ -121,41 +121,41 @@ void TableProperties::Add(const TableProperties& tp) {
 }
 
 const std::string TablePropertiesNames::kDataSize  =
-    "rocksdb.data.size";
+    "vidardb.data.size";
 const std::string TablePropertiesNames::kIndexSize =
-    "rocksdb.index.size";
+    "vidardb.index.size";
 const std::string TablePropertiesNames::kFilterSize =
-    "rocksdb.filter.size";
+    "vidardb.filter.size";
 const std::string TablePropertiesNames::kRawKeySize =
-    "rocksdb.raw.key.size";
+    "vidardb.raw.key.size";
 const std::string TablePropertiesNames::kRawValueSize =
-    "rocksdb.raw.value.size";
+    "vidardb.raw.value.size";
 const std::string TablePropertiesNames::kNumDataBlocks =
-    "rocksdb.num.data.blocks";
+    "vidardb.num.data.blocks";
 const std::string TablePropertiesNames::kNumEntries =
-    "rocksdb.num.entries";
+    "vidardb.num.entries";
 const std::string TablePropertiesNames::kFilterPolicy =
-    "rocksdb.filter.policy";
+    "vidardb.filter.policy";
 const std::string TablePropertiesNames::kFormatVersion =
-    "rocksdb.format.version";
+    "vidardb.format.version";
 const std::string TablePropertiesNames::kFixedKeyLen =
-    "rocksdb.fixed.key.length";
+    "vidardb.fixed.key.length";
 const std::string TablePropertiesNames::kColumnFamilyId =
-    "rocksdb.column.family.id";
+    "vidardb.column.family.id";
 const std::string TablePropertiesNames::kColumnFamilyName =
-    "rocksdb.column.family.name";
-const std::string TablePropertiesNames::kComparator = "rocksdb.comparator";
+    "vidardb.column.family.name";
+const std::string TablePropertiesNames::kComparator = "vidardb.comparator";
 const std::string TablePropertiesNames::kMergeOperator =
-    "rocksdb.merge.operator";
+    "vidardb.merge.operator";
 const std::string TablePropertiesNames::kPropertyCollectors =
-    "rocksdb.property.collectors";
-const std::string TablePropertiesNames::kCompression = "rocksdb.compression";
+    "vidardb.property.collectors";
+const std::string TablePropertiesNames::kCompression = "vidardb.compression";
 
-extern const std::string kPropertiesBlock = "rocksdb.properties";
+extern const std::string kPropertiesBlock = "vidardb.properties";
 // Old property block name for backward compatibility
-extern const std::string kPropertiesBlockOldName = "rocksdb.stats";
-extern const std::string kCompressionDictBlock = "rocksdb.compression_dict";
-extern const std::string kColumnBlock = "rocksdb.column";  // Shichao
+extern const std::string kPropertiesBlockOldName = "vidardb.stats";
+extern const std::string kCompressionDictBlock = "vidardb.compression_dict";
+extern const std::string kColumnBlock = "vidardb.column";  // Shichao
 
 // Seek to the properties block.
 // Return true if it successfully seeks to the properties block.
@@ -181,4 +181,4 @@ Status SeekToColumnBlock(InternalIterator* meta_iter, bool* is_found) {
 }
 /****************************** Shichao *******************************/
 
-}  // namespace rocksdb
+}  // namespace vidardb

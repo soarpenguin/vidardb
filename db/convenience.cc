@@ -7,13 +7,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 
-#include "rocksdb/convenience.h"
+#include "vidardb/convenience.h"
 
 #include "db/db_impl.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 void CancelAllBackgroundWork(DB* db, bool wait) {
   (dynamic_cast<DBImpl*>(db))->CancelAllBackgroundWork(wait);
@@ -25,6 +25,6 @@ Status DeleteFilesInRange(DB* db, ColumnFamilyHandle* column_family,
       ->DeleteFilesInRange(column_family, begin, end);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE

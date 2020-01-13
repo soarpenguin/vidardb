@@ -1,23 +1,23 @@
 ## Compilation
 
-**Important**: If you plan to run RocksDB in production, don't compile using default 
-`make` or `make all`. That will compile RocksDB in debug mode, which is much slower
+**Important**: If you plan to run VidarDB in production, don't compile using default 
+`make` or `make all`. That will compile VidarDB in debug mode, which is much slower
 than release mode.
 
-RocksDB's library should be able to compile without any dependency installed,
+VidarDB's library should be able to compile without any dependency installed,
 although we recommend installing some compression libraries (see below).
 We do depend on newer gcc/clang with C++11 support.
 
-There are few options when compiling RocksDB:
+There are few options when compiling VidarDB:
 
-* [recommended] `make static_lib` will compile librocksdb.a, RocksDB static library. Compiles static library in release mode.
+* [recommended] `make static_lib` will compile libvidardb.a, VidarDB static library. Compiles static library in release mode.
 
-* `make shared_lib` will compile librocksdb.so, RocksDB shared library. Compiles shared library in release mode.
+* `make shared_lib` will compile libvidardb.so, VidarDB shared library. Compiles shared library in release mode.
 
-* `make check` will compile and run all the unit tests. `make check` will compile RocksDB in debug mode.
+* `make check` will compile and run all the unit tests. `make check` will compile VidarDB in debug mode.
 
 * `make all` will compile our static library, and all our tools and unit tests. Our tools
-depend on gflags. You will need to have gflags installed to run `make all`. This will compile RocksDB in debug mode. Don't
+depend on gflags. You will need to have gflags installed to run `make all`. This will compile VidarDB in debug mode. Don't
 use binaries compiled by `make all` in production.
 
 * By default the binary we produce is optimized for the platform you're compiling on
@@ -26,7 +26,7 @@ your make commands, like this: `PORTABLE=1 make static_lib`
 
 ## Dependencies
 
-* You can link RocksDB with following compression libraries:
+* You can link VidarDB with following compression libraries:
   - [zlib](http://www.zlib.net/) - a library for data compression.
   - [bzip2](http://www.bzip.org/) - a library for data compression.
   - [snappy](https://code.google.com/p/snappy/) - a library for fast
@@ -34,7 +34,7 @@ your make commands, like this: `PORTABLE=1 make static_lib`
 
 * All our tools depend on:
   - [gflags](https://gflags.github.io/gflags/) - a library that handles
-      command line flags processing. You can compile rocksdb library even
+      command line flags processing. You can compile vidardb library even
       if you don't have gflags installed.
 
 ## Supported platforms
@@ -81,10 +81,10 @@ your make commands, like this: `PORTABLE=1 make static_lib`
         * Install via [homebrew](http://brew.sh/).
             * If you're first time developer in MacOS, you still need to run: `xcode-select --install` in your command line.
             * run `brew tap homebrew/versions; brew install gcc47 --use-llvm` to install gcc 4.7 (or higher).
-    * run `brew install rocksdb`
+    * run `brew install vidardb`
 
 * **iOS**:
-  * Run: `TARGET_OS=IOS make static_lib`. When building the project which uses rocksdb iOS library, make sure to define two important pre-processing macros: `ROCKSDB_LITE` and `IOS_CROSS_COMPILE`.
+  * Run: `TARGET_OS=IOS make static_lib`. When building the project which uses vidardb iOS library, make sure to define two important pre-processing macros: `VIDARDB_LITE` and `IOS_CROSS_COMPILE`.
 
 * **Windows**:
   * For building with MS Visual Studio 13 you will need Update 4 installed.

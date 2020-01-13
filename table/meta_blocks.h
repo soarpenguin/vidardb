@@ -12,13 +12,13 @@
 #include "db/builder.h"
 #include "db/table_properties_collector.h"
 #include "util/kv_map.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
+#include "vidardb/comparator.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
 #include "table/block_builder.h"
 #include "table/format.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 class BlockBuilder;
 class BlockHandle;
@@ -153,4 +153,4 @@ Status ReadMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                      const std::string& meta_block_name,
                      BlockContents* contents);
 
-}  // namespace rocksdb
+}  // namespace vidardb

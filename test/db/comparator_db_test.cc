@@ -7,8 +7,8 @@
 #include <map>
 #include <string>
 
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
 #include "util/hash.h"
 #include "util/kv_map.h"
 #include "util/string_util.h"
@@ -17,7 +17,7 @@
 
 using std::unique_ptr;
 
-namespace rocksdb {
+namespace vidardb {
 namespace {
 
 static const Comparator* comparator;
@@ -429,7 +429,7 @@ TEST_F(ComparatorDBTest, TwoStrComparator) {
   }
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

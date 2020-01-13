@@ -10,18 +10,18 @@
 #include <utility>
 #include <vector>
 #include "db/table_properties_collector.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/immutable_options.h"
-#include "rocksdb/listener.h"
-#include "rocksdb/options.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/types.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/immutable_options.h"
+#include "vidardb/listener.h"
+#include "vidardb/options.h"
+#include "vidardb/status.h"
+#include "vidardb/table_properties.h"
+#include "vidardb/types.h"
 #include "util/event_logger.h"
 #include "util/mutable_cf_options.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 struct Options;
 struct FileMetaData;
@@ -77,4 +77,4 @@ extern Status BuildTable(
     const Env::IOPriority io_priority = Env::IO_HIGH,
     TableProperties* table_properties = nullptr, int level = -1);
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -8,7 +8,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/statistics.h"
+#include "vidardb/statistics.h"
 
 #include <cassert>
 #include <string>
@@ -16,7 +16,7 @@
 #include <map>
 #include <mutex>
 
-namespace rocksdb {
+namespace vidardb {
 
 class HistogramBucketMapper {
  public:
@@ -146,4 +146,4 @@ class HistogramImpl : public Histogram {
   std::mutex mutex_;
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

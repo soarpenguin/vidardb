@@ -8,15 +8,15 @@
 #include <string>
 
 #include "db/table_properties_collector.h"
-#include "rocksdb/table.h"
-#include "rocksdb/table_properties.h"
+#include "vidardb/table.h"
+#include "vidardb/table_properties.h"
 #include "table/block.h"
 #include "table/format.h"
 #include "table/internal_iterator.h"
 #include "table/table_properties_internal.h"
 #include "util/coding.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 MetaIndexBuilder::MetaIndexBuilder()
     : meta_index_block_(new BlockBuilder(1 /* restart interval */)) {}
@@ -233,7 +233,7 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
     auto pos = predefined_uint64_properties.find(key);
 
     if (pos != predefined_uint64_properties.end()) {
-      // handle predefined rocksdb properties
+      // handle predefined vidardb properties
       uint64_t val;
       if (!GetVarint64(&raw_val, &val)) {
         // skip malformed value
@@ -436,4 +436,4 @@ Status ReadMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
                            env, false /* decompress */);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

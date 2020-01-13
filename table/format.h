@@ -10,14 +10,14 @@
 #pragma once
 #include <string>
 #include <stdint.h>
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "vidardb/slice.h"
+#include "vidardb/status.h"
+#include "vidardb/options.h"
+#include "vidardb/table.h"
 
 #include "port/port.h" // noexcept
 
-namespace rocksdb {
+namespace vidardb {
 
 class Block;
 class RandomAccessFile;
@@ -175,7 +175,7 @@ struct BlockContents {
         compression_type(_compression_type),
         allocation(std::move(_data)) {}
 
-  BlockContents(BlockContents&& other) ROCKSDB_NOEXCEPT { *this = std::move(other); }
+  BlockContents(BlockContents&& other) VIDARDB_NOEXCEPT { *this = std::move(other); }
 
   BlockContents& operator=(BlockContents&& other) {
     data = std::move(other.data);
@@ -216,4 +216,4 @@ inline BlockHandle::BlockHandle()
 inline BlockHandle::BlockHandle(uint64_t _offset, uint64_t _size)
     : offset_(_offset), size_(_size) {}
 
-}  // namespace rocksdb
+}  // namespace vidardb

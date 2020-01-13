@@ -30,14 +30,14 @@
 #include "db/db_impl.h"
 #include "db/dbformat.h"
 #include "db/filename.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/convenience.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/table.h"
+#include "vidardb/cache.h"
+#include "vidardb/convenience.h"
+#include "vidardb/db.h"
+#include "vidardb/env.h"
+#include "vidardb/options.h"
+#include "vidardb/slice.h"
+#include "vidardb/statistics.h"
+#include "vidardb/table.h"
 #include "table/block_based_table_factory.h"
 #include "table/mock_table.h"
 #include "table/scoped_arena_iterator.h"
@@ -53,7 +53,7 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 namespace anon {
 class AtomicCounter {
@@ -493,7 +493,7 @@ class SpecialEnv : public EnvWrapper {
   std::atomic<bool> is_wal_sync_thread_safe_{true};
 };
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
 class OnFileDeletionListener : public EventListener {
  public:
   OnFileDeletionListener() : matched_count_(0), expected_file_name_("") {}
@@ -668,7 +668,7 @@ class DBTestBase : public testing::Test {
 
   std::string AllEntriesFor(const Slice& user_key, int cf = 0);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   int NumSortedRuns(int cf = 0);
 
   uint64_t TotalSize(int cf = 0);
@@ -678,7 +678,7 @@ class DBTestBase : public testing::Test {
   size_t TotalLiveFiles(int cf = 0);
 
   size_t CountLiveFiles();
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   int NumTableFilesAtLevel(int level, int cf = 0);
 
@@ -771,14 +771,14 @@ class DBTestBase : public testing::Test {
 
   std::vector<std::uint64_t> ListTableFiles(Env* env, const std::string& path);
 
-#ifndef ROCKSDB_LITE
+#ifndef VIDARDB_LITE
   uint64_t GetNumberOfSstFilesForColumnFamily(DB* db,
                                               std::string column_family_name);
-#endif  // ROCKSDB_LITE
+#endif  // VIDARDB_LITE
 
   uint64_t TestGetTickerCount(const Options& options, Tickers ticker_type) {
     return options.statistics->getTickerCount(ticker_type);
   }
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -10,7 +10,7 @@
 #pragma once
 #include <memory>
 
-namespace rocksdb {
+namespace vidardb {
 
 class Iterator;
 struct ParsedInternalKey;
@@ -89,4 +89,4 @@ class TableReader {
   virtual void Close() {}
 };
 
-}  // namespace rocksdb
+}  // namespace vidardb

@@ -7,7 +7,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/db_bench_tool.h"
+#include "vidardb/db_bench_tool.h"
 #include "util/options_parser.h"
 #include "util/random.h"
 #include "util/testharness.h"
@@ -16,7 +16,7 @@
 #ifdef GFLAGS
 #include <gflags/gflags.h>
 
-namespace rocksdb {
+namespace vidardb {
 namespace {
 static const int kMaxArgCount = 100;
 static const size_t kArgBufferSize = 100000;
@@ -88,7 +88,7 @@ TEST_F(DBBenchTest, OptionsFile) {
   opt.base_background_compactions = 5;
   opt.max_background_compactions = 10;
   opt.arena_block_size = 8388608;
-  ASSERT_OK(PersistRocksDBOptions(DBOptions(opt), {"default"},
+  ASSERT_OK(PersistVidarDBOptions(DBOptions(opt), {"default"},
                                   {ColumnFamilyOptions(opt)}, kOptionsFileName,
                                   Env::Default()));
 
@@ -110,7 +110,7 @@ TEST_F(DBBenchTest, OptionsFileUniversal) {
   opt.base_background_compactions = 5;
   opt.max_background_compactions = 10;
   opt.arena_block_size = 8388608;
-  ASSERT_OK(PersistRocksDBOptions(DBOptions(opt), {"default"},
+  ASSERT_OK(PersistVidarDBOptions(DBOptions(opt), {"default"},
                                   {ColumnFamilyOptions(opt)}, kOptionsFileName,
                                   Env::Default()));
 
@@ -132,7 +132,7 @@ TEST_F(DBBenchTest, OptionsFileMultiLevelUniversal) {
   opt.base_background_compactions = 5;
   opt.max_background_compactions = 10;
   opt.arena_block_size = 8388608;
-  ASSERT_OK(PersistRocksDBOptions(DBOptions(opt), {"default"},
+  ASSERT_OK(PersistVidarDBOptions(DBOptions(opt), {"default"},
                                   {ColumnFamilyOptions(opt)}, kOptionsFileName,
                                   Env::Default()));
 
@@ -145,7 +145,7 @@ TEST_F(DBBenchTest, OptionsFileMultiLevelUniversal) {
 
 const std::string options_file_content = R"OPTIONS_FILE(
 [Version]
-  rocksdb_version=4.3.1
+  vidardb_version=4.3.1
   options_file_version=1.1
 
 [DBOptions]
@@ -254,10 +254,10 @@ const std::string options_file_content = R"OPTIONS_FILE(
   block_size=32768
   block_size_deviation=10
   block_restart_interval=16
-  filter_policy=rocksdb.BuiltinBloomFilter
+  filter_policy=vidardb.BuiltinBloomFilter
 )OPTIONS_FILE";
 
-}  // namespace rocksdb
+}  // namespace vidardb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

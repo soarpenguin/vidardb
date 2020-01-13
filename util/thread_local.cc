@@ -12,9 +12,9 @@
 #include "port/likely.h"
 #include <stdlib.h>
 
-namespace rocksdb {
+namespace vidardb {
 
-#ifdef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifdef VIDARDB_SUPPORT_THREAD_LOCAL
 __thread ThreadLocalPtr::ThreadData* ThreadLocalPtr::StaticMeta::tls_ = nullptr;
 #endif
 
@@ -131,7 +131,7 @@ ThreadLocalPtr::StaticMeta* ThreadLocalPtr::Instance() {
   // desturction order even when the main thread dies before any child threads.
   // However, thread_local requires gcc 4.8 and is not supported in all the
   // compilers that accepts -std=c++11 (e.g., the default clang on Mac), while
-  // the current RocksDB still accept gcc 4.7.
+  // the current VidarDB still accept gcc 4.7.
   static ThreadLocalPtr::StaticMeta* inst = new ThreadLocalPtr::StaticMeta();
   return inst;
 }
@@ -189,7 +189,7 @@ ThreadLocalPtr::StaticMeta::StaticMeta() : next_instance_id_(0), head_(this) {
 #if !defined(OS_WIN)
   static struct A {
     ~A() {
-#ifndef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifndef VIDARDB_SUPPORT_THREAD_LOCAL
       ThreadData* tls_ =
         static_cast<ThreadData*>(pthread_getspecific(Instance()->pthread_key_));
 #endif
@@ -227,7 +227,7 @@ void ThreadLocalPtr::StaticMeta::RemoveThreadData(
 }
 
 ThreadLocalPtr::ThreadData* ThreadLocalPtr::StaticMeta::GetThreadLocal() {
-#ifndef ROCKSDB_SUPPORT_THREAD_LOCAL
+#ifndef VIDARDB_SUPPORT_THREAD_LOCAL
   // Make this local variable name look like a member variable so that we
   // can share all the code below
   ThreadData* tls_ =
@@ -392,4 +392,4 @@ void ThreadLocalPtr::Scrape(std::vector<void*>* ptrs, void* const replacement) {
   Instance()->Scrape(id_, ptrs, replacement);
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb

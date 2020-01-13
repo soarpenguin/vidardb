@@ -9,7 +9,7 @@
 
 #include "table/internal_iterator.h"
 
-namespace rocksdb {
+namespace vidardb {
 class ScopedArenaIterator {
  public:
   explicit ScopedArenaIterator(InternalIterator* iter = nullptr)
@@ -26,4 +26,4 @@ class ScopedArenaIterator {
  private:
   InternalIterator* iter_;
 };
-}  // namespace rocksdb
+}  // namespace vidardb

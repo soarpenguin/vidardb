@@ -20,11 +20,11 @@
 
 #include "db/dbformat.h"
 
-#include "rocksdb/cache.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/table.h"
+#include "vidardb/cache.h"
+#include "vidardb/comparator.h"
+#include "vidardb/env.h"
+#include "vidardb/flush_block_policy.h"
+#include "vidardb/table.h"
 
 #include "table/block.h"
 #include "table/block_based_table_reader.h"
@@ -40,7 +40,7 @@
 #include "util/crc32c.h"
 #include "util/stop_watch.h"
 
-namespace rocksdb {
+namespace vidardb {
 
 // The interface for building index.
 // Instruction for adding a new concrete IndexBuilder:
@@ -233,7 +233,7 @@ Slice CompressBlock(const Slice& raw,
 }  // namespace
 
 // kBlockBasedTableMagicNumber was picked by running
-//    echo rocksdb.table.block_based | sha1sum
+//    echo vidardb.table.block_based | sha1sum
 // and taking the leading 64 bits.
 // Please note that kBlockBasedTableMagicNumber may also be accessed by other
 // .cc files
@@ -577,4 +577,4 @@ TableProperties BlockBasedTableBuilder::GetTableProperties() const {
   return ret;
 }
 
-}  // namespace rocksdb
+}  // namespace vidardb
