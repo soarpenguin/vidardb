@@ -3672,7 +3672,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
 /***************************** Shichao ******************************/
 bool DBImpl::RangeQuery(ReadOptions& read_options,
                         ColumnFamilyHandle* column_family, const Range& range,
-                        std::vector<std::string>& res, Status* s) {
+                        std::vector<RangeQueryPair>& res, Status* s) {
   res.clear();
 
   RangeQueryMeta*& meta = read_options.range_query_meta;
@@ -3752,7 +3752,10 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   // Copy to return the valid result list
   for (const auto& it : map_res) {
     if (it.second.type_ == kTypeValue) {
-      res.emplace_back(std::move(it.second.val_));
+      res.emplace_back(RangeQueryPair(
+        std::move(it.first),
+        std::move(it.second.val_)
+      ));
     }
   }
 

@@ -59,17 +59,17 @@ int main(int argc, char* argv[]) {
   read_options.batch_capacity = 2; // in batch // ok
 
 //  Range range; // full search // ok
-  Range range("2", "4"); // [2, 4] // ok
-//  Range range("1", "6"); // [1, 6] // ok
+  // Range range("2", "4"); // [2, 4] // ok
+ Range range("1", "6"); // [1, 6] // ok
 //  Range range("1", kRangeQueryMax); // [1, max] // ok
 
-  vector<string> res;
+  vector<RangeQueryPair> res;
   bool next = true;
   while (next) { // range query loop
     next = db->RangeQuery(read_options, range, res, &s);
     assert(s.ok());
     for (auto it : res) {
-      cout << it << " ";
+      cout << it.user_key << "=" << it.user_val << " ";
     }
     cout << endl;
   }

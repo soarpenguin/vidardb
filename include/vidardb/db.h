@@ -86,6 +86,7 @@ class ColumnFamilyHandle {
 static const int kMajorVersion = __VIDARDB_MAJOR__;
 static const int kMinorVersion = __VIDARDB_MINOR__;
 
+/***************************** Quanzhao *****************************/
 static const Slice kRangeQueryMin = Slice("min");  // Quanzhao
 static const Slice kRangeQueryMax = Slice("max");  // Quanzhao
 
@@ -98,7 +99,14 @@ struct Range {
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 
-/***************************** Quanzhao *****************************/
+struct RangeQueryPair {
+  const std::string user_key;
+  const std::string user_val;
+
+  RangeQueryPair(const std::string key, const std::string val) :
+                 user_key(key), user_val(val) { }
+};
+
 struct RangeQueryMeta {
   void* column_family_data;         // Column family data
   void* super_version;              // Super version
@@ -247,12 +255,14 @@ class DB {
   // If another subrange query exists, it returns true, else false.
   virtual bool RangeQuery(ReadOptions& options,
                           ColumnFamilyHandle* column_family, const Range& range,
-                          std::vector<std::string>& res, Status* s = nullptr) {
+                          std::vector<RangeQueryPair>& res,
+                          Status* s = nullptr) {
     *s = Status::NotSupported(Slice());
     return false;
   }
   virtual bool RangeQuery(ReadOptions& options, const Range& range,
-                          std::vector<std::string>& res, Status* s = nullptr) {
+                          std::vector<RangeQueryPair>& res,
+                          Status* s = nullptr) {
     return RangeQuery(options, DefaultColumnFamily(), range, res, s);
   }
   /***************** Shichao **********************/
