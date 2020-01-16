@@ -39,7 +39,7 @@ quoted_perl_command = $(subst ','\'',$(perl_command))
 # Set the default DEBUG_LEVEL to 2
 DEBUG_LEVEL?=2
 
-ifeq ($(MAKECMDGOALS),dbg)
+ifeq ($(MAKECMDGOA1LS),dbg)
 	DEBUG_LEVEL=2
 endif
 
