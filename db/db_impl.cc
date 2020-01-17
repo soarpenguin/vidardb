@@ -3691,7 +3691,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
     SuperVersion* sv = GetAndRefSuperVersion(cfd);
     meta = new RangeQueryMeta(cfd, sv, snapshot);
-    meta->next_start_key = range.start.ToString();
+    meta->next_start_key.assign(range.start.data_, range.start.size_);
   }
 
   // Create lookup key range

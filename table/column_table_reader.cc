@@ -1022,7 +1022,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
           if (parsed_key.sequence <= sequence_num) {
             if (start_sub_key.empty()) {
-              start_sub_key = iter->value().ToString();
+              start_sub_key.assign(iter->value().data_, iter->value().size_);
             }
 
             std::string user_key(iter->key().data(), iter->key().size() - 8);
@@ -1052,7 +1052,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
               it->second.val_ = "";
             }
 
-            user_vals.push_back(it);
+            user_vals.push_back(std::move(it));
             if (CompressResultMap(&res, read_options) &&
                 res.rbegin()->first <= user_key) {
               if (res.rbegin()->first < user_key) {
@@ -1079,8 +1079,8 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             continue;
           }
 
-          auto it = user_vals[user_val_idx++];
-          it->second.val_.append(iter->value().ToString());
+          auto& it = user_vals[user_val_idx++];
+          it->second.val_.append(iter->value().data_, iter->value().size_);
           if (i + 1 < columns_.size()) {
             it->second.val_.append(1, delim_);
           }
@@ -1118,7 +1118,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         continue;
       }
       // val1|val2|val3|...
-      value_.append(columns_[i]->value().ToString());
+      value_.append(columns_[i]->value().data_, columns_[i]->value().size_);
       if (i < columns_.size() - 1) {
         value_.append(1, delim_);
       }
