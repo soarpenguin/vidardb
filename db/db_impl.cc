@@ -3734,7 +3734,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   if (read_options.batch_capacity > 0 &&
       map_size > read_options.batch_capacity) {
     auto it = --(map_res.end());
-    meta->next_start_key = std::move(Slice(it->first).ToString());
+    meta->next_start_key = std::move(it->first);
     map_res.erase(it);  // Not include the next start key
   }
 

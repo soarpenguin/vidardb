@@ -391,6 +391,7 @@ struct Saver {
   bool* found_final_value;   // Is value set correctly? Used by KeyMayExist
   std::string* value;
   std::map<std::string, SeqTypeVal>* res;  // Shichao
+  std::map<std::string, SeqTypeVal>::iterator prev_it = res->end();  // Shichao
   SequenceNumber seq;
   MemTable* mem;
   Logger* logger;
@@ -479,19 +480,25 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
         std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
         SeqTypeVal stv = SeqTypeVal(s->seq, type, val);
 
-        auto it = s->res->end();
-        it = s->res->emplace_hint(it, std::move(user_key), std::move(stv));
+        auto it = s->prev_it;
+        if (it != s->res->end()) {
+          it++;
+        }
+        it = s->res->emplace_hint(it, user_key, std::move(stv));
         if (it->second.seq_ < s->seq) {
           it->second.seq_ = s->seq;
           it->second.type_ = type;
           it->second.val_ = val;
         }
 
-        if (CompressResultMap(s->res, *(s->read_options))) {
+        if (CompressResultMap(s->res, *(s->read_options)) &&
+            s->res->rbegin()->first <= user_key) {
           // Reach the batch capacity
           *(s->status) = Status::OK();
           return false;
         }
+
+        s->prev_it = it;
       }
       *(s->status) = Status::OK();
       return true;

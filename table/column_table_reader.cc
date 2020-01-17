@@ -1028,8 +1028,13 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             std::string user_key(iter->key().data(), iter->key().size() - 8);
             SeqTypeVal stv(parsed_key.sequence, parsed_key.type, "");
 
+            // give accurate hint
             auto it = res.end();
-            it = res.emplace_hint(it, std::move(user_key), std::move(stv));
+            if (!user_vals.empty()) {
+              it = user_vals.back();
+              it++;
+            }
+            it = res.emplace_hint(it, user_key, std::move(stv));
             if (it->second.seq_ > parsed_key.sequence) {
               // already exists the same user key, which overloads the current
               sub_key_bs.push_back(false);
@@ -1038,7 +1043,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
             // two cases:
             // 1. already exists the same user key, invalidate the old one
-            // 2. // same seq, the current one
+            // 2. same seq, the current one
             sub_key_bs.push_back(true);
             if (it->second.seq_ < parsed_key.sequence) {
               // already exists the same user key, invalidate the old one
@@ -1048,7 +1053,13 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             }
 
             user_vals.push_back(it);
-            if (CompressResultMap(&res, read_options)) {
+            if (CompressResultMap(&res, read_options) &&
+                res.rbegin()->first <= user_key) {
+              if (res.rbegin()->first < user_key) {
+                // user_key already erased in map, now erase in bit vectors
+                sub_key_bs.pop_back();
+                user_vals.pop_back();
+              }
               break;  // Reach the batch capacity
             }
           } else {

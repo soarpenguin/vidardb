@@ -5745,7 +5745,7 @@ class basic_json
             {
                 case value_t::array:
                 {
-                    return *lhs.m_value.array < *rhs.m_value.array;
+                    return (*lhs.m_value.array) < (*rhs.m_value.array);
                 }
                 case value_t::object:
                 {
