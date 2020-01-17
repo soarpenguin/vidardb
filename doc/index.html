@@ -7,7 +7,7 @@
 
 <body>
 <h1>VidarDB</h1>
-<address>The Facebook Database Engineering Team</address>
+<address>The VidarDB Engineering Team</address>
 <address>Build on earlier work on leveldb by Sanjay Ghemawat
                (sanjay@google.com) and Jeff Dean (jeff@google.com)</address>
 <p>
@@ -176,18 +176,6 @@ using their own locking protocol.  More details are available in
 the public header files.
 
 <p>
-<h1>Merge operators</h1>
-<p>
-Merge operators provide efficient support for read-modify-write operation.
-More on the interface and implementation can be found on:
-<p>
-<a href="https://github.com/facebook/vidardb/wiki/Merge-Operator">
-    Merge Operator</a>
-<p>
-<a href="https://github.com/facebook/vidardb/wiki/Merge-Operator-Implementation">
-    Merge Operator Implementation</a>
-
-<p>
 <h1>Iteration</h1>
 <p>
 The following example demonstrates how to print all key,value pairs
@@ -349,9 +337,7 @@ version numbers found in the keys to decide how to interpret them.
 <h1>MemTable and Table factories</h1>
 <p>
 By default, we keep the data in memory in skiplist memtable and the data
-on disk in a table format described here:
-<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Table-Format">
-    VidarDB Table Format</a>.
+on disk in a table format.
 <p>
 Since one of the goals of VidarDB is to have
 different parts of the system easily pluggable, we support different
@@ -363,11 +349,6 @@ For available memtable factories, please refer to
 <code>vidardb/table.h</code>. These features are both in active development
 and please be wary of any API changes that might break your application
 going forward.
-<p>
-You can also read more about memtables here:
-<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide#memtables">
-Memtables wiki
-</a>
 
 <p>
 <h1>Performance</h1>
@@ -579,11 +560,6 @@ checksums are verified:
 
 <p>
 <h1>Compaction</h1>
-<p>
-You can read more on Compactions here:
-<a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide#multi-threaded-compactions">
-    Multi-threaded compactions
-</a>
 <p>
 Here we give overview of the options that impact behavior of Compactions:
 <ul>
@@ -816,10 +792,6 @@ checks will be performed with ttl being first.
 Details about the <code>vidardb</code> implementation may be found in
 the following documents:
 <ul>
-<li> <a href="https://github.com/facebook/vidardb/wiki/VidarDB-Architecture-Guide">
-  VidarDB Architecture Guide</a>
-<li> <a href="https://github.com/facebook/vidardb/wiki/VidarDB-Table-Format">
-    Format of an immutable Table file</a>
 <li> <a href="log_format.txt">Format of a log file</a>
 </ul>
 
