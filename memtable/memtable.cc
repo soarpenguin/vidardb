@@ -391,7 +391,7 @@ struct Saver {
   bool* found_final_value;   // Is value set correctly? Used by KeyMayExist
   std::string* value;
   std::map<std::string, SeqTypeVal>* res;  // Shichao
-  std::map<std::string, SeqTypeVal>::iterator prev_it = res->end();  // Shichao
+  std::map<std::string, SeqTypeVal>::iterator prev_iter;  // Shichao
   SequenceNumber seq;
   MemTable* mem;
   Logger* logger;
@@ -459,10 +459,10 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
   const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
   Slice internal_key = Slice(key_ptr, key_length);
 
-  LookupKey* limit = static_cast<LookupKey*>(
-      s->read_options->range_query_meta->current_limit_key);
+  RangeQueryMeta* meta =
+      static_cast<RangeQueryMeta*>(s->read_options->range_query_meta);
   if (CompareRangeLimit(s->mem->GetInternalKeyComparator(), internal_key,
-                        limit) > 0) {
+                        meta->current_limit_key) > 0) {
     *(s->status) = Status::OK();
     return false;
   }
@@ -480,7 +480,7 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
         std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
         SeqTypeVal stv = SeqTypeVal(s->seq, type, val);
 
-        auto it = s->prev_it;
+        auto it = s->prev_iter;
         if (it != s->res->end()) {
           it++;
         }
@@ -498,7 +498,7 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
           return false;
         }
 
-        s->prev_it = it;
+        s->prev_iter = it;
       }
       *(s->status) = Status::OK();
       return true;
@@ -557,6 +557,7 @@ bool MemTable::RangeQuery(const ReadOptions& read_options,
   saver.status = s;
   saver.range = &range;
   saver.res = &res;
+  saver.prev_iter = res.end();
   saver.seq = kMaxSequenceNumber;
   saver.mem = this;
   saver.logger = moptions_.info_log;

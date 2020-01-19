@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
   read_options.batch_capacity = 2; // in batch // ok
 
 //  Range range; // full search // ok
-  // Range range("2", "4"); // [2, 4] // ok
+//  Range range("2", "4"); // [2, 4] // ok
   Range range("1", "6"); // [1, 6] // ok
 //  Range range("1", kRangeQueryMax); // [1, max] // ok
 

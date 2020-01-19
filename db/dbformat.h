@@ -26,6 +26,8 @@
 namespace vidardb {
 
 class InternalKey;
+class SuperVersion;
+class ColumnFamilyData;
 
 // Value types encoded as the last component of internal keys.
 // DO NOT CHANGE THESE ENUM VALUES: they are embedded in the on-disk
@@ -361,6 +363,20 @@ struct SeqTypeVal {
 /**************** Shichao ******************/
 
 /**************************** Quanzhao *****************************/
+struct RangeQueryMeta {
+  ColumnFamilyData* column_family_data;      // Column family data
+  SuperVersion* super_version;               // Super version
+  SequenceNumber snapshot;                   // Current snapshot
+  LookupKey* current_limit_key;              // Current limit key
+  SequenceNumber limit_sequence;             // Limit sequence
+  std::string next_start_key;                // Next start key
+
+  RangeQueryMeta(ColumnFamilyData* cfd, SuperVersion* sv, SequenceNumber snap,
+                 LookupKey* limit_key = nullptr, SequenceNumber limit_seq = 0):
+    column_family_data(cfd), super_version(sv), snapshot(snap),
+    current_limit_key(limit_key), limit_sequence(limit_seq) {}
+};
+
 // Ensure the result map size is no more than the expected capacity
 // which maybe include an extra limit user key.
 // Return true if the map size has reached the capacity, else false.
@@ -382,10 +398,9 @@ inline bool CompressResultMap(std::map<std::string, SeqTypeVal>* res,
   }
 
   // update the current range limit key
-  RangeQueryMeta* meta = read_options.range_query_meta;
-  if (meta->current_limit_key) {
-    delete static_cast<LookupKey*>(meta->current_limit_key);
-  }
+  RangeQueryMeta* meta =
+      static_cast<RangeQueryMeta*>(read_options.range_query_meta);
+  delete meta->current_limit_key;
   Slice limit_key((--(res->end()))->first);
   meta->current_limit_key = new LookupKey(limit_key, meta->limit_sequence);
   return true;

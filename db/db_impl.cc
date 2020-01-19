@@ -3675,9 +3675,8 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
                         std::vector<RangeQueryKeyVal>& res, Status* s) {
   res.clear();
 
-  RangeQueryMeta*& meta = read_options.range_query_meta;
   // Create range query metadata at first
-  if (meta == nullptr) {
+  if (read_options.range_query_meta == nullptr) {
     SequenceNumber snapshot;
     if (read_options.snapshot != nullptr) {
       snapshot = reinterpret_cast<const SnapshotImpl*>(
@@ -3690,9 +3689,14 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     auto cfd = cfh->cfd();
 
     SuperVersion* sv = GetAndRefSuperVersion(cfd);
-    meta = new RangeQueryMeta(cfd, sv, snapshot);
+    read_options.range_query_meta = new RangeQueryMeta(cfd, sv, snapshot);
+    RangeQueryMeta* meta =
+        static_cast<RangeQueryMeta*>(read_options.range_query_meta);
     meta->next_start_key.assign(range.start.data_, range.start.size_);
   }
+
+  RangeQueryMeta* meta =
+        static_cast<RangeQueryMeta*>(read_options.range_query_meta);
 
   // Create lookup key range
   LookupKey start_lookup_key(meta->next_start_key, meta->snapshot);
@@ -3703,9 +3707,8 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
 
   // Prepare range query
   std::map<std::string, SeqTypeVal> map_res;
-  ColumnFamilyData* cfd = reinterpret_cast<ColumnFamilyData*>(
-                          meta->column_family_data);
-  SuperVersion* sv = reinterpret_cast<SuperVersion*>(meta->super_version);
+  ColumnFamilyData* cfd = meta->column_family_data;
+  SuperVersion* sv = meta->super_version;
   bool skip_memtable =
       (read_options.read_tier == kPersistedTier && has_unpersisted_data_);
   // First look in the memtable, then in the immutable memtable (if any).
@@ -3726,10 +3729,9 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   // Update the next range query
-  if (meta->current_limit_key) {
-    delete static_cast<LookupKey*>(meta->current_limit_key);
-    meta->current_limit_key = nullptr;
-  }
+  delete meta->current_limit_key;
+  meta->current_limit_key = nullptr;
+
   size_t map_size = map_res.size();
   if (read_options.batch_capacity > 0 &&
       map_size > read_options.batch_capacity) {
@@ -3746,7 +3748,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     next_query = false;
     ReturnAndCleanupSuperVersion(cfd, sv);
     delete meta;
-    meta = nullptr;
+    read_options.range_query_meta = nullptr;
   }
 
   // Copy to return the valid result list

@@ -115,21 +115,20 @@ struct RangeQueryKeyVal {
   RangeQueryKeyVal(RangeQueryKeyVal&& kv) :
                    user_key(std::move(kv.user_key)),
                    user_val(std::move(kv.user_val)) { }
+
+  RangeQueryKeyVal& operator=(const RangeQueryKeyVal& kv) {
+    user_key = kv.user_key;
+    user_val = kv.user_val;
+    return *this;
+  }
+
+  RangeQueryKeyVal& operator=(RangeQueryKeyVal&& kv) {
+    user_key = std::move(kv.user_key);
+    user_val = std::move(kv.user_val);
+    return *this;
+  }
 };
 
-struct RangeQueryMeta {
-  void* column_family_data;         // Column family data
-  void* super_version;              // Super version
-  SequenceNumber snapshot;          // Current snapshot
-  void* current_limit_key;          // Current limit key, should maintain it
-  SequenceNumber limit_sequence;    // Limit sequence
-  std::string next_start_key;       // Next start key
-
-  RangeQueryMeta(void* cfd, void* sv, SequenceNumber s,
-                 void* limit_key = nullptr, SequenceNumber limit_seq = 0) :
-    column_family_data(cfd), super_version(sv), snapshot(s),
-    current_limit_key(limit_key), limit_sequence(limit_seq) {}
-};
 /***************************** Quanzhao *****************************/
 
 // A collections of table properties objects, where

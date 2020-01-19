@@ -37,17 +37,16 @@ int main() {
   ReadOptions ro;
   ro.columns = {1};
 
-  vector<string> resRQ;
+  vector<RangeQueryKeyVal> resRQ;
   bool next = true;
   while (next) { // range query loop
     next = db->RangeQuery(ro, Range(), resRQ, &s);
     assert(s.ok());
     for (auto it = resRQ.begin(); it != resRQ.end(); it++) {
-      cout << *it << " ";
+      cout << it->user_val << " ";
     }
     cout << endl;
   }
-
 
   string val;
   s = db->Get(ro, "column2", &val);

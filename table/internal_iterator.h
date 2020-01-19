@@ -25,8 +25,6 @@ class PinnedIteratorsManager;
 /*********************** Shichao **************************/
 struct LookupRange;
 struct SeqTypeVal;
-using filterFun = bool(*)(std::vector<const std::string*>&, int);
-using groupFun = bool(*)(std::vector<const std::string*>&, int, void*);
 /*********************** Shichao **************************/
 
 class InternalIterator : public Cleanable {

@@ -889,11 +889,12 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     }
 
     SequenceNumber sequence_num = range.SequenceNum();
+    RangeQueryMeta* meta =
+        static_cast<RangeQueryMeta*>(read_options.range_query_meta);
     auto prev_it = res.end();  // record previous iterator
     for (; iter_->Valid(); iter_->Next()) {
-      LookupKey* limit = static_cast<LookupKey*>(
-          read_options.range_query_meta->current_limit_key);
-      if (CompareRangeLimit(internal_comparator_, iter_->key(), limit) > 0) {
+      if (CompareRangeLimit(internal_comparator_, iter_->key(),
+                            meta->current_limit_key) > 0) {
         break;
       }
 

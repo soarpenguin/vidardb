@@ -996,6 +996,9 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
     std::string start_sub_key;  // track start sub key
     SequenceNumber sequence_num = range.SequenceNum();
+    RangeQueryMeta* meta =
+        static_cast<RangeQueryMeta*>(read_options.range_query_meta);
+
     // Range query one by one to improve performance
     for (size_t i = 0u; i < columns_.size(); i++) {
       InternalIterator* iter = columns_[i];
@@ -1008,10 +1011,8 @@ class ColumnTable::ColumnIterator : public InternalIterator {
         }
 
         for (; iter->Valid(); iter->Next()) {  // main iterator
-          LookupKey* limit_ = static_cast<LookupKey*>(
-              read_options.range_query_meta->current_limit_key);
           if (CompareRangeLimit(internal_comparator_, iter->key(),
-                                limit_) > 0) {
+                                meta->current_limit_key) > 0) {
             break;
           }
 

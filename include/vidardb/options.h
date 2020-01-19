@@ -49,7 +49,6 @@ class Slice;
 class Statistics;
 class InternalKeyComparator;
 class WalFilter;
-struct RangeQueryMeta;
 
 // DB contents are stored in a set of blocks, each of which holds a
 // sequence of key,value pairs.  Each block may be compressed before
@@ -1360,7 +1359,7 @@ struct ReadOptions {
 
   // Stores the temporary states for RangeQuery.
   // Note: Caller should not set the value.
-  RangeQueryMeta* range_query_meta = nullptr;
+  void* range_query_meta = nullptr;
   /***************************** Quanzhao *********************************/
 
   ReadOptions();
