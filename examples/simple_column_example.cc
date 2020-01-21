@@ -37,7 +37,7 @@ int main() {
   ReadOptions ro;
   ro.columns = {1};
 
-  vector<RangeQueryKeyVal> resRQ;
+  list<RangeQueryKeyVal> resRQ;
   bool next = true;
   while (next) { // range query loop
     next = db->RangeQuery(ro, Range(), resRQ, &s);

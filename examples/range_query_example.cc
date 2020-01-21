@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
   Range range("1", "6"); // [1, 6] // ok
 //  Range range("1", kRangeQueryMax); // [1, max] // ok
 
-  vector<RangeQueryKeyVal> res;
+  list<RangeQueryKeyVal> res;
   bool next = true;
   while (next) { // range query loop
     next = db->RangeQuery(read_options, range, res, &s);

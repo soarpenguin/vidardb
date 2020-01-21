@@ -3672,7 +3672,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options,
 /***************************** Shichao ******************************/
 bool DBImpl::RangeQuery(ReadOptions& read_options,
                         ColumnFamilyHandle* column_family, const Range& range,
-                        std::vector<RangeQueryKeyVal>& res, Status* s) {
+                        std::list<RangeQueryKeyVal>& res, Status* s) {
   res.clear();
 
   // Create range query metadata at first
@@ -3696,7 +3696,7 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   }
 
   RangeQueryMeta* meta =
-        static_cast<RangeQueryMeta*>(read_options.range_query_meta);
+      static_cast<RangeQueryMeta*>(read_options.range_query_meta);
 
   // Create lookup key range
   LookupKey start_lookup_key(meta->next_start_key, meta->snapshot);
@@ -3706,7 +3706,6 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   meta->current_limit_key = new LookupKey(range.limit, meta->limit_sequence);
 
   // Prepare range query
-  std::map<std::string, SeqTypeVal> map_res;
   ColumnFamilyData* cfd = meta->column_family_data;
   SuperVersion* sv = meta->super_version;
   bool skip_memtable =
@@ -3714,16 +3713,16 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   // First look in the memtable, then in the immutable memtable (if any).
   // s is both in/out. When in, s could be OK.
   if (!skip_memtable) {
-    if (!sv->mem->RangeQuery(read_options, lookup_range, map_res, s)) {
+    if (!sv->mem->RangeQuery(read_options, lookup_range, res, s)) {
       return false;
     }
-    if (!sv->imm->RangeQuery(read_options, lookup_range, map_res, s)) {
+    if (!sv->imm->RangeQuery(read_options, lookup_range, res, s)) {
       return false;
     }
   }
 
   *s = Status::OK();
-  sv->current->RangeQuery(read_options, lookup_range, map_res, s);
+  sv->current->RangeQuery(read_options, lookup_range, res, s);
   if (!s->ok()) {
     return false;
   }
@@ -3732,13 +3731,25 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
   delete meta->current_limit_key;
   meta->current_limit_key = nullptr;
 
-  size_t map_size = map_res.size();
+  size_t map_size = meta->map_res.size();
   if (read_options.batch_capacity > 0 &&
       map_size > read_options.batch_capacity) {
-    auto it = --(map_res.end());
+    auto it = --(meta->map_res.end());
     meta->next_start_key = std::move(it->first);
-    map_res.erase(it);  // Not include the next start key
+    // Not include the next start key
+    res.erase(it->second.iter_);
+    if (it->second.type_ == kTypeDeletion) {
+      meta->del_keys.erase(it->second.seq_);
+    }
+    meta->map_res.erase(it);
   }
+  meta->map_res.clear();
+
+  // Hide deleted keys from users, erase them in list
+  for (const auto& it : meta->del_keys) {
+    res.erase(it.second);
+  }
+  meta->del_keys.clear();
 
   // Check if have the next range query
   bool next_query = true;
@@ -3749,14 +3760,6 @@ bool DBImpl::RangeQuery(ReadOptions& read_options,
     ReturnAndCleanupSuperVersion(cfd, sv);
     delete meta;
     read_options.range_query_meta = nullptr;
-  }
-
-  // Copy to return the valid result list
-  for (const auto& it : map_res) {
-    if (it.second.type_ == kTypeValue) {
-      res.emplace_back(RangeQueryKeyVal(std::move(it.first),
-                                        std::move(it.second.val_)));
-    }
   }
 
   return next_query;

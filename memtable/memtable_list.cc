@@ -112,7 +112,7 @@ bool MemTableListVersion::Get(const LookupKey& key, std::string* value,
 /******************************* Shichao *******************************/
 bool MemTableListVersion::RangeQuery(const ReadOptions& read_options,
                                      const LookupRange& range,
-                                     std::map<std::string, SeqTypeVal>& res,
+                                     std::list<RangeQueryKeyVal>& res,
                                      Status* s) {
   for (const auto& memtable : memlist_) {
     if (!memtable->RangeQuery(read_options, range, res, s)) {

@@ -90,7 +90,7 @@ class DBImpl : public DB {
   using DB::RangeQuery;
   virtual bool RangeQuery(ReadOptions& options,
                           ColumnFamilyHandle* column_family, const Range& range,
-                          std::vector<RangeQueryKeyVal>& res,
+                          std::list<RangeQueryKeyVal>& res,
                           Status* s = nullptr) override;
   /*************************** Shichao ****************************/
 

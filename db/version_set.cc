@@ -1014,7 +1014,7 @@ void Version::Get(const ReadOptions& read_options, const LookupKey& k,
 /******************************** Shichao ********************************/
 void Version::RangeQuery(const ReadOptions& read_options,
                          const LookupRange& range,
-                         std::map<std::string, SeqTypeVal>& res,
+                         std::list<RangeQueryKeyVal>& res,
                          Status* status) {
   assert(status->ok());
 

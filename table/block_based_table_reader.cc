@@ -881,7 +881,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
 
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) {
+                            std::list<RangeQueryKeyVal>& res) {
     if (range.start_->user_key().compare(kRangeQueryMin) == 0) {
       iter_->SeekToFirst(); // Full search
     } else {
@@ -891,7 +891,7 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
     SequenceNumber sequence_num = range.SequenceNum();
     RangeQueryMeta* meta =
         static_cast<RangeQueryMeta*>(read_options.range_query_meta);
-    auto prev_it = res.end();  // record previous iterator
+    auto prev_it = meta->map_res.end();  // record previous iterator
     for (; iter_->Valid(); iter_->Next()) {
       if (CompareRangeLimit(internal_comparator_, iter_->key(),
                             meta->current_limit_key) > 0) {
@@ -905,26 +905,46 @@ class BlockBasedTable::BlockBasedIterator : public InternalIterator {
 
       if (parsed_key.sequence <= sequence_num) {
         std::string user_key(iter_->key().data(), iter_->key().size() - 8);
-        std::string val(iter_->value().data(), iter_->value().size());
-        SeqTypeVal stv(parsed_key.sequence, parsed_key.type, val);
+        SeqTypeVal stv(parsed_key.sequence, parsed_key.type, res.end());
 
         auto it = prev_it;
-        if (it != res.end()) {
+        if (it != meta->map_res.end()) {
           it++;
         }
-        it = res.emplace_hint(it, user_key, std::move(stv));
+        it = meta->map_res.emplace_hint(it, user_key, std::move(stv));
+        prev_it = it;
+
+        if (it->second.seq_ > parsed_key.sequence) {
+          // already exists the same user key, which shadows the current
+          continue;
+        }
+
+        std::string user_val(iter_->value().data(), iter_->value().size());
+
         if (it->second.seq_ < parsed_key.sequence) {
+          // replaced
+          if (it->second.type_ == kTypeDeletion) {
+            meta->del_keys.erase(it->second.seq_);
+          }
           it->second.seq_ = parsed_key.sequence;
           it->second.type_ = parsed_key.type;
-          it->second.val_ = val;
-        }
+          it->second.iter_->user_val = std::move(user_val);
+          if (parsed_key.type == kTypeDeletion) {
+            meta->del_keys.insert({parsed_key.sequence, it->second.iter_});
+          }
+        } else {
+          // inserted
+          res.emplace_back(user_key, std::move(user_val));
+          it->second.iter_ = --res.end();
+          if (parsed_key.type == kTypeDeletion) {
+            meta->del_keys.insert({parsed_key.sequence, it->second.iter_});
+          }
 
-        if (CompressResultMap(&res, read_options) &&
-            res.rbegin()->first <= user_key) {
-          break; // Reach the batch capacity
+          if (CompressResultList(&res, read_options)
+              && meta->map_res.rbegin()->first <= user_key) {
+            break;  // Reach the batch capacity
+          }
         }
-
-        prev_it = it;
       }
     }
 

@@ -986,7 +986,7 @@ class ColumnTable::ColumnIterator : public InternalIterator {
 
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) {
+                            std::list<RangeQueryKeyVal>& res) {
     std::vector<std::map<std::string, SeqTypeVal>::iterator> user_vals;
     std::vector<bool> sub_key_bs; // track the valid sub_keys
     if (num_entries_ > 0) {
@@ -1027,17 +1027,17 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             }
 
             std::string user_key(iter->key().data(), iter->key().size() - 8);
-            SeqTypeVal stv(parsed_key.sequence, parsed_key.type, "");
+            SeqTypeVal stv(parsed_key.sequence, parsed_key.type, res.end());
 
             // give accurate hint
-            auto it = res.end();
+            auto it = meta->map_res.end();
             if (!user_vals.empty()) {
               it = user_vals.back();
               it++;
             }
-            it = res.emplace_hint(it, user_key, std::move(stv));
+            it = meta->map_res.emplace_hint(it, user_key, std::move(stv));
             if (it->second.seq_ > parsed_key.sequence) {
-              // already exists the same user key, which overloads the current
+              // already exists the same user key, which shadows the current
               sub_key_bs.push_back(false);
               continue;
             }
@@ -1047,22 +1047,37 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             // 2. same seq, the current one
             sub_key_bs.push_back(true);
             if (it->second.seq_ < parsed_key.sequence) {
-              // already exists the same user key, invalidate the old one
+              // replaced
+              if (it->second.type_ == kTypeDeletion) {
+                meta->del_keys.erase(it->second.seq_);
+              }
               it->second.seq_ = parsed_key.sequence;
               it->second.type_ = parsed_key.type;
-              it->second.val_ = "";
+              it->second.iter_->user_val = "";
+              user_vals.push_back(std::move(it));
+              if (parsed_key.type == kTypeDeletion) {
+                meta->del_keys.insert({parsed_key.sequence, it->second.iter_});
+              }
+            } else {
+              // inserted
+              res.emplace_back(user_key, "");
+              it->second.iter_ = --res.end();
+              user_vals.push_back(std::move(it));
+              if (parsed_key.type == kTypeDeletion) {
+                meta->del_keys.insert({parsed_key.sequence, it->second.iter_});
+              }
+
+              if (CompressResultList(&res, read_options)
+                  && meta->map_res.rbegin()->first <= user_key) {
+                if (meta->map_res.rbegin()->first < user_key) {
+                  // element added but popped out in map, remove in bits as well
+                  sub_key_bs.pop_back();
+                  user_vals.pop_back();
+                }
+                break;  // Reach the batch capacity
+              }
             }
 
-            user_vals.push_back(std::move(it));
-            if (CompressResultMap(&res, read_options) &&
-                res.rbegin()->first <= user_key) {
-              if (res.rbegin()->first < user_key) {
-                // user_key already erased in map, now erase in bit vectors
-                sub_key_bs.pop_back();
-                user_vals.pop_back();
-              }
-              break;  // Reach the batch capacity
-            }
           } else {
             sub_key_bs.push_back(false);
           }
@@ -1080,10 +1095,10 @@ class ColumnTable::ColumnIterator : public InternalIterator {
             continue;
           }
 
-          auto& it = user_vals[user_val_idx++];
-          it->second.val_.append(iter->value().data_, iter->value().size_);
+          auto& it = user_vals[user_val_idx++]->second.iter_;
+          it->user_val.append(iter->value().data_, iter->value().size_);
           if (i + 1 < columns_.size()) {
-            it->second.val_.append(1, delim_);
+            it->user_val.append(1, delim_);
           }
         }
       }

@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <list>
 #include "vidardb/immutable_options.h"
 #include "vidardb/iterator.h"
 #include "vidardb/listener.h"
@@ -264,13 +265,13 @@ class DB {
   // If another subrange query exists, it returns true, else false.
   virtual bool RangeQuery(ReadOptions& options,
                           ColumnFamilyHandle* column_family, const Range& range,
-                          std::vector<RangeQueryKeyVal>& res,
+                          std::list<RangeQueryKeyVal>& res,
                           Status* s = nullptr) {
     *s = Status::NotSupported(Slice());
     return false;
   }
   virtual bool RangeQuery(ReadOptions& options, const Range& range,
-                          std::vector<RangeQueryKeyVal>& res,
+                          std::list<RangeQueryKeyVal>& res,
                           Status* s = nullptr) {
     return RangeQuery(options, DefaultColumnFamily(), range, res, s);
   }

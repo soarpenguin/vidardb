@@ -182,7 +182,7 @@ class MemTable {
   // in *status and return true.
   // Else, return false.
   bool RangeQuery(const ReadOptions& read_options, const LookupRange& range,
-                  std::map<std::string, SeqTypeVal>& res, Status* s);
+                  std::list<RangeQueryKeyVal>& res, Status* s);
   /******************************* Shichao *******************************/
 
   // Attempts to update the new_value inplace, else does normal Add

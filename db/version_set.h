@@ -454,7 +454,7 @@ class Version {
 
   /**************** Shichao *******************/
   void RangeQuery(const ReadOptions& read_options, const LookupRange& range,
-                  std::map<std::string, SeqTypeVal>& res, Status* status);
+                  std::list<RangeQueryKeyVal>& res, Status* status);
   /**************** Shichao *******************/
 
   // Loads some stats information from files. Call without mutex held. It needs

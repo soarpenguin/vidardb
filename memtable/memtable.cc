@@ -390,7 +390,7 @@ struct Saver {
   const LookupRange* range;  // Shichao
   bool* found_final_value;   // Is value set correctly? Used by KeyMayExist
   std::string* value;
-  std::map<std::string, SeqTypeVal>* res;  // Shichao
+  std::list<RangeQueryKeyVal>* res;  // Shichao
   std::map<std::string, SeqTypeVal>::iterator prev_iter;  // Shichao
   SequenceNumber seq;
   MemTable* mem;
@@ -477,28 +477,45 @@ static bool SaveValueForRangeQuery(void* arg, const char* entry) {
     case kTypeSingleDeletion: {
       if (s->seq <= sequence_num) {
         std::string user_key(internal_key.data(), internal_key.size() - 8);
-        std::string val(GetLengthPrefixedSlice(key_ptr + key_length).ToString());
-        SeqTypeVal stv = SeqTypeVal(s->seq, type, val);
+        SeqTypeVal stv(s->seq, type, s->res->end());
 
         auto it = s->prev_iter;
-        if (it != s->res->end()) {
+        if (it != meta->map_res.end()) {
           it++;
         }
-        it = s->res->emplace_hint(it, user_key, std::move(stv));
-        if (it->second.seq_ < s->seq) {
-          it->second.seq_ = s->seq;
-          it->second.type_ = type;
-          it->second.val_ = val;
-        }
-
-        if (CompressResultMap(s->res, *(s->read_options)) &&
-            s->res->rbegin()->first <= user_key) {
-          // Reach the batch capacity
-          *(s->status) = Status::OK();
-          return false;
-        }
-
+        it = meta->map_res.emplace_hint(it, user_key, std::move(stv));
         s->prev_iter = it;
+
+        if (it->second.seq_ <= s->seq) {
+          std::string user_val(GetLengthPrefixedSlice(key_ptr + key_length)
+                               .ToString());
+
+          if (it->second.seq_ < s->seq) {
+            // replaced
+            if (it->second.type_ == kTypeDeletion) {
+              meta->del_keys.erase(it->second.seq_);
+            }
+            it->second.seq_ = s->seq;
+            it->second.type_ = type;
+            it->second.iter_->user_val = std::move(user_val);
+            if (type == kTypeDeletion) {
+              meta->del_keys.insert({s->seq, it->second.iter_});
+            }
+          } else {
+            // inserted
+            s->res->emplace_back(user_key, std::move(user_val));
+            it->second.iter_ = --(s->res->end());
+            if (type == kTypeDeletion) {
+              meta->del_keys.insert({s->seq, it->second.iter_});
+            }
+
+            if (CompressResultList(s->res, *(s->read_options))
+                && meta->map_res.rbegin()->first <= user_key) {
+              *(s->status) = Status::OK();
+              return false;  // Reach the batch capacity
+            }
+          }
+        }
       }
       *(s->status) = Status::OK();
       return true;
@@ -547,17 +564,19 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
 /***************************** Shichao *****************************/
 bool MemTable::RangeQuery(const ReadOptions& read_options,
                           const LookupRange& range,
-                          std::map<std::string, SeqTypeVal>& res, Status* s) {
+                          std::list<RangeQueryKeyVal>& res, Status* s) {
   if (IsEmpty()) {
     *s = Status::NotFound(Slice());
     return true;
   }
 
+  RangeQueryMeta* meta =
+      static_cast<RangeQueryMeta*>(read_options.range_query_meta);
   Saver saver;
   saver.status = s;
   saver.range = &range;
   saver.res = &res;
-  saver.prev_iter = res.end();
+  saver.prev_iter = meta->map_res.end();
   saver.seq = kMaxSequenceNumber;
   saver.mem = this;
   saver.logger = moptions_.info_log;

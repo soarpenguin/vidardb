@@ -15,6 +15,7 @@
 #pragma once
 #include <stdio.h>
 #include <string>
+#include <unordered_map>  // Shichao
 #include "vidardb/comparator.h"
 #include "vidardb/db.h"
 #include "vidardb/slice.h"
@@ -329,33 +330,34 @@ struct LookupRange {
 struct SeqTypeVal {
   SequenceNumber seq_;
   ValueType type_;
-  std::string val_;
+  typedef std::list<RangeQueryKeyVal>::iterator ListIterator;
+  ListIterator iter_;
 
   SeqTypeVal() : seq_(0), type_(kTypeDeletion) { }
 
-  SeqTypeVal(SequenceNumber seq, ValueType type, const std::string& val) :
-    seq_(seq), type_(type), val_(val) { }
+  SeqTypeVal(SequenceNumber seq, ValueType type, const ListIterator& iter) :
+    seq_(seq), type_(type), iter_(iter) { }
 
-  SeqTypeVal(SequenceNumber seq, ValueType type, std::string&& val) :
-    seq_(seq), type_(type), val_(std::move(val)) { }
+  SeqTypeVal(SequenceNumber seq, ValueType type, ListIterator&& iter) :
+    seq_(seq), type_(type), iter_(std::move(iter)) { }
 
   SeqTypeVal(const SeqTypeVal& stv) :
-    seq_(stv.seq_), type_(stv.type_), val_(stv.val_) { }
+    seq_(stv.seq_), type_(stv.type_), iter_(stv.iter_) { }
 
   SeqTypeVal(SeqTypeVal&& stv) :
-    seq_(stv.seq_), type_(stv.type_), val_(std::move(stv.val_)) { }
+    seq_(stv.seq_), type_(stv.type_), iter_(std::move(stv.iter_)) { }
 
   SeqTypeVal& operator=(const SeqTypeVal& stv) {
     seq_ = stv.seq_;
     type_ = stv.type_;
-    val_ = stv.val_;
+    iter_ = stv.iter_;
     return *this;
   }
 
   SeqTypeVal& operator=(SeqTypeVal&& stv) {
     seq_ = stv.seq_;
     type_ = stv.type_;
-    val_ = std::move(stv.val_);
+    iter_ = std::move(stv.iter_);
     return *this;
   }
 };
@@ -370,6 +372,9 @@ struct RangeQueryMeta {
   LookupKey* current_limit_key;              // Current limit key
   SequenceNumber limit_sequence;             // Limit sequence
   std::string next_start_key;                // Next start key
+  std::map<std::string, SeqTypeVal> map_res; // Temp result map
+  std::unordered_map<SequenceNumber,
+      std::list<RangeQueryKeyVal>::iterator> del_keys;  // store delete keys
 
   RangeQueryMeta(ColumnFamilyData* cfd, SuperVersion* sv, SequenceNumber snap,
                  LookupKey* limit_key = nullptr, SequenceNumber limit_seq = 0):
@@ -377,31 +382,37 @@ struct RangeQueryMeta {
     current_limit_key(limit_key), limit_sequence(limit_seq) {}
 };
 
-// Ensure the result map size is no more than the expected capacity
+// Ensure the result size is no more than the expected capacity
 // which maybe include an extra limit user key.
-// Return true if the map size has reached the capacity, else false.
-inline bool CompressResultMap(std::map<std::string, SeqTypeVal>* res,
-                              const ReadOptions& read_options) {
+// Return true if the size has reached the capacity, else false.
+inline bool CompressResultList(std::list<RangeQueryKeyVal>* res,
+                               const ReadOptions& read_options) {
   if (read_options.batch_capacity <= 0) {  // infinite
     return false;
   }
 
   // reserve the next start key which is also the current limit key
+  RangeQueryMeta* meta =
+      static_cast<RangeQueryMeta*>(read_options.range_query_meta);
   size_t ok_size = read_options.batch_capacity + 1;
-  if (res->size() <= ok_size) {
+  if (meta->map_res.size() <= ok_size) {
     return false;
   }
 
-  size_t diff_size = res->size() - ok_size;
+  size_t diff_size = meta->map_res.size() - ok_size;
   for (size_t i = 0u; i < diff_size; i++) {
-    res->erase(--(res->end()));
+    auto it = --(meta->map_res.end());
+    res->erase(it->second.iter_);  // remove from list
+    if (it->second.type_ == kTypeDeletion) {
+      // remove from unordered_map
+      meta->del_keys.erase(it->second.seq_);
+    }
+    meta->map_res.erase(it);       // remove from map
   }
 
   // update the current range limit key
-  RangeQueryMeta* meta =
-      static_cast<RangeQueryMeta*>(read_options.range_query_meta);
   delete meta->current_limit_key;
-  Slice limit_key((--(res->end()))->first);
+  Slice limit_key(meta->map_res.rbegin()->first);
   meta->current_limit_key = new LookupKey(limit_key, meta->limit_sequence);
   return true;
 }

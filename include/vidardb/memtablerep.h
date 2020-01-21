@@ -124,7 +124,7 @@ class MemTableRep {
 
   /******************************* Shichao ***********************************/
   virtual void RangeQuery(const LookupRange& range,
-                          std::map<std::string, SeqTypeVal>& res,
+                          std::list<RangeQueryKeyVal>& res,
                           void* callback_args,
                           bool (*callback_func)(void* arg, const char* entry)) {}
   /******************************* Shichao ***********************************/

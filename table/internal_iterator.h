@@ -12,8 +12,7 @@
 #pragma once
 
 #include <string>
-#include <map>     // Shichao
-#include <vector>  // Shichao
+#include <list>    // Shichao
 #include "vidardb/iterator.h"
 #include "vidardb/status.h"
 #include "vidardb/options.h" // Quanzhao
@@ -25,6 +24,7 @@ class PinnedIteratorsManager;
 /*********************** Shichao **************************/
 struct LookupRange;
 struct SeqTypeVal;
+struct RangeQueryKeyVal;
 /*********************** Shichao **************************/
 
 class InternalIterator : public Cleanable {
@@ -80,7 +80,7 @@ class InternalIterator : public Cleanable {
   // Support OLAP range query, Table iterator should re-implement this.
   virtual Status RangeQuery(const ReadOptions& read_options,
                             const LookupRange& range,
-                            std::map<std::string, SeqTypeVal>& res) {
+                            std::list<RangeQueryKeyVal>& res) {
     return Status::NotSupported(Slice("not implemented"));
   }
   /***************************** Shichao ******************************/
